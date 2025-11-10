@@ -70,6 +70,7 @@ export default function CheckoutPage() {
             // Add all purchased items to the user's library
             cartItems.forEach(item => {
                 const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
+                // Ensure the full item object from the cart is being set
                 batch.set(libraryRef, { ...item });
             });
             
