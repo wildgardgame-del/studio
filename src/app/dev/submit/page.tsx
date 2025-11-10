@@ -25,7 +25,7 @@ import Footer from "@/components/layout/footer"
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFirebase } from "@/firebase";
+import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRole } from "@/hooks/useRole";
 import { useGameStore } from "@/context/game-store-context";
 
@@ -78,36 +78,43 @@ export default function SubmitGamePage() {
         }
 
         setIsSubmitting(true);
-        try {
-            const gamesRef = collection(firestore, 'games');
-            const newGame = {
-                ...values,
-                developerId: user.uid,
-                status: 'pending',
-                // Mocking some data that is not in the form yet
-                longDescription: values.description,
-                screenshots: [values.imageUrl],
-                rating: 0,
-                reviews: [],
-            }
-            await addDoc(gamesRef, newGame);
-
-            toast({
-                title: "Jogo Submetido!",
-                description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
-            });
-            router.push('/dev/dashboard');
-
-        } catch (error: any) {
-            console.error("Error submitting game:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erro ao Submeter',
-                description: error.message || 'Ocorreu um problema ao submeter o seu jogo. Tente novamente mais tarde.',
-            });
-        } finally {
-            setIsSubmitting(false);
+        const gamesRef = collection(firestore, 'games');
+        const newGameData = {
+            ...values,
+            developerId: user.uid,
+            status: 'pending',
+            // Mocking some data that is not in the form yet
+            longDescription: values.description,
+            screenshots: [values.imageUrl],
+            rating: 0,
+            reviews: [],
         }
+
+        addDoc(gamesRef, newGameData)
+          .then(() => {
+              toast({
+                  title: "Jogo Submetido!",
+                  description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
+              });
+              router.push('/dev/dashboard');
+          })
+          .catch((error) => {
+              console.error("Error submitting game:", error); // Keep console for generic errors
+              const permissionError = new FirestorePermissionError({
+                  path: gamesRef.path,
+                  operation: 'create',
+                  requestResourceData: newGameData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              toast({
+                  variant: 'destructive',
+                  title: 'Erro de Permissão',
+                  description: 'Não foi possível submeter o jogo. Verifique as permissões.',
+              });
+          })
+          .finally(() => {
+              setIsSubmitting(false);
+          });
     }
 
     if (isRoleLoading) {
