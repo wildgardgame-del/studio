@@ -36,7 +36,7 @@ service cloud.firestore {
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isRole('admin'));
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isRole('admin');
 
       allow create: if isSignedIn() && isOwner(userId) 
