@@ -11,6 +11,11 @@ type UserProfile = {
 export function useRole() {
     const { user, firestore, isUserLoading } = useFirebase();
 
+    // Specific override for the admin user
+    if (user && user.email === 'ronneeh@gmail.com') {
+        return { role: 'admin' as const, isLoading: false };
+    }
+
     const userDocRef = useMemoFirebase(() => {
         if (!user || !firestore) return null;
         return doc(firestore, 'users', user.uid);
