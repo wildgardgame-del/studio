@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, PlusCircle, ShieldAlert, Gamepad2 } from 'lucide-react';
+import { Loader2, PlusCircle, ShieldAlert, Gamepad2, Award } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
@@ -17,7 +17,7 @@ export default function DevDashboardPage() {
   const router = useRouter();
   
   const isLoading = isUserLoading || purchasedGames === undefined;
-  const hasDevLicense = isPurchased('dev-account-upgrade');
+  const hasDevLicense = isPurchased('dev-account-upgrade') || isPurchased('dev-android-account-upgrade');
 
   useEffect(() => {
     // If we're done loading and the user is not logged in OR doesn't have the license, redirect.
@@ -79,6 +79,17 @@ export default function DevDashboardPage() {
                     </CardHeader>
                     <CardContent>
                        <Button variant="link" className="p-0 text-accent">Gerenciar Jogos</Button>
+                    </CardContent>
+                </Link>
+             </Card>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/apply-for-dev">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Award className="text-accent" />Gerir Licenças</CardTitle>
+                        <CardDescription>Adquira licenças adicionais, como a licença de desenvolvedor Android.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Button variant="link" className="p-0 text-accent">Ver Licenças</Button>
                     </CardContent>
                 </Link>
              </Card>

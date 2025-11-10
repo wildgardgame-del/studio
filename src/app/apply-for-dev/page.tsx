@@ -59,7 +59,7 @@ export default function ApplyForDevPage() {
     }
     
     const isLoading = isUserLoading || isLicenseLoading || isAndroidLicenseLoading;
-    const hasDevLicense = isPurchased('dev-account-upgrade');
+    const hasStandardLicense = isPurchased('dev-account-upgrade');
     const hasAndroidLicense = isPurchased('dev-android-account-upgrade');
 
 
@@ -91,26 +91,6 @@ export default function ApplyForDevPage() {
             </div>
         )
     }
-
-    if (hasDevLicense || hasAndroidLicense) {
-        return (
-            <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                     <Rocket className="h-16 w-16 text-primary mb-4" />
-                    <h1 className="text-3xl font-bold font-headline">Você já é um Desenvolvedor!</h1>
-                    <p className="mt-2 text-muted-foreground max-w-md">
-                        A sua conta já tem privilégios de desenvolvedor. Visite o seu painel para começar a submeter jogos.
-                    </p>
-                    <Button asChild className="mt-6">
-                        <Link href="/dev/dashboard">Ir para o Painel</Link>
-                    </Button>
-                </main>
-                <Footer />
-            </div>
-        )
-    }
-
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -145,8 +125,8 @@ export default function ApplyForDevPage() {
                             </CardContent>
                              <CardFooter className="flex-col items-stretch gap-4 p-6 bg-secondary/30">
                                 <div className="text-4xl font-bold text-primary text-center">${devLicenseProduct.price?.toFixed(2) || '0.00'}</div>
-                                <Button size="lg" className="w-full" onClick={() => handlePurchase(devLicenseProduct)}>
-                                    <ShoppingCart className="mr-2" /> Comprar Licença
+                                <Button size="lg" className="w-full" onClick={() => handlePurchase(devLicenseProduct)} disabled={hasStandardLicense}>
+                                    {hasStandardLicense ? <><CheckCircle2 className="mr-2" />Já Possui</> : <><ShoppingCart className="mr-2" /> Comprar Licença</>}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -176,8 +156,8 @@ export default function ApplyForDevPage() {
                             </CardContent>
                             <CardFooter className="flex-col items-stretch gap-4 p-6 bg-secondary/30">
                                 <div className="text-4xl font-bold text-primary text-center">${androidLicenseProduct.price?.toFixed(2) || '0.00'}</div>
-                                <Button size="lg" className="w-full" disabled>
-                                    Em Breve
+                                <Button size="lg" className="w-full" onClick={() => handlePurchase(androidLicenseProduct)} disabled={hasAndroidLicense || true}>
+                                    {hasAndroidLicense ? <><CheckCircle2 className="mr-2" />Já Possui</> : 'Em Breve'}
                                 </Button>
                             </CardFooter>
                         </Card>
