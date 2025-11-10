@@ -62,6 +62,19 @@ export default function SubmitGamePage() {
     const { toast } = useToast();
     const router = useRouter();
 
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            title: "",
+            price: 0,
+            description: "",
+            longDescription: "",
+            genres: "",
+            coverImage: undefined,
+            screenshots: undefined,
+        },
+    });
+
     const uploadFile = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             if (!storage) {
