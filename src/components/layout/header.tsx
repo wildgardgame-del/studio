@@ -38,7 +38,6 @@ import { Cart } from '@/components/cart';
 import { Icons } from '../icons';
 import { useGameStore } from '@/context/game-store-context';
 import { useUser } from '@/firebase';
-import { useRole } from '@/hooks/useRole';
 
 const navLinks = [
   { href: '/browse', label: 'Store' },
@@ -46,13 +45,13 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { cartItems, wishlistItems, isPurchased } = useGameStore();
+  const { cartItems, wishlistItems } = useGameStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
-  const { role } = useRole();
+  // Role logic is removed
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -79,8 +78,6 @@ export default function Header() {
     return email.substring(0, 2).toUpperCase();
   }
 
-  const hasDevLicense = isPurchased('dev-account-upgrade');
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -101,6 +98,12 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+             <Link
+                href="/dev/dashboard"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                Submit a Game
+              </Link>
           </nav>
         </div>
 
@@ -140,6 +143,13 @@ export default function Header() {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Wishlist
+                </Link>
+                 <Link
+                  href="/dev/dashboard"
+                  className="transition-colors hover:text-foreground/80 text-foreground/60"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Submit a Game
                 </Link>
             </div>
           </SheetContent>
@@ -207,31 +217,11 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {role === 'admin' && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {(role === 'dev' || role === 'admin' || hasDevLicense) && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dev Panel</Link>
-                    </DropdownMenuItem>
-                  )}
                   
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
                   
-                  {role !== 'admin' && role !== 'dev' && !hasDevLicense && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/apply-for-dev">
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        <span>Become a Publisher</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />

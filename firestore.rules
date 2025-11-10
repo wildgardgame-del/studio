@@ -1,23 +1,4 @@
 
-/**
- * @fileoverview Firestore Security Rules for GameSphere.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for personal data and a role-based access control (RBAC)
- * system for game management. A new submission system isolates pending games from the public catalog.
- *
- * Roles:
- * - user: Can browse and buy games, and write reviews.
- * - dev: Can submit games and update their own submissions.
- * - admin: Can manage games (approve/reject), user roles, and all submissions.
- *
- * Data Structure & Rules:
- * - /games/{gameId}: Public read. Creation restricted to 'admin' role (via submission approval).
- * - /users/{userId}: Profiles are private. Role changes are restricted to 'admin' role or self-upgrade to 'dev'.
- * - /users/{userId}/...: Subcollections (cart, wishlist, library) are private to the user.
- * - /users/{userId}/game_submissions/{gameSubId}: Devs can create/update their own. Admins can manage all.
- * - /reviews/{reviewId}: Public read. Writes are restricted to the review owner.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -45,25 +26,9 @@ service cloud.firestore {
                       && request.resource.data.email == request.auth.token.email
                       && request.resource.data.role == 'user';
 
-      allow update: if isSignedIn() && (
-                      (isOwner(userId) && (
-                        (request.resource.data.keys().hasAll(['role']) == false) || 
-                        (resource.data.role == 'user' && request.resource.data.role == 'dev')
-                      )) ||
-                      (isRole('admin'))
-                    );
+      allow update: if isSignedIn() && isRole('admin');
 
       allow delete: if isSignedIn() && isExistingOwner(userId);
-
-      /**
-       * @description User can read/write their own game submissions. Admins can manage all.
-       * @path /users/{userId}/game_submissions/{gameSubId}
-       */
-      match /game_submissions/{gameSubId} {
-        allow create: if isSignedIn() && isOwner(userId);
-        allow read, update: if isSignedIn() && (isOwner(userId) || isRole('admin'));
-        allow delete: if isSignedIn() && isRole('admin');
-      }
     }
 
     /**
@@ -100,14 +65,6 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
-    }
-    
-     /**
-     * @description Admin can list game submissions across all users.
-     * @path /{path=**}/game_submissions/{gameSubId}
-     */
-    match /{path=**}/game_submissions/{gameSubId} {
-      allow list: if isSignedIn() && isRole('admin');
     }
   }
 

@@ -48,6 +48,15 @@
           "type": "string",
           "description": "URL of the game's trailer.",
           "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ],
+          "description": "The review status of the game."
         }
       },
       "required": [
@@ -56,7 +65,8 @@
         "description",
         "price",
         "developerId",
-        "imageUrl"
+        "imageUrl",
+        "status"
       ]
     },
     "User": {
@@ -80,7 +90,7 @@
         },
         "registrationDate": {
           "type": "string",
-          "description": "The date when the user registered.",
+  "description": "The date when the user registered.",
           "format": "date-time"
         },
         "role": {
@@ -88,7 +98,6 @@
           "description": "The role of the user.",
           "enum": [
             "user",
-            "dev",
             "admin"
           ]
         }
@@ -203,23 +212,6 @@
         "userId",
         "gameIds"
       ]
-    },
-    "GameSubmission": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "GameSubmission",
-      "type": "object",
-      "description": "A game submitted by a developer for review.",
-      "properties": {
-         "title": { "type": "string" },
-         "description": { "type": "string" },
-         "price": { "type": "number" },
-         "genre": { "type": "string" },
-         "imageUrl": { "type": "string", "format": "uri" },
-         "developerId": { "type": "string" },
-         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
-         "submittedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["title", "description", "price", "genre", "imageUrl", "developerId", "status", "submittedAt"]
     }
   },
   "auth": {
@@ -238,7 +230,7 @@
           "schema": {
             "$ref": "#/backend/entities/Game"
           },
-          "description": "Stores approved, published games. Only admins can create documents here (by approving a submission).",
+          "description": "Stores all games, including pending, approved, and rejected ones. Any signed-in user can create a game (submit for review). Admins can update/delete.",
           "params": [
             {
               "name": "gameId",
@@ -338,22 +330,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/game_submissions/{gameSubId}",
-        "definition": {
-          "entityName": "GameSubmission",
-          "schema": {
-            "$ref": "#/backend/entities/GameSubmission"
-          },
-          "description": "Stores game submissions from a developer. Devs can create/update their own, admins can manage all.",
-          "params": [
-            { "name": "userId", "description": "The developer's user ID." },
-            { "name": "gameSubId", "description": "The game submission's unique ID." }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore data structure has been refactored to separate game submissions from the main game catalog, enhancing security and clarity. Game submissions are now stored in a subcollection under a developer's application, ensuring that only authorized developers can submit games and only admins can manage them. The main `/games` collection is now exclusively for published games, with creation rights restricted to admins who approve submissions. This prevents developers from writing directly to the public-facing game list, resolving previous permission issues."
+    "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
   }
 }

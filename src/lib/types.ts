@@ -16,9 +16,8 @@ export type Game = {
   }[];
 };
 
+// This type is no longer used, but kept for reference to avoid breaking other parts of the app.
 export type DeveloperApplication = {
-  // This type is now obsolete with the new purchase flow, but kept for reference
-  // to avoid breaking changes in other parts of the app if it's referenced.
   id: string;
   userId: string;
   developerName: string;

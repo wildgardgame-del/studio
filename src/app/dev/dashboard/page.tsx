@@ -7,51 +7,25 @@ import Footer from '@/components/layout/footer';
 import { Loader2, PlusCircle, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useRole } from '@/hooks/useRole';
-import { useGameStore } from '@/context/game-store-context';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 export default function DevDashboardPage() {
-  const { role, isLoading: isRoleLoading } = useRole();
-  const { isPurchased } = useGameStore();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  const hasDevLicense = isPurchased('dev-account-upgrade');
-  const isDev = role === 'dev' || role === 'admin';
-  const hasAccess = isDev || hasDevLicense;
-  
-  const isLoading = isRoleLoading; // Add other loading states if needed e.g. from isPurchased
-
   useEffect(() => {
-    if (!isLoading && !hasAccess) {
-      // Optional: redirect to a specific "access-denied" page
-      // For now, we'll just show the message
+    if (!isUserLoading && !user) {
+      router.push('/login');
     }
-  }, [isLoading, hasAccess, router]);
+  }, [isUserLoading, user, router]);
 
-  if (isLoading) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
-    );
-  }
-
-  if (!hasAccess) {
-     return (
-        <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
-                <h1 className="text-3xl font-bold">Acesso Negado</h1>
-                <p className="text-muted-foreground mt-2 max-w-md">Você não tem a Licença de Desenvolvedor para acessar esta página. Adquira uma para começar a publicar.</p>
-                <Button asChild className="mt-6">
-                    <Link href="/apply-for-dev">Obter Licença de Desenvolvedor</Link>
-                </Button>
-            </main>
-            <Footer />
-        </div>
     );
   }
 
@@ -60,8 +34,8 @@ export default function DevDashboardPage() {
       <Header />
       <main className="flex-1 bg-secondary/30">
         <div className="container py-12">
-          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Painel de Desenvolvedor</h1>
-          <p className="text-muted-foreground mt-2">Gerencie seus jogos e veja suas estatísticas.</p>
+          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Painel de Contribuidor</h1>
+          <p className="text-muted-foreground mt-2">Submeta e gerencie os seus jogos.</p>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card className="hover:border-primary transition-colors md:col-span-1 lg:col-span-1">

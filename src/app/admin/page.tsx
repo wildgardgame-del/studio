@@ -1,6 +1,6 @@
 'use client';
 
-import { useRole } from '@/hooks/useRole';
+import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,16 +11,19 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function AdminDashboardPage() {
-  const { role, isLoading } = useRole();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
+  
+  // Hardcoded admin check
+  const isAdmin = user?.email === 'ronneeh@gmail.com';
 
   useEffect(() => {
-    if (!isLoading && role !== 'admin') {
+    if (!isUserLoading && !isAdmin) {
       router.push('/');
     }
-  }, [isLoading, role, router]);
+  }, [isUserLoading, isAdmin, router]);
 
-  if (isLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -28,7 +31,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (role !== 'admin') {
+  if (!isAdmin) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center text-center">
             <ShieldAlert className="h-20 w-20 text-destructive mb-4" />

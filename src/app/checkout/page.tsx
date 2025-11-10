@@ -66,7 +66,6 @@ export default function CheckoutPage() {
         // Simulate payment processing
         setTimeout(async () => {
             const batch = writeBatch(firestore);
-            const containsDevLicense = cartItems.some(item => item.id === 'dev-account-upgrade');
 
             // Add all purchased items to the user's library
             cartItems.forEach(item => {
@@ -74,12 +73,6 @@ export default function CheckoutPage() {
                 batch.set(libraryRef, { ...item });
             });
             
-            // If dev license is in the cart, upgrade user role
-            if (containsDevLicense) {
-                const userRef = doc(firestore, `users`, user.uid);
-                batch.update(userRef, { role: 'dev' });
-            }
-
             batch.commit()
                 .then(() => {
                     clearCart();
@@ -88,29 +81,17 @@ export default function CheckoutPage() {
                         title: "Pagamento bem-sucedido!",
                         description: "Seus itens já estão disponíveis na sua biblioteca.",
                     });
-                    if (containsDevLicense) {
-                        router.push('/dev/dashboard');
-                    } else {
-                        router.push('/library');
-                    }
+                    router.push('/library');
                 })
                 .catch((error) => {
                     console.error("Error committing purchase to Firestore:", error);
-                    let path = `users/${user.uid}/library`;
-                    const requestResourceData: any = { cart: cartItems.map(i => ({...i})) };
-                    let operation: 'write' | 'update' = 'write';
+                    const permissionError = new FirestorePermissionError({
+                        path: `users/${user.uid}/library`,
+                        operation: 'write',
+                        requestResourceData: { cart: cartItems.map(i => ({...i})) }
+                    });
                     
-                    if (containsDevLicense) {
-                        path = `users/${user.uid}`;
-                        requestResourceData.role = 'dev';
-                        operation = 'update';
-                    }
-                    
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({
-                        path: path,
-                        operation: operation,
-                        requestResourceData: requestResourceData
-                    }));
+                    errorEmitter.emit('permission-error', permissionError);
                     
                     toast({
                         variant: "destructive",
