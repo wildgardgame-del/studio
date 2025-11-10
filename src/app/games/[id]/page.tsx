@@ -25,7 +25,6 @@ export default function GamePage() {
 
   const { data: game, isLoading } = useDoc<Game>(gameRef);
 
-  // 1. Mostrar o ecrã de carregamento enquanto os dados estão a ser buscados.
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -39,14 +38,10 @@ export default function GamePage() {
     );
   }
 
-  // 2. Após o carregamento, se o jogo não existir, mostrar 404.
   if (!game) {
-    notFound();
-    // A chamada notFound() interrompe a execução, não é necessário um return aqui, mas é uma boa prática.
-    return null;
+    return notFound();
   }
 
-  // 3. Se chegou até aqui, isLoading é false e 'game' existe. Podemos renderizar com segurança.
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
