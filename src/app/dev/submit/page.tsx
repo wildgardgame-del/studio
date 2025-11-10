@@ -73,7 +73,9 @@ export default function SubmitGamePage() {
         },
     });
 
-    const uploadFile = async (file: File, path: string): Promise<string> => {
+    const uploadFile = async (file: File): Promise<string> => {
+        if (!storage) throw new Error("Firebase Storage not initialized");
+        const path = `games/${uuidv4()}-${file.name}`;
         const storageRef = ref(storage, path);
         await uploadBytes(storageRef, file);
         return getDownloadURL(storageRef);
@@ -92,19 +94,20 @@ export default function SubmitGamePage() {
         setIsSubmitting(true);
         
         try {
-            // 1. Upload Cover Image
+            // 1. Prepare all file upload promises
             const coverImageFile = values.coverImage[0];
-            const coverImagePath = `games/${uuidv4()}-${coverImageFile.name}`;
-            const coverImageUrl = await uploadFile(coverImageFile, coverImagePath);
-
-            // 2. Upload Screenshots
             const screenshotFiles = Array.from(values.screenshots as FileList);
-            const screenshotUrls = await Promise.all(
-                screenshotFiles.map(file => {
-                    const screenshotPath = `games/${uuidv4()}-${file.name}`;
-                    return uploadFile(file, screenshotPath);
-                })
-            );
+
+            const allUploadPromises = [
+                uploadFile(coverImageFile),
+                ...screenshotFiles.map(file => uploadFile(file))
+            ];
+
+            // 2. Execute all uploads in parallel
+            const uploadedUrls = await Promise.all(allUploadPromises);
+            
+            const coverImageUrl = uploadedUrls[0];
+            const screenshotUrls = uploadedUrls.slice(1);
             
             // 3. Prepare data for Firestore
             const newGameData = {
