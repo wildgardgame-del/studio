@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import React from 'react';
+import Autoplay from "embla-carousel-autoplay";
 
 import { Button } from '@/components/ui/button';
 import { GameCard } from '@/components/game-card';
@@ -28,6 +30,10 @@ export default function Home() {
   }, [firestore]);
 
   const { data: featuredGames, isLoading } = useCollection<Game>(gamesQuery);
+  
+  const plugin = React.useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: true })
+  )
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -72,11 +78,14 @@ export default function Home() {
             </div>
           ) : (
              <Carousel
+              plugins={[plugin.current]}
               opts={{
                 align: "start",
                 loop: true,
               }}
               className="w-full"
+              onMouseEnter={plugin.current.stop}
+              onMouseLeave={plugin.current.reset}
             >
               <CarouselContent>
                 {(featuredGames || []).map((game) => (
