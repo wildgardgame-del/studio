@@ -49,7 +49,6 @@ export default function GamePage() {
     );
   }
 
-  // This must come AFTER the isLoading check.
   if (!game) {
     notFound();
   }
@@ -73,11 +72,11 @@ export default function GamePage() {
               />
               <div className="mt-4 space-y-2">
                 <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)}>
-                  <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+                  <ShoppingCart className="mr-2 h-5 w-5" /> Adicionar ao Carrinho
                 </Button>
                 <Button size="lg" variant="outline" className="w-full" onClick={() => handleToggleWishlist(game)}>
                   <Heart className={cn("mr-2 h-5 w-5", isWishlisted && "fill-accent text-accent")} />
-                  {isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}
+                  {isWishlisted ? 'Na Lista de Desejos' : 'Adicionar à Lista de Desejos'}
                 </Button>
               </div>
             </div>
@@ -97,7 +96,7 @@ export default function GamePage() {
                     />
                   ))}
                 </div>
-                <span className="text-muted-foreground">{game.rating?.toFixed(1)} ({game.reviews?.length || 0} reviews)</span>
+                <span className="text-muted-foreground">{game.rating?.toFixed(1) || 'N/A'} ({game.reviews?.length || 0} avaliações)</span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {game.genres?.map((genre) => (
@@ -113,8 +112,8 @@ export default function GamePage() {
 
               <Tabs defaultValue="screenshots" className="w-full mt-8">
                 <TabsList>
-                  <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
-                  <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                  <TabsTrigger value="screenshots">Capturas de Ecrã</TabsTrigger>
+                  <TabsTrigger value="reviews">Avaliações</TabsTrigger>
                 </TabsList>
                 <TabsContent value="screenshots" className="mt-4">
                     {game.screenshots && game.screenshots.length > 0 ? (
@@ -130,11 +129,11 @@ export default function GamePage() {
                             <CarouselNext />
                         </Carousel>
                     ) : (
-                        <p className='text-muted-foreground'>No screenshots available.</p>
+                        <p className='text-muted-foreground'>Não há capturas de ecrã disponíveis.</p>
                     )}
                 </TabsContent>
                 <TabsContent value="reviews" className="mt-4">
-                  <p className='text-muted-foreground'>No reviews yet. Be the first to leave one!</p>
+                  <p className='text-muted-foreground'>Ainda não há avaliações. Seja o primeiro a deixar uma!</p>
                 </TabsContent>
               </Tabs>
             </div>
