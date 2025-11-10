@@ -110,11 +110,8 @@ service cloud.firestore {
      * @path /developer_applications/{applicationId}
      */
     match /developer_applications/{applicationId} {
-      allow get: if isSignedIn() && isRole('admin');
-      allow list: if isSignedIn() && 
-                    (isRole('admin') || 
-                    (request.query.where[0][2] == request.auth.uid));
-
+      allow get: if isSignedIn() && (isRole('admin') || isExistingOwner(resource.data.userId));
+      allow list: if isSignedIn() && isRole('admin');
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isRole('admin');
     }

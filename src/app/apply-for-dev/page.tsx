@@ -26,6 +26,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import type { DeveloperApplication } from "@/lib/types";
+import { useRole } from "@/hooks/useRole";
 
 const formSchema = z.object({
   developerName: z.string().min(2, "O nome do desenvolvedor/estúdio deve ter pelo menos 2 caracteres."),
@@ -66,13 +67,14 @@ const StatusCard = ({ status }: { status: 'pending' | 'approved' | 'rejected' })
 export default function ApplyForDevPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
-    const { user, firestore } = useFirebase();
+    const { user, firestore, isUserLoading } = useFirebase();
+    const { role, isLoading: isRoleLoading } = useRole();
     const router = useRouter();
 
     const applicationQuery = useMemoFirebase(() => {
-        if (!user || !firestore) return null;
+        if (!user || !firestore || role === 'admin') return null; // Don't query for admins
         return query(collection(firestore, "developer_applications"), where("userId", "==", user.uid), limit(1));
-    }, [user, firestore]);
+    }, [user, firestore, role]);
 
     const { data: applications, isLoading: isLoadingApplication } = useCollection<DeveloperApplication>(applicationQuery);
     const existingApplication = applications?.[0];
@@ -95,7 +97,7 @@ export default function ApplyForDevPage() {
             });
             return router.push('/login');
         }
-        if (existingApplication) return;
+        if (existingApplication || role === 'admin') return;
 
         setIsSubmitting(true);
         try {
@@ -126,7 +128,9 @@ export default function ApplyForDevPage() {
     }
 
     const renderContent = () => {
-        if (!user && !isLoadingApplication) {
+        const isLoading = isUserLoading || isRoleLoading || isLoadingApplication;
+
+        if (!user && !isLoading) {
             return (
                 <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-secondary/50">
                     <Info className="h-12 w-12 text-primary" />
@@ -139,10 +143,20 @@ export default function ApplyForDevPage() {
             )
         }
 
-        if (isLoadingApplication) {
+        if (isLoading) {
             return (
                 <div className="flex items-center justify-center min-h-[400px]">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                </div>
+            )
+        }
+        
+        if (role === 'admin') {
+             return (
+                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-secondary/50">
+                    <Info className="h-12 w-12 text-primary" />
+                    <h2 className="mt-6 text-2xl font-bold">Administradores não precisam se candidatar</h2>
+                    <p className="mt-2 text-muted-foreground">Como administrador, você já tem acesso a todos os recursos de desenvolvedor.</p>
                 </div>
             )
         }
