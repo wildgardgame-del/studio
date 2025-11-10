@@ -1,4 +1,9 @@
+'use client';
+
 import Link from "next/link"
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,8 +18,37 @@ import { Label } from "@/components/ui/label"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
+import { useAuth, useUser } from "@/firebase";
 
 export default function LoginPage() {
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      router.push('/');
+    } catch (error) {
+      console.error("Error signing in with Google: ", error);
+    }
+  };
+
+  if (isUserLoading || (!isUserLoading && user)) {
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
         <Header />
@@ -52,7 +86,7 @@ export default function LoginPage() {
                     <Button type="submit" className="w-full">
                         Login
                     </Button>
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
                         Login with Google
                     </Button>
                     </div>

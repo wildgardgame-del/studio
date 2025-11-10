@@ -3,6 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { GameStoreProvider } from '@/context/game-store-context';
+import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'GameSphere',
@@ -30,10 +31,12 @@ export default function RootLayout({
           'font-body'
         )}
       >
-        <GameStoreProvider>
-          {children}
-          <Toaster />
-        </GameStoreProvider>
+        <FirebaseClientProvider>
+          <GameStoreProvider>
+            {children}
+            <Toaster />
+          </GameStoreProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
