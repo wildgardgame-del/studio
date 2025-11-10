@@ -135,34 +135,7 @@ export default function GamePage() {
                     )}
                 </TabsContent>
                 <TabsContent value="reviews" className="mt-4">
-                    {game.reviews && game.reviews.length > 0 ? (
-                        <div className="space-y-6">
-                            {game.reviews.map((review) => (
-                            <Card key={review.id} className="bg-secondary/50">
-                                <CardContent className="p-4">
-                                <div className="flex items-start gap-4">
-                                    <Avatar>
-                                        <AvatarFallback>{review.author.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <div className='w-full'>
-                                        <div className='flex justify-between items-center'>
-                                            <p className="font-semibold">{review.author}</p>
-                                            <div className="flex items-center gap-1 text-sm">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star key={i} className={cn('h-4 w-4', i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <p className="text-muted-foreground mt-1">{review.text}</p>
-                                    </div>
-                                </div>
-                                </CardContent>
-                            </Card>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className='text-muted-foreground'>No reviews yet.</p>
-                    )}
+                  <p className='text-muted-foreground'>No reviews yet. Be the first to leave one!</p>
                 </TabsContent>
               </Tabs>
             </div>
