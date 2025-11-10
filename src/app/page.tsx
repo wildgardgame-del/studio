@@ -79,30 +79,30 @@ export default function Home() {
           )}
         </section>
         
-        <section className="bg-secondary/50 py-12">
+        <section className="bg-secondary/50 py-8">
           <div className="container">
-            <h2 className="font-headline text-2xl font-bold md:text-3xl mb-6 text-center">Why Forge Gate Hub?</h2>
-            <div className="grid md:grid-cols-3 gap-8 text-center">
+            <h2 className="font-headline text-xl font-bold md:text-2xl mb-4 text-center">Why Forge Gate Hub?</h2>
+            <div className="grid md:grid-cols-3 gap-6 text-center">
               <div className="flex flex-col items-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary mb-3">
-                  <Star className="h-6 w-6" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary mb-2">
+                  <Star className="h-5 w-5" />
                 </div>
-                <h3 className="font-headline text-lg font-bold">Curated Selection</h3>
-                <p className="text-muted-foreground text-sm">Explore a universe of games, from indie gems to AAA blockbusters, hand-picked for you.</p>
+                <h3 className="font-headline text-base font-bold">Curated Selection</h3>
+                <p className="text-muted-foreground text-xs">Explore a universe of games, from indie gems to AAA blockbusters, hand-picked for you.</p>
               </div>
               <div className="flex flex-col items-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
                 </div>
-                <h3 className="font-headline text-lg font-bold">AI Recommendations</h3>
-                <p className="text-muted-foreground text-sm">Our smart AI suggests games you'll love based on your unique play style.</p>
+                <h3 className="font-headline text-base font-bold">AI Recommendations</h3>
+                <p className="text-muted-foreground text-xs">Our smart AI suggests games you'll love based on your unique play style.</p>
               </div>
               <div className="flex flex-col items-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9.09 9.91 5.82 5.82"/><path d="m14.91 9.91-5.82 5.82"/></svg>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9.09 9.91 5.82 5.82"/><path d="m14.91 9.91-5.82 5.82"/></svg>
                 </div>
-                <h3 className="font-headline text-lg font-bold">Seamless Experience</h3>
-                <p className="text-muted-foreground text-sm">A user-friendly interface that makes finding and playing games a breeze.</p>
+                <h3 className="font-headline text-base font-bold">Seamless Experience</h3>
+                <p className="text-muted-foreground text-xs">A user-friendly interface that makes finding and playing games a breeze.</p>
               </div>
             </div>
           </div>
