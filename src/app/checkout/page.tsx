@@ -157,7 +157,7 @@ export default function CheckoutPage() {
                                 {cartItems.map(item => (
                                     <div key={item.id} className="flex justify-between items-center">
                                         <div className="flex items-center gap-3">
-                                            <Image src={item.coverImage} alt={item.title} width={45} height={60} className="rounded-sm object-cover aspect-[3/4]" />
+                                            <Image src={item.coverImage || `https://picsum.photos/seed/${item.id}/45/60`} alt={item.title} width={45} height={60} className="rounded-sm object-cover aspect-[3/4]" />
                                             <span className="truncate font-semibold">{item.title}</span>
                                         </div>
                                         <span>${item.price.toFixed(2)}</span>
