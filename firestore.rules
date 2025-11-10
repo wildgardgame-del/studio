@@ -9,9 +9,7 @@ service cloud.firestore {
      */
     match /games/{gameId} {
       allow get, list: if true;
-      allow create: if true;
-      allow update: if isSignedIn() && isRole('admin');
-      allow delete: if isSignedIn() && isRole('admin');
+      allow write: if true;
     }
 
     /**
