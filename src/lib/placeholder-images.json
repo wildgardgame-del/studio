@@ -1,3 +1,118 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "A futuristic cityscape at night, with flying vehicles and neon signs, representing a vast world of games.",
+      "imageUrl": "https://images.unsplash.com/photo-1519608487953-e999c86e7455?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjeWJlcnB1bmslMjBjaXR5fGVufDB8fHx8MTc2Mjc0NDY3MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cyberpunk city"
+    },
+    {
+      "id": "cosmic-rift-cover",
+      "description": "Cover art for Cosmic Rift, showing a spaceship emerging from a colorful nebula.",
+      "imageUrl": "https://images.unsplash.com/photo-1605517021366-1b0393fdb50a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzcGFjZXNoaXAlMjBuZWJ1bGF8ZW58MHx8fHwxNzYyNzQ4NjY1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "spaceship nebula"
+    },
+    {
+      "id": "cosmic-rift-1",
+      "description": "Screenshot of Cosmic Rift: A dogfight between several small fighters in an asteroid field.",
+      "imageUrl": "https://images.unsplash.com/photo-1575653932700-fcc34df03761?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzcGFjZSUyMGJhdHRsZXxlbnwwfHx8fDE3NjI3NTI1NTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "space battle"
+    },
+    {
+      "id": "cosmic-rift-2",
+      "description": "Screenshot of Cosmic Rift: The player's ship cockpit view, looking out at a giant ringed planet.",
+      "imageUrl": "https://images.unsplash.com/photo-1547234936-74a4b1ee7f42?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwbGFuZXQlMjB2aWV3fGVufDB8fHx8MTc2Mjc3MzM0OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "planet view"
+    },
+    {
+      "id": "cyberpunk-samurai-cover",
+      "description": "Cover art for Cyberpunk Samurai, featuring a warrior with a katana standing in a rainy, neon-lit alley.",
+      "imageUrl": "https://images.unsplash.com/photo-1672864825929-6c623785c5cb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y3liZXJwdW5rJTIwc2FtdXJhaXxlbnwwfHx8fDE3NjI3NzMzNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cyberpunk samurai"
+    },
+    {
+      "id": "cyberpunk-samurai-1",
+      "description": "Screenshot of Cyberpunk Samurai: A fast-paced sword fight on a futuristic rooftop.",
+      "imageUrl": "https://images.unsplash.com/photo-1633846827817-8f19ed03c196?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzd29yZCUyMGZpZ2h0fGVufDB8fHx8MTc2MjY2MDgyNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sword fight"
+    },
+    {
+      "id": "cyberpunk-samurai-2",
+      "description": "Screenshot of Cyberpunk Samurai: The character customizing their cybernetic enhancements.",
+      "imageUrl": "https://images.unsplash.com/photo-1546776310-eef45dd6d63c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjeWJlcm5ldGljJTIwcm9ib3R8ZW58MHx8fHwxNzYyNzczMzQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cybernetic robot"
+    },
+    {
+      "id": "oceans-whisper-cover",
+      "description": "Cover art for Ocean's Whisper, showing a diver discovering ancient ruins underwater.",
+      "imageUrl": "https://images.unsplash.com/photo-1758970439539-aaf2ac8c1ba8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8dW5kZXJ3YXRlciUyMHJ1aW5zfGVufDB8fHx8MTc2Mjc3MzM1MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "underwater ruins"
+    },
+    {
+      "id": "oceans-whisper-1",
+      "description": "Screenshot of Ocean's Whisper: A school of glowing jellyfish swims by the player.",
+      "imageUrl": "https://images.unsplash.com/photo-1727945608265-f40334668142?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxnbG93aW5nJTIwamVsbHlmaXNofGVufDB8fHx8MTc2Mjc3MzM0OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "glowing jellyfish"
+    },
+    {
+      "id": "oceans-whisper-2",
+      "description": "Screenshot of Ocean's Whisper: Solving a puzzle inside a submerged temple.",
+      "imageUrl": "https://images.unsplash.com/photo-1642367499627-080eeca92446?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8dW5kZXJ3YXRlciUyMHRlbXBsZXxlbnwwfHx8fDE3NjI3NzMzNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "underwater temple"
+    },
+    {
+      "id": "void-racer-cover",
+      "description": "Cover art for Void Racer, a futuristic racing vehicle speeding down a suspended track in a giant city.",
+      "imageUrl": "https://images.unsplash.com/photo-1761942943730-c31590bb5c1b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmdXR1cmUlMjByYWNpbmd8ZW58MHx8fHwxNzYyNzczMzQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "future racing"
+    },
+    {
+      "id": "void-racer-1",
+      "description": "Screenshot of Void Racer: A tight corner on a race track, with multiple vehicles vying for position.",
+      "imageUrl": "https://images.unsplash.com/photo-1607515433201-98f09419ef49?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjYXIlMjByYWNlfGVufDB8fHx8MTc2Mjc2MzUzNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car race"
+    },
+    {
+      "id": "void-racer-2",
+      "description": "Screenshot of Void Racer: A vehicle customization screen.",
+      "imageUrl": "https://images.unsplash.com/photo-1610884642242-27194c2c6faa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjdXN0b20lMjBjYXJ8ZW58MHx8fHwxNzYyNzczMzQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "custom car"
+    },
+    {
+      "id": "forest-guardian-cover",
+      "description": "Cover art for Forest Guardian, a mystical creature standing in a sun-dappled, ancient forest.",
+      "imageUrl": "https://images.unsplash.com/photo-1732383055768-ac257dbfc8be?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxteXN0aWNhbCUyMGZvcmVzdHxlbnwwfHx8fDE3NjI2OTQ5NzZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mystical forest"
+    },
+    {
+      "id": "forest-guardian-1",
+      "description": "Screenshot of Forest Guardian: The player character talking to friendly forest animals.",
+      "imageUrl": "https://images.unsplash.com/photo-1679902385374-07c2f9e9e5d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxmb3Jlc3QlMjBhbmltYWxzfGVufDB8fHx8MTc2Mjc3MzM1MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "forest animals"
+    },
+    {
+      "id": "forest-guardian-2",
+      "description": "Screenshot of Forest Guardian: Using magic to grow giant plants to solve a puzzle.",
+      "imageUrl": "https://images.unsplash.com/photo-1646938566183-0a64ee0f5c8d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYWdpYyUyMHBsYW50c3xlbnwwfHx8fDE3NjI3NzMzNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "magic plants"
+    },
+    {
+      "id": "starfall-cover",
+      "description": "Cover art for Starfall, a hero looking up at a sky full of falling stars on an alien planet.",
+      "imageUrl": "https://images.unsplash.com/photo-1601376893666-ccba61145b48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxmYWxsaW5nJTIwc3RhcnN8ZW58MHx8fHwxNzYyNzczMzQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "falling stars"
+    },
+    {
+      "id": "starfall-1",
+      "description": "Screenshot of Starfall: Exploring a vast, alien desert with two moons in the sky.",
+      "imageUrl": "https://images.unsplash.com/photo-1671758732468-2dcbe4fdaeda?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhbGllbiUyMGRlc2VydHxlbnwwfHx8fDE3NjI3NzMzNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "alien desert"
+    },
+    {
+      "id": "starfall-2",
+      "description": "Screenshot of Starfall: A tense battle against a giant alien creature.",
+      "imageUrl": "https://images.unsplash.com/photo-1568224014743-c17edeea85bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhbGllbiUyMG1vbnN0ZXJ8ZW58MHx8fHwxNzYyNzczMzQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "alien monster"
+    }
+  ]
 }
