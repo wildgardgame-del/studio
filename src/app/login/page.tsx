@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { Button } from "@/components/ui/button"
@@ -19,11 +19,13 @@ import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
 import { useAuth, useUser } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -32,16 +34,26 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
+    if (!auth) {
+      console.error("Auth service is not available.");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not connect to authentication service.",
+      });
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
-      if (auth) {
-        await signInWithPopup(auth, provider);
-        router.push('/');
-      } else {
-        console.error("Auth service is not available.");
-      }
-    } catch (error) {
+      await signInWithPopup(auth, provider);
+      router.push('/');
+    } catch (error: any) {
       console.error("Error signing in with Google: ", error);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred during Google sign-in.",
+      });
     }
   };
 
