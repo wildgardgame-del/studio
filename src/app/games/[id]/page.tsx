@@ -18,7 +18,6 @@ export default function GamePage() {
 
   const { firestore } = useFirebase();
 
-  // Memoize the document reference to prevent re-renders
   const gameRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
     return doc(firestore, 'games', id);
@@ -26,8 +25,7 @@ export default function GamePage() {
 
   const { data: game, isLoading } = useDoc<Game>(gameRef);
 
-  // 1. Show a full-page loading indicator while fetching data.
-  // This is the most crucial step to prevent premature rendering.
+  // 1. Mostrar o ecrã de carregamento enquanto os dados estão a ser buscados.
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -41,12 +39,14 @@ export default function GamePage() {
     );
   }
 
-  // 2. After loading, if the game is still not found, show the 404 page.
+  // 2. Após o carregamento, se o jogo não existir, mostrar 404.
   if (!game) {
     notFound();
+    // A chamada notFound() interrompe a execução, não é necessário um return aqui, mas é uma boa prática.
+    return null;
   }
 
-  // 3. Only if loading is complete AND the game exists, render the content.
+  // 3. Se chegou até aqui, isLoading é false e 'game' existe. Podemos renderizar com segurança.
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
