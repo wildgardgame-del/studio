@@ -79,9 +79,6 @@ export default function Header() {
     return email.substring(0, 2).toUpperCase();
   }
 
-  const hasDevLicense = isPurchased('dev-account-upgrade');
-
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -221,9 +218,10 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
-                   {role === 'user' && !hasDevLicense && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/apply-for-dev"><Sparkles className="mr-2 h-4 w-4" />Torne-se um Desenvolvedor</Link>
+                  {role === 'user' && !isPurchased('dev-account-upgrade') && (
+                    <DropdownMenuItem>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>Become a Publisher</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
