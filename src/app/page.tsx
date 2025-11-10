@@ -60,6 +60,26 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="container py-16">
+          <div className="mb-8 flex items-center justify-between">
+            <h2 className="font-headline text-3xl font-bold md:text-4xl">Featured Games</h2>
+            <Button variant="link" asChild className="text-accent">
+              <Link href="/browse">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
+          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[450px] w-full" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredGames.map((game) => (
+                <GameCard key={game.id} game={game} />
+              ))}
+            </div>
+          )}
+        </section>
+        
         <section className="bg-secondary/50 py-16">
           <div className="container">
             <h2 className="font-headline text-3xl font-bold md:text-4xl mb-8 text-center">Why Forge Gate Hub?</h2>
@@ -88,27 +108,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        <section className="container py-16">
-          <div className="mb-8 flex items-center justify-between">
-            <h2 className="font-headline text-3xl font-bold md:text-4xl">Featured Games</h2>
-            <Button variant="link" asChild className="text-accent">
-              <Link href="/browse">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-          </div>
-          {isLoading ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[450px] w-full" />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredGames.map((game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
-          )}
-        </section>
-
       </main>
       <Footer />
     </div>
