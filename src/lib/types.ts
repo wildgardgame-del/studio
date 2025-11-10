@@ -16,6 +16,10 @@ export type Game = {
   }[];
   status?: 'pending' | 'approved' | 'rejected';
   developerId?: string;
+  submittedAt?: {
+    seconds: number;
+    nanoseconds: number;
+  };
 };
 
 // This type is no longer used, but kept for reference to avoid breaking other parts of the app.
