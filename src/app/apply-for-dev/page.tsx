@@ -126,7 +126,7 @@ export default function ApplyForDevPage() {
                              <div className="bg-gradient-to-br from-primary/20 to-accent/20 p-8 rounded-lg aspect-square flex flex-col justify-center items-center text-center">
                                 {devLicenseProduct.title && (
                                     <Image 
-                                        src="/images/dev-license.png" 
+                                        src={devLicenseProduct.coverImage} 
                                         alt={devLicenseProduct.title} 
                                         width={300}
                                         height={400}
