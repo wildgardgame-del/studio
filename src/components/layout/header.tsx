@@ -11,6 +11,7 @@ import {
   LogOut,
   Sparkles,
   Shield,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -207,18 +208,25 @@ export default function Header() {
                   <DropdownMenuSeparator />
                   {role === 'admin' && (
                     <DropdownMenuItem asChild>
-                      <Link href="/admin"><Shield className="mr-2" />Admin Panel</Link>
+                      <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
+                    </DropdownMenuItem>
+                  )}
+                  {(role === 'dev' || role === 'admin') && (
+                     <DropdownMenuItem asChild>
+                      <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Painel de Desenvolvedor</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link href="/library"><Library className="mr-2" />Library</Link>
+                    <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/apply-for-dev"><Sparkles className="mr-2" />Torne-se um Desenvolvedor</Link>
-                  </DropdownMenuItem>
+                   {role === 'user' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/apply-for-dev"><Sparkles className="mr-2 h-4 w-4" />Torne-se um Desenvolvedor</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2" />
+                    <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
