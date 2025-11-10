@@ -47,13 +47,14 @@ service cloud.firestore {
      * @description Users manage their own profile. Admins can manage user roles.
      * @path /users/{userId}
      * @allow get: A user can read their own profile.
+     * @allow list: Admins can list users.
      * @allow create: A user can create their own profile, with default 'user' role.
      * @allow update: A user can update their own data, but not their role. Admins can update roles.
      * @allow delete: A user can delete their own profile.
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // User listing is not allowed
+      allow list: if isSignedIn() && isRole('admin');
 
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
@@ -67,11 +68,12 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isExistingOwner(userId);
 
       /**
-       * @description User can read/write their own application.
+       * @description User can read/write their own application. Admins can manage them.
        * @path /users/{userId}/developer_applications/{applicationId}
        */
       match /developer_applications/{applicationId} {
         allow read, write: if isSignedIn() && isOwner(userId);
+        allow update: if isSignedIn() && isRole('admin');
       }
     }
 
@@ -112,11 +114,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Admin can list and update developer applications across all users.
+     * @description Admin can list developer applications across all users.
      * @path /{path=**}/developer_applications/{applicationId}
      */
     match /{path=**}/developer_applications/{applicationId} {
-      allow list, update: if isSignedIn() && isRole('admin');
+      // This rule allows an admin to use collection group queries.
+      allow list: if isSignedIn() && isRole('admin');
     }
   }
 
