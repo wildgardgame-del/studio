@@ -13,13 +13,10 @@ import {
   PlusCircle,
   Award,
   Gamepad2,
-  Moon,
-  Sun,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
-import { useTheme } from "next-themes";
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -55,7 +52,6 @@ export default function Header() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
-  const { theme, setTheme } = useTheme();
   
   const hasDevLicense = isPurchased('dev-account-upgrade');
 
@@ -83,10 +79,6 @@ export default function Header() {
     if (!email) return 'U';
     return email.substring(0, 2).toUpperCase();
   }
-
-  const toggleTheme = () => {
-    setTheme(theme === 'theme-cyberpunk' ? 'theme-dark-default' : 'theme-cyberpunk');
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -192,12 +184,6 @@ export default function Header() {
                 </form>
             </div>
             <nav className="hidden md:flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-
                 <Link href="/wishlist">
                 <Button variant="ghost" size="icon" className="relative">
                     <Heart className="h-5 w-5" />

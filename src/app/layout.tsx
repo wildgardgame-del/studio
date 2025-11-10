@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { GameStoreProvider } from '@/context/game-store-context';
 import { FirebaseClientProvider } from '@/firebase';
-import { ThemeProvider } from '@/context/theme-provider';
 
 export const metadata: Metadata = {
   title: 'GameSphere',
@@ -29,22 +28,15 @@ export default function RootLayout({
       <body
         className={cn(
           'min-h-screen bg-background font-body antialiased',
-          'font-body'
+          'font-body dark' // Apply dark theme directly
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="theme-dark-default"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <FirebaseClientProvider>
-            <GameStoreProvider>
-              {children}
-              <Toaster />
-            </GameStoreProvider>
-          </FirebaseClientProvider>
-        </ThemeProvider>
+        <FirebaseClientProvider>
+          <GameStoreProvider>
+            {children}
+            <Toaster />
+          </GameStoreProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
