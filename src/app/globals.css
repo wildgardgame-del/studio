@@ -26,7 +26,29 @@
     --radius: 0.5rem;
   }
  
-  .dark {
+  .theme-dark-default {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 255 15% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 255 15% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 260 90% 65%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 255 15% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 255 15% 15%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 180 90% 50%;
+    --accent-foreground: 240 65% 5%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 255 15% 20%;
+    --input: 255 15% 20%;
+    --ring: 260 90% 65%;
+  }
+
+  .theme-cyberpunk {
     --background: 0 0% 0%;
     --foreground: 0 0% 98%;
     --card: 255 15% 11%;
