@@ -8,8 +8,8 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      allow get: if true;
-      allow list: if query.where.size() == 1 && query.where[0].field == 'status' && query.where[0].op == '==' && query.where[0].value == 'approved';
+      allow get: if resource.data.status == 'approved' || (isSignedIn() && resource.data.developerId == request.auth.uid) || (isSignedIn() && isAdmin());
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update, delete: if isSignedIn() && isAdmin();
     }
