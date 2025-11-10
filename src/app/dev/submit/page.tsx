@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -74,9 +75,6 @@ export default function SubmitGamePage() {
     },
   });
 
-  // ---------------------------
-  //  Função de upload com timeout
-  // ---------------------------
   const uploadFile = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!storage) return reject(new Error("Firebase Storage not initialized"));
@@ -84,21 +82,20 @@ export default function SubmitGamePage() {
       const storageRef = ref(storage, path);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
-      // Timeout de segurança
       const timeout = setTimeout(() => {
-        uploadTask.cancel(); // Cancela o upload se demorar muito
+        uploadTask.cancel();
         reject(new Error("Upload timeout – verifique permissões do Firebase Storage."));
-      }, 30000); // 30 segundos
+      }, 30000);
 
       uploadTask.on(
         "state_changed",
-        null, // Não precisamos de monitorizar o progresso aqui
-        (error) => {
+        null, // 'next' observer - não precisamos dele aqui
+        (error) => { // 'error' observer
           clearTimeout(timeout);
           console.error("Upload error:", error);
           reject(error);
         },
-        async () => {
+        async () => { // 'complete' observer
           clearTimeout(timeout);
           try {
             const url = await getDownloadURL(uploadTask.snapshot.ref);
@@ -111,9 +108,6 @@ export default function SubmitGamePage() {
     });
   };
 
-  // ---------------------------
-  //  Submissão principal
-  // ---------------------------
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
       toast({
@@ -135,7 +129,6 @@ export default function SubmitGamePage() {
         description: "O upload pode demorar alguns segundos.",
       });
 
-      // Uploads paralelos com fallback de erro
       const allUploadPromises = [
         uploadFile(coverImageFile),
         ...screenshotFiles.map(file => uploadFile(file))
@@ -148,13 +141,11 @@ export default function SubmitGamePage() {
         .map(r => (r as PromiseFulfilledResult<string>).value);
 
       if (successful.length < allUploadPromises.length) {
-        // Encontra o primeiro erro para mostrar uma mensagem mais útil
         const firstError = uploadResults.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined;
         throw new Error(firstError?.reason?.message || "Um ou mais uploads falharam.");
       }
 
-      const coverImageUrl = successful[0];
-      const screenshotUrls = successful.slice(1);
+      const [coverImageUrl, ...screenshotUrls] = successful;
 
       const newGameData = {
         title: values.title,
@@ -165,38 +156,33 @@ export default function SubmitGamePage() {
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         developerId: user.uid,
-        status: 'pending',
+        status: 'pending' as const,
         submittedAt: serverTimestamp(),
         rating: 0,
         reviews: [],
       };
 
-      const docRef = await addDoc(collection(firestore, `games`), newGameData);
-      
-      const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'create',
-          requestResourceData: newGameData,
-      });
-      errorEmitter.emit('permission-error', permissionError);
-
+      // Usar a versão não-bloqueante para criar o documento
+      addDocumentNonBlocking(collection(firestore, `games`), newGameData);
 
       toast({
         title: "Jogo Submetido!",
         description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
       });
 
-      await new Promise(res => setTimeout(res, 300)); // evita redirecionar antes do toast
+      // Aguarda um pouco para o toast aparecer antes do redirecionamento
+      await new Promise(res => setTimeout(res, 500));
       router.push('/dev/dashboard');
+
     } catch (error: any) {
       console.error("Error submitting game:", error);
       
-      const isStorageError = error.code?.includes('storage') || error.message?.includes('Storage');
+      const isStorageError = error.code?.includes('storage') || error.message?.includes('Storage') || error.message?.includes('Upload');
 
       toast({
         variant: 'destructive',
         title: isStorageError ? 'Erro no Upload' : 'Erro na Submissão',
-        description: error.message || 'Não foi possível completar a operação.',
+        description: error.message || 'Não foi possível completar a operação. Verifique as permissões.',
       });
       
     } finally {
@@ -220,7 +206,6 @@ export default function SubmitGamePage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Campos principais */}
                 <FormField control={form.control} name="title" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Título do Jogo</FormLabel>
@@ -297,12 +282,6 @@ export default function SubmitGamePage() {
                     </>
                   )}
                 </Button>
-
-                {isSubmitting && (
-                  <p className="text-center text-sm text-muted-foreground mt-2">
-                    Submetendo jogo... (aguardando upload e Firestore)
-                  </p>
-                )}
               </form>
             </Form>
           </CardContent>
