@@ -105,11 +105,16 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows any signed-in user to submit an application. Readable only by admins.
+     * @description Allows user to create an application. Admins can manage applications.
+     *              Users can read their own application status.
      * @path /developer_applications/{applicationId}
      */
     match /developer_applications/{applicationId} {
-      allow get, list: if isSignedIn() && isRole('admin');
+      allow get: if isSignedIn() && isRole('admin');
+      allow list: if isSignedIn() && (
+                    isRole('admin') ||
+                    (request.query.limit == 1 && request.query.where.size() == 1 && request.query.where[0][0] == 'userId' && request.query.where[0][2] == request.auth.uid)
+                  );
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isRole('admin');
     }
@@ -140,4 +145,3 @@ service cloud.firestore {
     return isSignedIn() && getRole(request.auth.uid) == role;
   }
 }
-    

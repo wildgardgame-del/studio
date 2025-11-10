@@ -15,3 +15,16 @@ export type Game = {
     rating: number;
   }[];
 };
+
+export type DeveloperApplication = {
+  id: string;
+  userId: string;
+  developerName: string;
+  portfolio?: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+}
