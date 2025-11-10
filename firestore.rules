@@ -49,7 +49,7 @@ service cloud.firestore {
      * @allow get: A user can read their own profile.
      * @allow list: Admins can list users.
      * @allow create: A user can create their own profile, with default 'user' role.
-     * @allow update: A user can update their own data, but not their role. Admins can update roles.
+     * @allow update: A user can update their own data. Admins or a user upgrading to 'dev' can update roles.
      * @allow delete: A user can delete their own profile.
      */
     match /users/{userId} {
@@ -61,7 +61,11 @@ service cloud.firestore {
                       && request.resource.data.role == 'user';
 
       allow update: if isSignedIn() && (
-                      (isOwner(userId) && request.resource.data.role == resource.data.role) ||
+                      // User can update their own data, but not their role (unless upgrading to dev)
+                      (isOwner(userId) && (
+                        (request.resource.data.role == resource.data.role) || // Can update if role is unchanged
+                        (resource.data.role == 'user' && request.resource.data.role == 'dev') // Can upgrade from user to dev
+                      )) ||
                       (isRole('admin')) // Admins can change anyone's role
                     );
 
