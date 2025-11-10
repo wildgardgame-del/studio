@@ -3,13 +3,13 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Code, Info, Rocket } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { useFirebase } from "@/firebase";
 import { useGameStore } from "@/context/game-store-context";
-import { useRole } from "@/hooks/useRole";
 import type { Game } from "@/lib/types";
 
 // Create a special "product" for the developer account upgrade
@@ -29,7 +29,6 @@ const devLicenseProduct: Game = {
 
 export default function ApplyForDevPage() {
     const { user, isUserLoading } = useFirebase();
-    const { role, isLoading: isRoleLoading } = useRole();
     const router = useRouter();
     const { handleAddToCart, isPurchased } = useGameStore();
 
@@ -42,7 +41,7 @@ export default function ApplyForDevPage() {
         router.push('/checkout');
     }
     
-    const isLoading = isUserLoading || isRoleLoading;
+    const isLoading = isUserLoading;
     const hasLicense = isPurchased(devLicenseProduct.id);
 
 
@@ -58,7 +57,7 @@ export default function ApplyForDevPage() {
         );
     }
 
-    if (role === 'admin' || role === 'dev' || hasLicense) {
+    if (hasLicense) {
         return (
             <div className="flex min-h-screen flex-col">
                 <Header />
@@ -69,7 +68,7 @@ export default function ApplyForDevPage() {
                         A sua conta já tem privilégios de desenvolvedor. Visite o seu painel para começar a submeter jogos.
                     </p>
                     <Button asChild className="mt-6">
-                        <a href="/dev/dashboard">Ir para o Painel</a>
+                        <Link href="/dev/dashboard">Ir para o Painel</Link>
                     </Button>
                 </main>
                 <Footer />
@@ -86,7 +85,7 @@ export default function ApplyForDevPage() {
                     <h1 className="text-3xl font-bold font-headline">Inicie Sessão para se Tornar um Desenvolvedor</h1>
                     <p className="mt-2 text-muted-foreground max-w-md">Para comprar a Licença de Programador, precisa de ter uma conta e iniciar sessão.</p>
                     <Button asChild className="mt-4">
-                        <a href="/login">Login</a>
+                        <Link href="/login">Login</Link>
                     </Button>
                 </main>
                 <Footer />

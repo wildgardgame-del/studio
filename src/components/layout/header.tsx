@@ -11,6 +11,7 @@ import {
   LogOut,
   Shield,
   PlusCircle,
+  Award,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -44,12 +45,14 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { cartItems, wishlistItems } = useGameStore();
+  const { cartItems, wishlistItems, isPurchased } = useGameStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
+  
+  const hasDevLicense = isPurchased('dev-account-upgrade');
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -96,13 +99,22 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-            {user && (
+            {user && hasDevLicense && (
               <Link
                   href="/dev/submit"
                   className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Submit a Game
+              </Link>
+            )}
+             {user && !hasDevLicense && (
+              <Link
+                  href="/apply-for-dev"
+                  className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center"
+                >
+                  <Award className="mr-2 h-4 w-4" />
+                  Become a Publisher
               </Link>
             )}
           </nav>
@@ -145,13 +157,22 @@ export default function Header() {
                 >
                   Wishlist
                 </Link>
-                 {user && (
+                 {user && hasDevLicense && (
                     <Link
                         href="/dev/submit"
                         className="transition-colors hover:text-foreground/80 text-foreground/60"
                         onClick={() => setIsMobileMenuOpen(false)}
                         >
                         Submit a Game
+                    </Link>
+                 )}
+                 {user && !hasDevLicense && (
+                    <Link
+                        href="/apply-for-dev"
+                        className="transition-colors hover:text-foreground/80 text-foreground/60"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                        Become a Publisher
                     </Link>
                  )}
             </div>
@@ -224,6 +245,12 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
+                  
+                  {hasDevLicense && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/dev/dashboard"><PlusCircle className="mr-2 h-4 w-4" />Dev Dashboard</Link>
+                    </DropdownMenuItem>
+                  )}
 
                   {user.email === 'ronneeh@gmail.com' && (
                     <DropdownMenuItem asChild>

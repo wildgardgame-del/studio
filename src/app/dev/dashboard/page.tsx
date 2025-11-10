@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,21 +9,39 @@ import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
+import { useGameStore } from '@/context/game-store-context';
 
 export default function DevDashboardPage() {
   const { user, isUserLoading } = useUser();
+  const { isPurchased, purchasedGames } = useGameStore();
   const router = useRouter();
+  
+  const isLoading = isUserLoading || !purchasedGames;
+  const hasDevLicense = isPurchased('dev-account-upgrade');
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
+    if (!isLoading && (!user || !hasDevLicense)) {
+      router.push('/apply-for-dev');
     }
-  }, [isUserLoading, user, router]);
+  }, [isLoading, user, hasDevLicense, router]);
 
-  if (isUserLoading || !user) {
+  if (isLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!hasDevLicense) {
+       return (
+        <div className="flex min-h-screen flex-col items-center justify-center text-center">
+            <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
+            <h1 className="text-3xl font-bold">Acesso Negado</h1>
+            <p className="text-muted-foreground mt-2">Você precisa de uma licença de desenvolvedor para aceder a esta página.</p>
+            <Button asChild className="mt-6">
+                <Link href="/apply-for-dev">Obter Licença</Link>
+            </Button>
       </div>
     );
   }
