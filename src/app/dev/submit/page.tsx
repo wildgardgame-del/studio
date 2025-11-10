@@ -26,7 +26,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { useRole } from "@/hooks/useRole";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
@@ -43,7 +42,6 @@ export default function SubmitGamePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
     const { user, firestore } = useFirebase();
-    const { role, isLoading: isRoleLoading } = useRole();
     const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -70,23 +68,10 @@ export default function SubmitGamePage() {
             return router.push('/login');
         }
 
-        const hasDevAccess = role === 'dev' || role === 'admin';
-
-        if (!hasDevAccess) {
-             toast({
-                variant: 'destructive',
-                title: 'Não autorizado',
-                description: 'Você não tem permissão para submeter jogos.',
-            });
-            return;
-        }
-
         setIsSubmitting(true);
         
-        // This assumes a user who is a 'dev' has one DeveloperApplication.
-        // A more robust implementation would query for the application ID.
-        // For now, we use a placeholder or known ID if available. A simple approach
-        // is to use the userId as the document ID for the developer application.
+        // Using a placeholder for developer application ID. A real implementation
+        // might query for this or use a known ID. For simplicity, we use the user's UID.
         const developerApplicationRef = doc(firestore, `users/${user.uid}/developer_applications`, user.uid);
         const gameSubmissionsRef = collection(developerApplicationRef, 'game_submissions');
         
@@ -117,14 +102,6 @@ export default function SubmitGamePage() {
           .finally(() => {
               setIsSubmitting(false);
           });
-    }
-
-    if (isRoleLoading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            </div>
-        )
     }
 
     return (
@@ -218,4 +195,3 @@ export default function SubmitGamePage() {
         </div>
     )
 }
-
