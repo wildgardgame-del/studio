@@ -31,9 +31,9 @@
           "type": "string",
           "description": "The genre of the game (e.g., Action, RPG, Strategy)."
         },
-        "developer": {
+        "developerId": {
           "type": "string",
-          "description": "The developer of the game."
+          "description": "The ID of the developer user who submitted the game."
         },
         "publisher": {
           "type": "string",
@@ -48,6 +48,15 @@
           "type": "string",
           "description": "URL of the game's trailer.",
           "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "description": "The submission status of the game.",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
         }
       },
       "required": [
@@ -55,12 +64,9 @@
         "title",
         "description",
         "price",
-        "releaseDate",
-        "genre",
-        "developer",
-        "publisher",
-        "imageUrl",
-        "trailerUrl"
+        "developerId",
+        "status",
+        "imageUrl"
       ]
     },
     "User": {
@@ -86,13 +92,23 @@
           "type": "string",
           "description": "The date when the user registered.",
           "format": "date-time"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user.",
+          "enum": [
+            "user",
+            "dev",
+            "admin"
+          ]
         }
       },
       "required": [
         "id",
         "username",
         "email",
-        "registrationDate"
+        "registrationDate",
+        "role"
       ]
     },
     "Review": {
@@ -215,7 +231,7 @@
           "schema": {
             "$ref": "#/backend/entities/Game"
           },
-          "description": "Stores game information.  Accessible to all users.",
+          "description": "Stores game information. Approved games are accessible to all users. Devs can create games, and admins can approve them.",
           "params": [
             {
               "name": "gameId",
@@ -231,7 +247,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information.  Accessible only to the user and admins.",
+          "description": "Stores user profile information, including their role. Accessible only to the user, but roles can only be changed by admins.",
           "params": [
             {
               "name": "userId",
@@ -317,6 +333,7 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support GameSphere's core features, focusing on scalability, security, and ease of maintenance. Authorization independence is achieved by avoiding hierarchical `get()` calls in security rules. The structure leverages path-based ownership and membership maps for collaborative data, while segregating data based on access needs.  \n\n**Authorization Independence:** For user-owned data such as shopping carts, wishlists, and library, path-based ownership (`/users/{userId}/...`) is employed, eliminating the need to fetch parent data for authorization. Reviews include the `userId` and `gameId`, enabling direct rule application without parent document access.\n\n**Structural Segregation:** Games are stored in a single `/games` collection since they have a uniform security posture (accessible to all users for browsing). User-specific data, such as shopping carts, wishlists and library, are stored under `/users/{userId}` to ensure private access. Reviews, while associated with both games and users, are stored at the root level but contain the `userId` and `gameId` to facilitate independent security rules.\n\n**Access Modeling:** User-owned data follows the `/users/{userId}/{collection}/{documentId}` pattern. The reviews collection requires the `userId` and `gameId` to be present, to allow rules to validate that the authenticated user owns the review, and to allow listing reviews for a specific game (rules are not filters).\n\n**QAPs Support:** Secure `list` operations are ensured through structural segregation. Listing games is open to all, listing shopping carts, wishlists and library items are restricted to the owning user via path-based rules. Reviews can be listed, and rules can ensure that only reviews associated with a particular gameId are visible (rules are not filters).\n\nThis design facilitates simple, robust, and easily debuggable security rules."
+    "reasoning": "The Firestore data structure is designed to support GameSphere's core features, focusing on scalability, security, and ease of maintenance. Authorization independence is achieved by avoiding hierarchical `get()` calls in security rules. The structure leverages path-based ownership and membership maps for collaborative data, while segregating data based on access needs.  \n\n**Authorization Independence:** For user-owned data such as shopping carts, wishlists, and library, path-based ownership (`/users/{userId}/...`) is employed, eliminating the need to fetch parent data for authorization. Reviews include the `userId` and `gameId`, enabling direct rule application without parent document access.\n\n**Structural Segregation:** Games are stored in a single `/games` collection since they have a uniform security posture (accessible to all users for browsing). User-specific data, such as shopping carts, wishlists and library, are stored under `/users/{userId}` to ensure private access. Reviews, while associated with both games and users, are stored at the root level but contain the `userId` and `gameId` to facilitate independent security rules.\n\n**Access Modeling:** User-owned data follows the `/users/{userId}/{collection}/{documentId}` pattern. The reviews collection requires the `userId` and `gameId` to be present, to allow rules to validate that the authenticated user owns the review, and to allow listing reviews for a specific game (rules are not filters).\n\n**QAPs Support:** Secure `list` operations are ensured through structural segregation. Listing games is open to all, listing shopping carts, wishlists and library items are restricted to the owning user via path-based rules. Reviews can be listed, and rules can ensure that only reviews associated with a particular gameId are visible (rules are not filters).\n\n**Role-Based Access Control:** The `User` entity now has a `role` field. The `Game` entity has `status` and `developerId` fields. Firestore rules will use these fields to enforce that only `dev` users can create games, and only `admin` users can change a game's `status` or a user's `role`."
   }
 }
+    
