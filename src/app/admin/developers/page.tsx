@@ -24,19 +24,28 @@ export default function ManageDevelopersPage() {
     const fetchApplications = async () => {
         if (!firestore) throw new Error("Firestore not available");
 
+        console.log('DEBUG: Iniciando fetchApplications...');
         const allApplications: ApplicationWithId[] = [];
         const usersSnapshot = await getDocs(collection(firestore, 'users'));
+        
+        console.log(`DEBUG: Encontrados ${usersSnapshot.size} utilizadores.`);
 
         for (const userDoc of usersSnapshot.docs) {
-            const user = userDoc.data();
+            console.log(`DEBUG: A processar utilizador: ${userDoc.id}`);
             const appsCollectionRef = collection(firestore, `users/${userDoc.id}/developer_applications`);
             const appsSnapshot = await getDocs(appsCollectionRef);
             
-            appsSnapshot.forEach((doc) => {
-                allApplications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
-            });
+            if (appsSnapshot.empty) {
+                console.log(`DEBUG: Nenhuma candidatura encontrada para o utilizador ${userDoc.id}.`);
+            } else {
+                 console.log(`DEBUG: Encontradas ${appsSnapshot.size} candidaturas para o utilizador ${userDoc.id}.`);
+                 appsSnapshot.forEach((doc) => {
+                    allApplications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
+                });
+            }
         }
         
+        console.log('DEBUG: Resultado final de allApplications:', allApplications);
         return allApplications;
     };
     
