@@ -63,9 +63,6 @@ export default function Home() {
                 <Button asChild size="lg" className="font-bold">
                   <Link href="/browse">Browse Games</Link>
                 </Button>
-                 <Button asChild size="lg" variant="outline" className="font-bold" disabled>
-                  <Link href="#">Get Recommendations</Link>
-                </Button>
               </div>
             </div>
           </div>
