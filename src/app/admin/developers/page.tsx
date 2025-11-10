@@ -23,19 +23,18 @@ export default function ManageDevelopersPage() {
         if (!firestore) throw new Error("Firestore not available");
         
         const applicationsRef = collectionGroup(firestore, 'developer_applications');
-        // Correctly query for pending applications directly from Firestore
-        const q = query(applicationsRef, where('status', '==', 'pending'));
-        
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(applicationsRef);
+
         const applications: ApplicationWithId[] = [];
         querySnapshot.forEach((doc) => {
             applications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
         });
-        return applications;
+        
+        // Filter for pending applications on the client-side
+        return applications.filter(app => app.status === 'pending');
     };
     
     const { data: pendingApplications, isLoading, refetch } = useQuery({
-        // Updated queryKey to be more specific
         queryKey: ['pending-developer-applications'],
         queryFn: fetchApplications,
         enabled: !!firestore,
@@ -47,7 +46,6 @@ export default function ManageDevelopersPage() {
         try {
             const batch = writeBatch(firestore);
 
-            // Path to the application document within the user's subcollection
             const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
             batch.update(appRef, { status: newStatus });
             
