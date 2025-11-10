@@ -107,22 +107,26 @@ export default function Header() {
                 <div className="flex flex-col space-y-3">
                 {navLinks.map((link) => (
                     <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                        "transition-colors hover:text-foreground/80",
-                        pathname === link.href ? "text-foreground" : "text-foreground/60"
-                    )}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                          "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          pathname === link.href
+                          ? "bg-muted text-foreground"
+                          : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
-                    {link.label}
+                      {link.label}
                     </Link>
                 ))}
                 <Link
                     href="/wishlist"
                     className={cn(
-                        "transition-colors hover:text-foreground/80",
-                        pathname === "/wishlist" ? "text-foreground" : "text-foreground/60"
+                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      pathname === "/wishlist"
+                      ? "bg-muted text-foreground"
+                      : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
                     )}
                     onClick={() => setIsMobileMenuOpen(false)}
                     >
@@ -131,7 +135,7 @@ export default function Header() {
                     {user && hasDevLicense && (
                         <Link
                             href="/dev/dashboard"
-                            className="transition-colors hover:text-foreground/80 text-foreground/60"
+                            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
                             onClick={() => setIsMobileMenuOpen(false)}
                             >
                             Dev Dashboard
@@ -140,7 +144,7 @@ export default function Header() {
                     {user && !hasDevLicense && (
                         <Link
                             href="/apply-for-dev"
-                            className="transition-colors hover:text-foreground/80 text-foreground/60"
+                            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
                             onClick={() => setIsMobileMenuOpen(false)}
                             >
                             Become a Publisher
@@ -162,18 +166,20 @@ export default function Header() {
             </div>
 
             <div className="hidden md:flex flex-1 justify-center">
-                <nav className="flex items-center space-x-6 text-sm font-medium">
+                <nav className="flex items-center space-x-2 text-sm font-medium">
                     {navLinks.map((link) => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                            "transition-colors hover:text-foreground/80",
-                            pathname === link.href ? "text-foreground" : "text-foreground/60"
-                        )}
-                    >
-                        {link.label}
-                    </Link>
+                      <Link
+                          key={link.href}
+                          href={link.href}
+                          className={cn(
+                              "rounded-md px-3 py-2 transition-colors",
+                              pathname === link.href
+                              ? "bg-muted text-foreground"
+                              : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                          )}
+                      >
+                          {link.label}
+                      </Link>
                     ))}
                 </nav>
             </div>
