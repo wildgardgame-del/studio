@@ -12,6 +12,7 @@ import {
   Shield,
   PlusCircle,
   Award,
+  Gamepad2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -101,11 +102,11 @@ export default function Header() {
             ))}
             {user && hasDevLicense && (
               <Link
-                  href="/dev/submit"
+                  href="/dev/dashboard"
                   className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center"
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Submit a Game
+                  Dev Dashboard
               </Link>
             )}
              {user && !hasDevLicense && (
@@ -159,11 +160,11 @@ export default function Header() {
                 </Link>
                  {user && hasDevLicense && (
                     <Link
-                        href="/dev/submit"
+                        href="/dev/dashboard"
                         className="transition-colors hover:text-foreground/80 text-foreground/60"
                         onClick={() => setIsMobileMenuOpen(false)}
                         >
-                        Submit a Game
+                        Dev Dashboard
                     </Link>
                  )}
                  {user && !hasDevLicense && (
@@ -247,9 +248,14 @@ export default function Header() {
                   </DropdownMenuItem>
                   
                   {hasDevLicense && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/dev/dashboard"><PlusCircle className="mr-2 h-4 w-4" />Dev Dashboard</Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dev/dashboard"><PlusCircle className="mr-2 h-4 w-4" />Dev Dashboard</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dev/my-games"><Gamepad2 className="mr-2 h-4 w-4" />My Games</Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
 
                   {user.email === 'ronneeh@gmail.com' && (

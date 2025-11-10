@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, PlusCircle, ShieldAlert } from 'lucide-react';
+import { Loader2, PlusCircle, ShieldAlert, Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
@@ -71,14 +71,16 @@ export default function DevDashboardPage() {
                     </CardContent>
                 </Link>
              </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Meus Jogos</CardTitle>
-                    <CardDescription>Visualize o status e as estatísticas dos seus jogos submetidos.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Em breve...</p>
-                </CardContent>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/dev/my-games">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Gamepad2 className="text-accent" />Meus Jogos</CardTitle>
+                        <CardDescription>Visualize o status e as estatísticas dos seus jogos submetidos.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Button variant="link" className="p-0 text-accent">Gerenciar Jogos</Button>
+                    </CardContent>
+                </Link>
              </Card>
           </div>
         </div>
