@@ -218,9 +218,11 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    <span>Become a Publisher</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/publisher">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>Become a Publisher</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
