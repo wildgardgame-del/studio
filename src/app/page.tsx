@@ -13,12 +13,12 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 
 export default function Home() {
   const { firestore } = useFirebase();
 
-  // Reverted query to a simpler state to avoid permission issues.
   const gamesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -71,11 +71,25 @@ export default function Home() {
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[450px] w-full" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {(featuredGames || []).slice(0, 4).map((game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
+             <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {(featuredGames || []).map((game) => (
+                  <CarouselItem key={game.id} className="sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                    <div className="p-1">
+                      <GameCard game={game} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="ml-14" />
+              <CarouselNext className="mr-14" />
+            </Carousel>
           )}
         </section>
         
