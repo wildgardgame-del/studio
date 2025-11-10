@@ -6,8 +6,6 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
 import { Loader2, Send } from "lucide-react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,9 +21,7 @@ import { Input } from "@/components/ui/input"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
@@ -39,10 +35,7 @@ const formSchema = z.object({
 })
 
 export default function SubmitGamePage() {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
-    const { user, firestore } = useFirebase();
-    const router = useRouter();
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -59,46 +52,9 @@ export default function SubmitGamePage() {
     });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!user || !firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Não autenticado',
-                description: 'Você precisa fazer login para submeter um jogo.',
-            });
-            return router.push('/login');
-        }
-
-        setIsSubmitting(true);
-        
-        const gamesRef = collection(firestore, `games`);
-        
-        const newGameData = {
-            ...values,
-            developerId: user.uid,
-            status: 'pending',
-            submittedAt: serverTimestamp(),
-            screenshots: values.screenshots ? values.screenshots.split(',').map(s => s.trim()) : [],
-        }
-
-        addDoc(gamesRef, newGameData)
-          .then(() => {
-              toast({
-                  title: "Jogo Submetido!",
-                  description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
-              });
-              router.push('/dev/dashboard');
-          })
-          .catch((error) => {
-              const permissionError = new FirestorePermissionError({
-                  path: gamesRef.path,
-                  operation: 'create',
-                  requestResourceData: newGameData,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-          })
-          .finally(() => {
-              setIsSubmitting(false);
-          });
+        // Ação simplificada: apenas atualiza o estado para indicar que foi submetido.
+        console.log("Form values:", values);
+        setIsSubmitted(true);
     }
 
     return (
@@ -176,9 +132,9 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
-                                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                    {isSubmitting ? (
-                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A Submeter...</>
+                                <Button type="submit" className="w-full" disabled={isSubmitted}>
+                                    {isSubmitted ? (
+                                        "Submetido"
                                     ) : (
                                         <><Send className="mr-2 h-4 w-4" />Submeter Jogo para Revisão</>
                                     )}
