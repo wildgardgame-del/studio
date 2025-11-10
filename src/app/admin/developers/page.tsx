@@ -1,0 +1,143 @@
+'use client';
+
+import { collectionGroup, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Check, Loader2, X } from 'lucide-react';
+import type { DeveloperApplication } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
+
+type ApplicationWithId = DeveloperApplication & { id: string };
+
+export default function ManageDevelopersPage() {
+    const { firestore } = useFirebase();
+    const { toast } = useToast();
+
+    const fetchApplications = async () => {
+        if (!firestore) throw new Error("Firestore not available");
+        
+        const applicationsRef = collectionGroup(firestore, 'developer_applications');
+        const q = query(applicationsRef);
+        
+        const querySnapshot = await getDocs(q);
+        const applications: ApplicationWithId[] = [];
+        querySnapshot.forEach((doc) => {
+            applications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
+        });
+        return applications;
+    };
+    
+    const { data: applications, isLoading, refetch } = useQuery({
+        queryKey: ['developer-applications'],
+        queryFn: fetchApplications,
+        enabled: !!firestore,
+    });
+    
+    const handleApproval = async (application: ApplicationWithId, newStatus: 'approved' | 'rejected') => {
+        if (!firestore) return;
+
+        try {
+            const batch = writeBatch(firestore);
+
+            const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
+            batch.update(appRef, { status: newStatus });
+            
+            if (newStatus === 'approved') {
+                const userRef = doc(firestore, 'users', application.userId);
+                batch.update(userRef, { role: 'dev' });
+            }
+
+            await batch.commit();
+
+            toast({
+                title: 'Sucesso!',
+                description: `A candidatura de ${application.developerName} foi ${newStatus === 'approved' ? 'aprovada' : 'rejeitada'}.`,
+            });
+            refetch();
+        } catch (error: any) {
+            console.error('Error updating application status:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Erro!',
+                description: `Não foi possível atualizar a candidatura. Detalhes: ${error.message}`,
+            });
+        }
+    };
+    
+    const pendingApplications = applications?.filter(app => app.status === 'pending') || [];
+
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                </div>
+            );
+        }
+
+        if (pendingApplications.length === 0) {
+            return <p className="text-center text-muted-foreground py-8">Não existem candidaturas pendentes.</p>
+        }
+
+        return (
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Nome do Desenvolvedor</TableHead>
+                        <TableHead>Data de Submissão</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {pendingApplications.map((app) => (
+                        <TableRow key={app.id}>
+                            <TableCell className="font-medium">{app.developerName}</TableCell>
+                            <TableCell>{new Date(app.submittedAt.seconds * 1000).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                                <Badge variant={app.status === 'pending' ? 'secondary' : 'default'}>{app.status}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600" onClick={() => handleApproval(app, 'approved')}>
+                                    <Check className="h-5 w-5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" onClick={() => handleApproval(app, 'rejected')}>
+                                    <X className="h-5 w-5" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        );
+    }
+
+    return (
+        <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1 bg-secondary/30">
+                <div className="container py-12">
+                    <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Gerenciar Desenvolvedores</h1>
+                    <p className="text-muted-foreground mt-2">Aprove ou rejeite novas candidaturas de desenvolvedores.</p>
+                    
+                    <Card className="mt-8">
+                        <CardHeader>
+                            <CardTitle>Candidaturas Pendentes</CardTitle>
+                            <CardDescription>Reveja as candidaturas abaixo e tome uma ação.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {renderContent()}
+                        </CardContent>
+                    </Card>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    );
+}

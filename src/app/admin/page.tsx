@@ -59,14 +59,16 @@ export default function AdminDashboardPage() {
                     <p className="text-sm text-muted-foreground">Em breve...</p>
                 </CardContent>
              </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Gerenciar Desenvolvedores</CardTitle>
-                    <CardDescription>Visualize e aprove solicitações de novos desenvolvedores.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Em breve...</p>
-                </CardContent>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/admin/developers">
+                    <CardHeader>
+                        <CardTitle>Gerenciar Desenvolvedores</CardTitle>
+                        <CardDescription>Visualize e aprove solicitações de novos desenvolvedores.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="link" className="p-0 text-accent">Ir para a gestão</Button>
+                    </CardContent>
+                </Link>
              </Card>
              <Card>
                 <CardHeader>

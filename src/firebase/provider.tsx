@@ -5,12 +5,14 @@ import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 interface FirebaseProviderProps {
   children: ReactNode;
   firebaseApp: FirebaseApp;
   firestore: Firestore;
   auth: Auth;
+  queryClient: QueryClient;
 }
 
 // Internal state for user authentication
@@ -60,6 +62,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   firebaseApp,
   firestore,
   auth,
+  queryClient,
 }) => {
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: null,
@@ -104,10 +107,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   }, [firebaseApp, firestore, auth, userAuthState]);
 
   return (
-    <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
-      {children}
-    </FirebaseContext.Provider>
+    <QueryClientProvider client={queryClient}>
+        <FirebaseContext.Provider value={contextValue}>
+          <FirebaseErrorListener />
+          {children}
+        </FirebaseContext.Provider>
+    </QueryClientProvider>
   );
 };
 
