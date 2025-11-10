@@ -91,7 +91,7 @@ export default function GamePage() {
                       key={i}
                       className={cn(
                         'h-5 w-5',
-                        i < Math.floor(game.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'
+                        game.rating && i < Math.floor(game.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'
                       )}
                     />
                   ))}
