@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button"
@@ -37,13 +37,23 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     const auth = getAuth();
+    
+    // Set the authDomain dynamically to match the current window's origin
+    // This is crucial for popup-based sign-in to work in different environments (like the "Open in new window" feature).
+    auth.tenantId = null; // Recommended for popup flows in some environments.
+    if (typeof window !== 'undefined') {
+        auth.config.authDomain = window.location.hostname;
+    }
+
     const provider = new GoogleAuthProvider();
     
     try {
+      // Ensure persistence is set, which helps with redirects.
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         console.log("Google Sign-In cancelled by user.");
       } else {
         console.error("Error signing in with Google: ", error);
