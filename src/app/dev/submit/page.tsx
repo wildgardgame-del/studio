@@ -1,11 +1,10 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -24,11 +23,18 @@ import Footer from "@/components/layout/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
   price: z.coerce.number().min(0, "O preço não pode ser negativo."),
-})
+  description: z.string().min(10, "A descrição curta deve ter pelo menos 10 caracteres."),
+  longDescription: z.string().min(30, "A descrição longa deve ter pelo menos 30 caracteres."),
+  genres: z.string().min(3, "Introduza pelo menos um género."),
+  coverImage: z.string().url("Introduza um URL de imagem válido."),
+  screenshots: z.string().min(10, "Introduza pelo menos um URL de captura de ecrã, separado por vírgulas se houver mais do que um."),
+});
+
 
 export default function SubmitGamePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +47,11 @@ export default function SubmitGamePage() {
         defaultValues: {
             title: "",
             price: 0,
+            description: "",
+            longDescription: "",
+            genres: "",
+            coverImage: "",
+            screenshots: "",
         },
     });
 
@@ -60,14 +71,13 @@ export default function SubmitGamePage() {
         
         const newGameData = {
             ...values,
-            description: "Uma nova aventura espera por você!",
-            longDescription: "Descrição detalhada em breve.",
-            genres: ["Aventura"],
-            coverImage: "https://picsum.photos/seed/newgame/600/800",
-            screenshots: ["https://picsum.photos/seed/newgame-ss1/1920/1080"],
+            genres: values.genres.split(',').map(g => g.trim()),
+            screenshots: values.screenshots.split(',').map(ss => ss.trim()),
             developerId: user.uid,
             status: 'pending',
             submittedAt: serverTimestamp(),
+            rating: 0, // Initial rating
+            reviews: [], // Initial empty reviews
         }
 
         addDoc(gamesRef, newGameData)
@@ -112,6 +122,7 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
+
                                 <FormField control={form.control} name="price" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Preço (USD)</FormLabel>
@@ -119,9 +130,55 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
+                                
+                                <FormField control={form.control} name="description" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Descrição Curta</FormLabel>
+                                        <FormControl><Textarea placeholder="Uma breve sinopse para o cartão do jogo." {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+
+                                <FormField control={form.control} name="longDescription" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Descrição Completa</FormLabel>
+                                        <FormControl><Textarea rows={5} placeholder="Descreva o seu jogo em detalhe para a página da loja." {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+
+                                <FormField control={form.control} name="genres" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Géneros</FormLabel>
+                                        <FormControl><Input placeholder="Ação, RPG, Estratégia" {...field} /></FormControl>
+                                        <FormDescription>Separe os vários géneros por vírgulas.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                
+                                <FormField control={form.control} name="coverImage" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>URL da Imagem de Capa</FormLabel>
+                                        <FormControl><Input placeholder="https://exemplo.com/capa.jpg" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+
+                                <FormField control={form.control} name="screenshots" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>URLs das Capturas de Ecrã</FormLabel>
+                                        <FormControl><Textarea placeholder="https://exemplo.com/ss1.jpg, https://exemplo.com/ss2.jpg" {...field} /></FormControl>
+                                         <FormDescription>Separe os vários URLs por vírgulas.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+
                                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                                     {isSubmitting ? (
-                                        "Submetendo..."
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            A Submeter...
+                                        </>
                                     ) : (
                                         <><Send className="mr-2 h-4 w-4" />Submeter Jogo para Revisão</>
                                     )}
