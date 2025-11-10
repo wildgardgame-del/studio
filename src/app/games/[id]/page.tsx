@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
+import React from 'react';
 
 import { games } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,8 @@ type GamePageProps = {
 };
 
 export default function GamePage({ params }: GamePageProps) {
-  const game = games.find((g) => g.id === params.id);
+  const resolvedParams = React.use(params);
+  const game = games.find((g) => g.id === resolvedParams.id);
   const { handleAddToCart, handleToggleWishlist, isInWishlist } = useGameStore();
 
   if (!game) {
