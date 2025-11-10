@@ -24,8 +24,8 @@ import { Icons } from '../icons';
 import { useGameStore } from '@/context/game-store-context';
 
 const navLinks = [
-  { href: '/browse', label: 'Browse' },
-  { href: '/recommendations', label: 'Recommendations' },
+  { href: '/browse', label: 'Store' },
+  { href: '/library', label: 'Library' },
 ];
 
 export default function Header() {
