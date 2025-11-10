@@ -213,6 +213,52 @@
         "userId",
         "gameIds"
       ]
+    },
+    "DeveloperApplication": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DeveloperApplication",
+      "type": "object",
+      "description": "Represents a user's application to become a developer.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user applying."
+        },
+        "developerName": {
+          "type": "string",
+          "description": "The name of the developer or studio."
+        },
+        "portfolio": {
+          "type": "string",
+          "format": "uri",
+          "description": "A URL to the developer's portfolio."
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason for wanting to become a developer."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the application.",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "submittedAt": {
+            "type": "string",
+            "description": "The date when the application was submitted.",
+            "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "developerName",
+        "reason",
+        "status",
+        "submittedAt"
+      ]
     }
   },
   "auth": {
@@ -328,6 +374,22 @@
             {
               "name": "gameId",
               "description": "The unique identifier of the game."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/developer_applications/{applicationId}",
+        "definition": {
+          "entityName": "DeveloperApplication",
+          "schema": {
+            "$ref": "#/backend/entities/DeveloperApplication"
+          },
+          "description": "Stores applications from users wanting to become developers. Writable by any authenticated user, but only readable by admins.",
+          "params": [
+            {
+              "name": "applicationId",
+              "description": "The unique identifier for the application."
             }
           ]
         }

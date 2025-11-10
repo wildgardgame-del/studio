@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
 import { Loader2, Send } from "lucide-react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +23,8 @@ import Footer from "@/components/layout/footer"
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useFirebase } from "@/firebase";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   developerName: z.string().min(2, "O nome do desenvolvedor/estúdio deve ter pelo menos 2 caracteres."),
@@ -32,6 +35,8 @@ const formSchema = z.object({
 export default function ApplyForDevPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+    const { user, firestore } = useFirebase();
+    const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -42,19 +47,42 @@ export default function ApplyForDevPage() {
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsSubmitting(true);
-        console.log("Developer Application:", values);
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (!user || !firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Não autenticado',
+                description: 'Você precisa fazer login para se candidatar.',
+            });
+            return router.push('/login');
+        }
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsSubmitting(false);
+        setIsSubmitting(true);
+        try {
+            const applicationsRef = collection(firestore, 'developer_applications');
+            await addDoc(applicationsRef, {
+                ...values,
+                userId: user.uid,
+                status: 'pending',
+                submittedAt: serverTimestamp(),
+            });
+
             toast({
                 title: "Aplicação Enviada!",
                 description: "Obrigado por se candidatar. Analisaremos sua aplicação em breve.",
             });
             form.reset();
-        }, 2000);
+
+        } catch (error: any) {
+            console.error("Error submitting application:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao Enviar',
+                description: error.message || 'Ocorreu um problema ao enviar sua aplicação. Tente novamente mais tarde.',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
   return (
@@ -117,7 +145,7 @@ export default function ApplyForDevPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                            <Button type="submit" className="w-full" disabled={isSubmitting || !user}>
                                 {isSubmitting ? (
                                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...</>
                                 ) : (
@@ -133,3 +161,5 @@ export default function ApplyForDevPage() {
     </div>
   )
 }
+
+    
