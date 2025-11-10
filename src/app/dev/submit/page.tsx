@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
 import { Send } from "lucide-react";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,6 +22,8 @@ import { Input } from "@/components/ui/input"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
@@ -27,7 +31,10 @@ const formSchema = z.object({
 })
 
 export default function SubmitGamePage() {
-    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user, firestore } = useFirebase();
+    const { toast } = useToast();
+    const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -38,9 +45,53 @@ export default function SubmitGamePage() {
     });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        // Ação simplificada: apenas atualiza o estado para indicar que foi submetido.
-        console.log("Form values:", values);
-        setIsSubmitted(true);
+        if (!user || !firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Não autenticado',
+                description: 'Você precisa fazer login para submeter um jogo.',
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        
+        const gamesRef = collection(firestore, `games`);
+        
+        const newGameData = {
+            ...values,
+            description: "Uma nova aventura espera por você!",
+            longDescription: "Descrição detalhada em breve.",
+            genres: ["Aventura"],
+            coverImage: "https://picsum.photos/seed/newgame/600/800",
+            screenshots: ["https://picsum.photos/seed/newgame-ss1/1920/1080"],
+            rating: 0,
+            reviews: [],
+            developerId: user.uid,
+            status: 'pending',
+            submittedAt: serverTimestamp(),
+        }
+
+        addDoc(gamesRef, newGameData)
+          .then((docRef) => {
+              toast({
+                  title: "Jogo Submetido!",
+                  description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
+              });
+              // We can use docRef.id if we want to redirect to the new game page
+              router.push('/dev/dashboard');
+          })
+          .catch((error) => {
+              const permissionError = new FirestorePermissionError({
+                  path: gamesRef.path,
+                  operation: 'create',
+                  requestResourceData: newGameData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+          })
+          .finally(() => {
+              setIsSubmitting(false);
+          });
     }
 
     return (
@@ -71,9 +122,9 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
-                                <Button type="submit" className="w-full" disabled={isSubmitted}>
-                                    {isSubmitted ? (
-                                        "Submetido"
+                                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        "Submetendo..."
                                     ) : (
                                         <><Send className="mr-2 h-4 w-4" />Submeter Jogo para Revisão</>
                                     )}
