@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useGameStore } from '@/context/game-store-context';
+import { Badge } from './ui/badge';
 
 type GameCardProps = {
   game: Game;
@@ -27,7 +28,7 @@ export function GameCard({ game, className }: GameCardProps) {
   const gameIsPurchased = isPurchased(game.id);
 
   return (
-    <Card className={cn('group relative overflow-hidden transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1', className)}>
+    <Card className={cn('group relative flex flex-col overflow-hidden transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1', className)}>
       {gameIsPurchased && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">
           <Library className="h-3 w-3" />
@@ -48,14 +49,20 @@ export function GameCard({ game, className }: GameCardProps) {
           />
         </Link>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-4 flex-1">
         <Link href={`/games/${game.id}`}>
           <CardTitle className="font-headline text-lg truncate hover:text-primary">{game.title}</CardTitle>
         </Link>
-        <p className="text-sm text-muted-foreground mt-1 truncate">{game.description}</p>
+        <p className="text-sm text-muted-foreground mt-1 h-10">{game.description.substring(0, 70)}{game.description.length > 70 && '...'}</p>
+        
+        <div className="flex flex-wrap gap-1 mt-2">
+            {(game.genres || []).slice(0, 2).map(genre => (
+                <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
+            ))}
+        </div>
       </CardContent>
-      <CardFooter className="flex items-center justify-between p-4 pt-0">
-        <p className="text-xl font-bold text-accent">${game.price}</p>
+      <CardFooter className="flex items-center justify-between p-4 pt-0 mt-auto">
+        <p className="text-xl font-bold text-accent">${game.price.toFixed(2)}</p>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
