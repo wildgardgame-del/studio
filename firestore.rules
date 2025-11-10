@@ -28,7 +28,8 @@ service cloud.firestore {
      */
     match /games/{gameId} {
       allow get, list: if true;
-      allow write: if isSignedIn() && (request.method == 'create' || isRole('admin'));
+      allow create: if true;
+      allow write: if isSignedIn() && isRole('admin');
     }
 
     /**
