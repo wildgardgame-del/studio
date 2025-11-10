@@ -1,7 +1,7 @@
 'use client';
 
 import { collection, query, getDocs, writeBatch, doc, updateDoc, collectionGroup } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,34 +32,60 @@ export default function ManageDevelopersPage() {
         enabled: !!firestore,
     });
     
-    const handleApproval = async (application: ApplicationWithId, newStatus: 'approved' | 'rejected') => {
+    const handleApproval = (application: ApplicationWithId, newStatus: 'approved' | 'rejected') => {
         if (!firestore) return;
 
         const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
         const userRef = doc(firestore, 'users', application.userId);
+        
+        const successMessage = `A candidatura de ${application.developerName} foi ${newStatus === 'approved' ? 'aprovada' : 'rejeitada'}.`;
 
-        try {
-            if (newStatus === 'approved') {
-                const batch = writeBatch(firestore);
-                batch.update(appRef, { status: newStatus });
-                batch.update(userRef, { role: 'dev' });
-                await batch.commit();
-            } else {
-                 await updateDoc(appRef, { status: newStatus });
-            }
+        if (newStatus === 'approved') {
+            const batch = writeBatch(firestore);
+            const appUpdateData = { status: newStatus };
+            const userUpdateData = { role: 'dev' };
 
-            toast({
-                title: 'Sucesso!',
-                description: `A candidatura de ${application.developerName} foi ${newStatus === 'approved' ? 'aprovada' : 'rejeitada'}.`,
-            });
-            refetch();
-        } catch (error: any) {
-            console.error('Error updating application status:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Erro!',
-                description: `Não foi possível atualizar a candidatura. Detalhes: ${error.message}`,
-            });
+            batch.update(appRef, appUpdateData);
+            batch.update(userRef, userUpdateData);
+            
+            batch.commit()
+                .then(() => {
+                    toast({ title: 'Sucesso!', description: successMessage });
+                    refetch();
+                })
+                .catch((error) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: `users/${application.userId}`, 
+                        operation: 'write',
+                        requestResourceData: { appStatus: appUpdateData, userRole: userUpdateData },
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Erro de Permissão',
+                        description: `Não foi possível aprovar a candidatura.`,
+                    });
+                });
+        } else { // 'rejected'
+            const appUpdateData = { status: newStatus };
+            updateDoc(appRef, appUpdateData)
+                .then(() => {
+                     toast({ title: 'Sucesso!', description: successMessage });
+                     refetch();
+                })
+                .catch(error => {
+                    const permissionError = new FirestorePermissionError({
+                        path: appRef.path,
+                        operation: 'update',
+                        requestResourceData: appUpdateData,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Erro de Permissão',
+                        description: `Não foi possível rejeitar a candidatura.`,
+                    });
+                });
         }
     };
 
