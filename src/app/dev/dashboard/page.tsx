@@ -1,47 +1,14 @@
 
 'use client';
 
-import { useRole } from '@/hooks/useRole';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert, PlusCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function DevDashboardPage() {
-  const { role, isLoading } = useRole();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && role !== 'dev' && role !== 'admin') {
-      router.push('/');
-    }
-  }, [isLoading, role, router]);
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (role !== 'dev' && role !== 'admin') {
-    return (
-        <div className="flex min-h-screen flex-col items-center justify-center text-center">
-            <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
-            <h1 className="text-3xl font-bold">Acesso Negado</h1>
-            <p className="text-muted-foreground mt-2">Você não tem permissão para acessar esta página.</p>
-            <Button asChild className="mt-6">
-                <Link href="/">Voltar para a Loja</Link>
-            </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
