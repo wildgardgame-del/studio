@@ -25,7 +25,7 @@ import { useGameStore } from "@/context/game-store-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase } from "@/firebase";
+import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import type { Game } from "@/lib/types";
 
 const formSchema = z.object({
@@ -50,16 +50,31 @@ export default function CheckoutPage() {
         },
     });
     
-    const saveToLibrary = async (game: Game) => {
+    const saveToLibrary = (game: Game) => {
         if (!user || !firestore) return;
         const libraryRef = doc(firestore, `users/${user.uid}/library`, game.id);
-        setDoc(libraryRef, game);
+        setDoc(libraryRef, game)
+            .catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: libraryRef.path,
+                    operation: 'create',
+                    requestResourceData: game
+                }));
+            });
     }
     
-    const upgradeToDev = async () => {
+    const upgradeToDev = () => {
         if (!user || !firestore) return;
         const userRef = doc(firestore, `users/${user.uid}`);
-        updateDoc(userRef, { role: 'dev' });
+        const roleData = { role: 'dev' };
+        updateDoc(userRef, roleData)
+            .catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: roleData
+                }));
+            });
     }
 
     function onSubmit(values: z.infer<typeof formSchema>) {
