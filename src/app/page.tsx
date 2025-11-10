@@ -5,13 +5,6 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { GameCard } from '@/components/game-card';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
 import heroImage from '@/lib/placeholder-images.json';
 import { ArrowRight, Loader2, Star } from 'lucide-react';
 import Header from '@/components/layout/header';
@@ -36,7 +29,6 @@ export default function Home() {
   const { data: approvedGames, isLoading } = useCollection<Game>(gamesQuery);
 
   const featuredGames = approvedGames?.slice(0, 4) || [];
-  const newReleases = approvedGames?.slice(2, 6) || [];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -117,28 +109,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="container py-16">
-          <h2 className="font-headline text-3xl font-bold md:text-4xl mb-8">New Releases</h2>
-           {isLoading ? (
-             <div className="flex space-x-4">
-                <Skeleton className="h-[450px] w-1/3" />
-                <Skeleton className="h-[450px] w-1/3" />
-                <Skeleton className="h-[450px] w-1/3" />
-             </div>
-           ) : (
-            <Carousel opts={{ align: 'start', loop: newReleases.length > 2 }}>
-                <CarouselContent>
-                {newReleases.map((game) => (
-                    <CarouselItem key={game.id} className="md:basis-1/2 lg:basis-1/3">
-                    <GameCard game={game} />
-                    </CarouselItem>
-                ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-            </Carousel>
-           )}
-        </section>
       </main>
       <Footer />
     </div>
