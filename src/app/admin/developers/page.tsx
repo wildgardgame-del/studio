@@ -1,6 +1,6 @@
 'use client';
 
-import { collectionGroup, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collectionGroup, query, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -23,19 +23,19 @@ export default function ManageDevelopersPage() {
         if (!firestore) throw new Error("Firestore not available");
         
         const applicationsRef = collectionGroup(firestore, 'developer_applications');
-        const querySnapshot = await getDocs(applicationsRef);
+        const q = query(applicationsRef); // Query for all applications
+        const querySnapshot = await getDocs(q);
 
         const applications: ApplicationWithId[] = [];
         querySnapshot.forEach((doc) => {
             applications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
         });
         
-        // Filter for pending applications on the client-side
-        return applications.filter(app => app.status === 'pending');
+        return applications; // Return all fetched applications
     };
     
-    const { data: pendingApplications, isLoading, refetch } = useQuery({
-        queryKey: ['pending-developer-applications'],
+    const { data: allApplications, isLoading, refetch } = useQuery({
+        queryKey: ['all-developer-applications'],
         queryFn: fetchApplications,
         enabled: !!firestore,
     });
@@ -80,8 +80,8 @@ export default function ManageDevelopersPage() {
             );
         }
 
-        if (!pendingApplications || pendingApplications.length === 0) {
-            return <p className="text-center text-muted-foreground py-8">Não existem candidaturas pendentes.</p>
+        if (!allApplications || allApplications.length === 0) {
+            return <p className="text-center text-muted-foreground py-8">Não foi encontrada nenhuma candidatura.</p>
         }
 
         return (
@@ -95,18 +95,25 @@ export default function ManageDevelopersPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {pendingApplications.map((app) => (
+                    {allApplications.map((app) => (
                         <TableRow key={app.id}>
                             <TableCell className="font-medium">{app.developerName}</TableCell>
                             <TableCell>{new Date(app.submittedAt.seconds * 1000).toLocaleDateString()}</TableCell>
                             <TableCell>
-                                <Badge variant={app.status === 'pending' ? 'secondary' : 'default'}>{app.status}</Badge>
+                                <Badge 
+                                    variant={
+                                        app.status === 'pending' ? 'secondary' : 
+                                        app.status === 'approved' ? 'default' : 'destructive'
+                                    }
+                                >
+                                    {app.status}
+                                </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600" onClick={() => handleApproval(app, 'approved')}>
+                                <Button variant="ghost" size="icon" className="text-green-500 hover:text-green-600" onClick={() => handleApproval(app, 'approved')} disabled={app.status === 'approved'}>
                                     <Check className="h-5 w-5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" onClick={() => handleApproval(app, 'rejected')}>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" onClick={() => handleApproval(app, 'rejected')} disabled={app.status === 'rejected'}>
                                     <X className="h-5 w-5" />
                                 </Button>
                             </TableCell>
@@ -127,8 +134,8 @@ export default function ManageDevelopersPage() {
                     
                     <Card className="mt-8">
                         <CardHeader>
-                            <CardTitle>Candidaturas Pendentes</CardTitle>
-                            <CardDescription>Reveja as candidaturas abaixo e tome uma ação.</CardDescription>
+                            <CardTitle>Todas as Candidaturas</CardTitle>
+                            <CardDescription>Reveja todas as candidaturas submetidas e tome uma ação.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {renderContent()}
