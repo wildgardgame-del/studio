@@ -46,7 +46,7 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { cartItems, wishlistItems } = useGameStore();
+  const { cartItems, wishlistItems, isPurchased } = useGameStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,6 +78,8 @@ export default function Header() {
     if (!email) return 'U';
     return email.substring(0, 2).toUpperCase();
   }
+
+  const hasDevLicense = isPurchased('dev-account-upgrade');
 
 
   return (
@@ -219,7 +221,7 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
-                   {role === 'user' && (
+                   {role === 'user' && !hasDevLicense && (
                     <DropdownMenuItem asChild>
                       <Link href="/apply-for-dev"><Sparkles className="mr-2 h-4 w-4" />Torne-se um Desenvolvedor</Link>
                     </DropdownMenuItem>
