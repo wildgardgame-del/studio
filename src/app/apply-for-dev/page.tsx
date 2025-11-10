@@ -127,7 +127,7 @@ export default function ApplyForDevPage() {
                     {/* Standard Dev License */}
                     {devLicenseProduct ? (
                         <Card className="flex flex-col h-full">
-                            <CardHeader className="text-left">
+                            <CardHeader className="text-center">
                                 <CardTitle className="font-headline text-2xl">{devLicenseProduct.title}</CardTitle>
                                 <CardDescription>{devLicenseProduct.description}</CardDescription>
                             </CardHeader>
@@ -158,7 +158,7 @@ export default function ApplyForDevPage() {
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-sm font-semibold text-primary-foreground bg-primary rounded-full">
                                 MAIS POPULAR
                             </div>
-                            <CardHeader className="text-left">
+                            <CardHeader className="text-center">
                                 <CardTitle className="font-headline text-2xl">{androidLicenseProduct.title}</CardTitle>
                                 <CardDescription>{androidLicenseProduct.description}</CardDescription>
                             </CardHeader>
