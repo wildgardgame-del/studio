@@ -14,38 +14,43 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useState } from 'react';
 
 type ApplicationWithId = DeveloperApplication & { id: string };
 
 export default function ManageDevelopersPage() {
     const { firestore } = useFirebase();
     const { toast } = useToast();
+    const [debugOutput, setDebugOutput] = useState<string[]>([]);
 
     const fetchApplications = async () => {
         if (!firestore) throw new Error("Firestore not available");
 
-        console.log('DEBUG: Iniciando fetchApplications...');
+        const localDebugOutput: string[] = [];
+        localDebugOutput.push('DEBUG: Iniciando fetchApplications...');
+        
         const allApplications: ApplicationWithId[] = [];
         const usersSnapshot = await getDocs(collection(firestore, 'users'));
         
-        console.log(`DEBUG: Encontrados ${usersSnapshot.size} utilizadores.`);
+        localDebugOutput.push(`DEBUG: Encontrados ${usersSnapshot.size} utilizadores.`);
 
         for (const userDoc of usersSnapshot.docs) {
-            console.log(`DEBUG: A processar utilizador: ${userDoc.id}`);
+            localDebugOutput.push(`DEBUG: A processar utilizador: ${userDoc.id}`);
             const appsCollectionRef = collection(firestore, `users/${userDoc.id}/developer_applications`);
             const appsSnapshot = await getDocs(appsCollectionRef);
             
             if (appsSnapshot.empty) {
-                console.log(`DEBUG: Nenhuma candidatura encontrada para o utilizador ${userDoc.id}.`);
+                localDebugOutput.push(`DEBUG: Nenhuma candidatura encontrada para o utilizador ${userDoc.id}.`);
             } else {
-                 console.log(`DEBUG: Encontradas ${appsSnapshot.size} candidaturas para o utilizador ${userDoc.id}.`);
+                 localDebugOutput.push(`DEBUG: Encontradas ${appsSnapshot.size} candidaturas para o utilizador ${userDoc.id}.`);
                  appsSnapshot.forEach((doc) => {
                     allApplications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
                 });
             }
         }
         
-        console.log('DEBUG: Resultado final de allApplications:', allApplications);
+        localDebugOutput.push('DEBUG: Resultado final de allApplications: ' + JSON.stringify(allApplications, null, 2));
+        setDebugOutput(localDebugOutput);
         return allApplications;
     };
     
@@ -162,6 +167,14 @@ export default function ManageDevelopersPage() {
             <Header />
             <main className="flex-1 bg-secondary/30">
                 <div className="container py-12">
+                    <Card className="mb-4 bg-black/80 text-green-400 font-mono text-xs">
+                        <CardHeader><CardTitle>Debug Output</CardTitle></CardHeader>
+                        <CardContent>
+                            <pre className="whitespace-pre-wrap">
+                                {debugOutput.join('\n')}
+                            </pre>
+                        </CardContent>
+                    </Card>
                     <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Gerenciar Desenvolvedores</h1>
                     <p className="text-muted-foreground mt-2">Aprove ou rejeite novas candidaturas de desenvolvedores.</p>
                     
