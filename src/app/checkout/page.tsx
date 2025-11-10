@@ -66,39 +66,56 @@ export default function CheckoutPage() {
         // Simulate payment processing
         setTimeout(async () => {
             const batch = writeBatch(firestore);
+            const containsDevLicense = cartItems.some(item => item.id === 'dev-account-upgrade');
 
             // Add all purchased items to the user's library
             cartItems.forEach(item => {
                 const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                batch.set(libraryRef, item);
+                batch.set(libraryRef, { ...item }); // Ensure a new object is passed
             });
             
-            try {
-                await batch.commit();
-
-                clearCart();
-                setIsProcessing(false);
-
-                toast({
-                    title: "Pagamento bem-sucedido!",
-                    description: "Seus itens já estão disponíveis na sua biblioteca.",
-                });
-                router.push('/library');
-
-            } catch (error) {
-                console.error("Error committing purchase to Firestore:", error);
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `users/${user.uid}/library`,
-                    operation: 'write',
-                    requestResourceData: { cart: cartItems }
-                }));
-                 toast({
-                    variant: "destructive",
-                    title: "Erro na Compra",
-                    description: "Não foi possível guardar a sua compra. Verifique as suas permissões e tente novamente.",
-                });
-                setIsProcessing(false);
+            // If dev license is in the cart, upgrade user role
+            if (containsDevLicense) {
+                const userRef = doc(firestore, `users`, user.uid);
+                batch.update(userRef, { role: 'dev' });
             }
+
+            batch.commit()
+                .then(() => {
+                    clearCart();
+                    setIsProcessing(false);
+                    toast({
+                        title: "Pagamento bem-sucedido!",
+                        description: "Seus itens já estão disponíveis na sua biblioteca.",
+                    });
+                    if (containsDevLicense) {
+                        router.push('/dev/dashboard');
+                    } else {
+                        router.push('/library');
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error committing purchase to Firestore:", error);
+                    let path = `users/${user.uid}/library`;
+                    let requestResourceData: any = { cart: cartItems.map(i => ({...i})) };
+                    if (containsDevLicense) {
+                        path = `users/${user.uid}`;
+                        requestResourceData.role = 'dev';
+                    }
+                    
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: path,
+                        operation: 'write',
+                        requestResourceData: requestResourceData
+                    }));
+                    
+                    toast({
+                        variant: "destructive",
+                        title: "Erro na Compra",
+                        description: "Não foi possível guardar a sua compra. Verifique as suas permissões e tente novamente.",
+                    });
+                    setIsProcessing(false);
+                });
         }, 2000);
     }
     

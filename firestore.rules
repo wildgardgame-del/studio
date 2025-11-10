@@ -12,7 +12,7 @@
  *
  * Data Structure & Rules:
  * - /games/{gameId}: Public read for approved games. Creation limited to 'dev' role. Updates managed by 'dev' and 'admin' roles.
- * - /users/{userId}: Profiles are private. Role changes are restricted to 'admin' role.
+ * - /users/{userId}: Profiles are private. Role changes are restricted to 'admin' role or self-upgrade to 'dev'.
  * - /users/{userId}/...: Subcollections (cart, wishlist, library, developer_applications) are private to the user.
  * - /reviews/{reviewId}: Public read. Writes are restricted to the review owner.
  */
@@ -29,7 +29,7 @@ service cloud.firestore {
      * @allow delete: Admins can delete games.
      */
     match /games/{gameId} {
-      allow get, list: if resource.data.status == 'approved';
+      allow get, list: if resource.data.status == 'approved' || (isSignedIn() && isRole('admin'));
 
       allow create: if isSignedIn() && isRole('dev')
                       && request.resource.data.developerId == request.auth.uid
@@ -53,11 +53,12 @@ service cloud.firestore {
      * @allow delete: A user can delete their own profile.
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isSignedIn() && (isOwner(userId) || isRole('admin'));
       allow list: if isSignedIn() && isRole('admin');
 
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
+                      && request.resource.data.email == request.auth.token.email
                       && request.resource.data.role == 'user';
 
       allow update: if isSignedIn() && (
@@ -144,10 +145,18 @@ service cloud.firestore {
   }
 
   function getRole(userId) {
-    return getUserData(userId).role;
+    // Gracefully handle cases where the user document might not exist yet
+    let userData = get(/databases/$(database)/documents/users/$(userId));
+    if (userData == null) {
+      return 'user'; // Default to 'user' if profile doesn't exist
+    }
+    return userData.data.role;
   }
 
   function isRole(role) {
-    return isSignedIn() && getRole(request.auth.uid) == role;
+    if (!isSignedIn()) {
+      return false;
+    }
+    return getRole(request.auth.uid) == role;
   }
 }
