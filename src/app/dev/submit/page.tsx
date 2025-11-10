@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
 import { Loader2, Send } from "lucide-react";
-import { addDoc, collection, doc, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
@@ -70,10 +70,7 @@ export default function SubmitGamePage() {
 
         setIsSubmitting(true);
         
-        // Using a placeholder for developer application ID. A real implementation
-        // might query for this or use a known ID. For simplicity, we use the user's UID.
-        const developerApplicationRef = doc(firestore, `users/${user.uid}/developer_applications`, user.uid);
-        const gameSubmissionsRef = collection(developerApplicationRef, 'game_submissions');
+        const gameSubmissionsRef = collection(firestore, `users/${user.uid}/game_submissions`);
         
         const newGameData = {
             ...values,

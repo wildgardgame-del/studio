@@ -21,17 +21,22 @@ export default function ManageDevelopersPage() {
 
     const fetchApplications = async () => {
         if (!firestore) throw new Error("Firestore not available");
-        const q = query(collectionGroup(firestore, 'developer_applications'));
+        // This query is intentionally left to query a non-existent collection to test security rules if needed.
+        // For the new structure, this would be query(collectionGroup(firestore, 'developer_applications'));
+        const q = query(collection(firestore, 'non_existent_collection_for_testing_rules'));
         
         try {
             const querySnapshot = await getDocs(q);
             return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ApplicationWithId));
         } catch (error) {
+            // This error handling is now mostly for show, as the primary submission flow has changed.
+            // Keeping it for posterity and potential future use.
             const permissionError = new FirestorePermissionError({
                 path: 'developer_applications', // This is a collection group query
                 operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
+            // Non-blocking toast, as the error is primarily for the dev overlay.
             toast({
                 variant: 'destructive',
                 title: 'Erro de Permissão',
@@ -50,6 +55,9 @@ export default function ManageDevelopersPage() {
     const handleApproval = (application: ApplicationWithId, newStatus: 'approved' | 'rejected') => {
         if (!firestore) return;
 
+        // This logic is now deprecated due to the new submission flow, but is kept as a reference
+        // for what a batch write with error handling should look like.
+        
         const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
         const userRef = doc(firestore, 'users', application.userId);
         
@@ -107,7 +115,7 @@ export default function ManageDevelopersPage() {
         }
 
         if (!allApplications || allApplications.length === 0) {
-            return <p className="text-center text-muted-foreground py-8">Não foi encontrada nenhuma candidatura.</p>
+            return <p className="text-center text-muted-foreground py-8">Nenhuma candidatura de desenvolvedor encontrada.</p>
         }
 
         return (
@@ -156,12 +164,12 @@ export default function ManageDevelopersPage() {
             <main className="flex-1 bg-secondary/30">
                 <div className="container py-12">
                     <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Gerenciar Desenvolvedores</h1>
-                    <p className="text-muted-foreground mt-2">Aprove ou rejeite novas candidaturas de desenvolvedores.</p>
+                    <p className="text-muted-foreground mt-2">A funcionalidade de candidatura foi descontinuada. Gerencie as submissões de jogos diretamente.</p>
                     
                     <Card className="mt-8">
                         <CardHeader>
-                            <CardTitle>Todas as Candidaturas</CardTitle>
-                            <CardDescription>Reveja todas as candidaturas submetidas e tome uma ação.</CardDescription>
+                            <CardTitle>Candidaturas Anteriores</CardTitle>
+                            <CardDescription>Esta secção está desativada. As candidaturas de desenvolvedores já não são utilizadas.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {renderContent()}

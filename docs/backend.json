@@ -204,52 +204,6 @@
         "gameIds"
       ]
     },
-    "DeveloperApplication": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DeveloperApplication",
-      "type": "object",
-      "description": "Represents a user's application to become a developer.",
-      "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user applying."
-        },
-        "developerName": {
-          "type": "string",
-          "description": "The name of the developer or studio."
-        },
-        "portfolio": {
-          "type": "string",
-          "format": "uri",
-          "description": "A URL to the developer's portfolio."
-        },
-        "reason": {
-          "type": "string",
-          "description": "The reason for wanting to become a developer."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the application.",
-          "enum": [
-            "pending",
-            "approved",
-            "rejected"
-          ]
-        },
-        "submittedAt": {
-            "type": "string",
-            "description": "The date when the application was submitted.",
-            "format": "date-time"
-        }
-      },
-      "required": [
-        "userId",
-        "developerName",
-        "reason",
-        "status",
-        "submittedAt"
-      ]
-    },
     "GameSubmission": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "GameSubmission",
@@ -386,27 +340,7 @@
         }
       },
       {
-        "path": "/users/{userId}/developer_applications/{applicationId}",
-        "definition": {
-          "entityName": "DeveloperApplication",
-          "schema": {
-            "$ref": "#/backend/entities/DeveloperApplication"
-          },
-          "description": "Stores applications from users wanting to become developers. Writable and readable by the user, but only manageable (update/delete) by admins.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "applicationId",
-              "description": "The unique identifier for the application."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/developer_applications/{applicationId}/game_submissions/{gameSubId}",
+        "path": "/users/{userId}/game_submissions/{gameSubId}",
         "definition": {
           "entityName": "GameSubmission",
           "schema": {
@@ -415,7 +349,6 @@
           "description": "Stores game submissions from a developer. Devs can create/update their own, admins can manage all.",
           "params": [
             { "name": "userId", "description": "The developer's user ID." },
-            { "name": "applicationId", "description": "The developer's application ID." },
             { "name": "gameSubId", "description": "The game submission's unique ID." }
           ]
         }
@@ -424,4 +357,3 @@
     "reasoning": "The Firestore data structure has been refactored to separate game submissions from the main game catalog, enhancing security and clarity. Game submissions are now stored in a subcollection under a developer's application, ensuring that only authorized developers can submit games and only admins can manage them. The main `/games` collection is now exclusively for published games, with creation rights restricted to admins who approve submissions. This prevents developers from writing directly to the public-facing game list, resolving previous permission issues."
   }
 }
-    

@@ -14,8 +14,7 @@
  * - /games/{gameId}: Public read. Creation restricted to 'admin' role (via submission approval).
  * - /users/{userId}: Profiles are private. Role changes are restricted to 'admin' role or self-upgrade to 'dev'.
  * - /users/{userId}/...: Subcollections (cart, wishlist, library) are private to the user.
- * - /users/{userId}/developer_applications/{appId}: Private to the user, manageable by admin.
- * - /users/{userId}/developer_applications/{appId}/game_submissions/{gameSubId}: Devs can create/update their own. Admins can manage all.
+ * - /users/{userId}/game_submissions/{gameSubId}: Devs can create/update their own. Admins can manage all.
  * - /reviews/{reviewId}: Public read. Writes are restricted to the review owner.
  */
 rules_version = '2';
@@ -55,21 +54,13 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isExistingOwner(userId);
 
       /**
-       * @description User can read/write their own application. Admins can manage them.
-       * @path /users/{userId}/developer_applications/{applicationId}
+       * @description User can read/write their own game submissions. Admins can manage all.
+       * @path /users/{userId}/game_submissions/{gameSubId}
        */
-      match /developer_applications/{applicationId} {
-        allow read, write: if isSignedIn() && (isOwner(userId) || isRole('admin'));
-
-        /**
-         * @description Devs can manage their own game submissions. Admins can manage all.
-         * @path /users/{userId}/developer_applications/{applicationId}/game_submissions/{gameSubId}
-         */
-        match /game_submissions/{gameSubId} {
-            allow create: if isSignedIn() && isOwner(userId);
-            allow read, update: if isSignedIn() && (isOwner(userId) || isRole('admin'));
-            allow delete: if isSignedIn() && isRole('admin');
-        }
+      match /game_submissions/{gameSubId} {
+        allow create: if isSignedIn() && isOwner(userId);
+        allow read, update: if isSignedIn() && (isOwner(userId) || isRole('admin'));
+        allow delete: if isSignedIn() && isRole('admin');
       }
     }
 
@@ -108,14 +99,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
-
-    /**
-     * @description Admin can list developer applications across all users.
-     * @path /{path=**}/developer_applications/{applicationId}
-     */
-    match /{path=**}/developer_applications/{applicationId} {
-      allow list: if isSignedIn() && isRole('admin');
-    }
+    
      /**
      * @description Admin can list game submissions across all users.
      * @path /{path=**}/game_submissions/{gameSubId}
