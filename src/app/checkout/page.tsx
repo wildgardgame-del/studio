@@ -71,7 +71,7 @@ export default function CheckoutPage() {
             // Add all purchased items to the user's library
             cartItems.forEach(item => {
                 const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                batch.set(libraryRef, { ...item }); // Ensure a new object is passed
+                batch.set(libraryRef, { ...item });
             });
             
             // If dev license is in the cart, upgrade user role
@@ -97,15 +97,18 @@ export default function CheckoutPage() {
                 .catch((error) => {
                     console.error("Error committing purchase to Firestore:", error);
                     let path = `users/${user.uid}/library`;
-                    let requestResourceData: any = { cart: cartItems.map(i => ({...i})) };
+                    const requestResourceData: any = { cart: cartItems.map(i => ({...i})) };
+                    let operation: 'write' | 'update' = 'write';
+                    
                     if (containsDevLicense) {
                         path = `users/${user.uid}`;
                         requestResourceData.role = 'dev';
+                        operation = 'update';
                     }
                     
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
                         path: path,
-                        operation: 'write',
+                        operation: operation,
                         requestResourceData: requestResourceData
                     }));
                     

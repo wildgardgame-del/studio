@@ -64,8 +64,8 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
                       // User can update their own data, but not their role (unless upgrading to dev)
                       (isOwner(userId) && (
-                        (request.resource.data.role == resource.data.role) || // Can update if role is unchanged
-                        (resource.data.role == 'user' && request.resource.data.role == 'dev') // Can upgrade from user to dev
+                        (request.resource.data.keys().hasAll(['role']) == false) || // Allow updates to any field except role
+                        (resource.data.role == 'user' && request.resource.data.role == 'dev') // Allow user to upgrade to dev
                       )) ||
                       (isRole('admin')) // Admins can change anyone's role
                     );
