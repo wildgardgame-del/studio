@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn2.unrealengine.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
