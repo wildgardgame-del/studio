@@ -4,13 +4,14 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { doc } from 'firebase/firestore';
+import Image from 'next/image';
 
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import type { Game } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 
 export default function GamePage() {
   const params = useParams();
@@ -44,6 +45,13 @@ export default function GamePage() {
       <div className="flex min-h-screen flex-col">
         <Header />
         <main className="container flex flex-1 flex-col items-center justify-center py-12 text-center">
+          <Image
+            src={game.coverImage}
+            alt={`Capa do jogo ${game.title}`}
+            width={300}
+            height={400}
+            className="rounded-lg object-cover aspect-[3/4] mb-8 shadow-lg"
+          />
           <h1 className="text-4xl font-bold font-headline mb-8">{game.title}</h1>
           <Button asChild>
             <Link href="/browse">
