@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
 import { Loader2, Send } from "lucide-react";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, doc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button"
@@ -27,7 +27,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRole } from "@/hooks/useRole";
-import { useGameStore } from "@/context/game-store-context";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
@@ -35,6 +34,9 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "O preço não pode ser negativo."),
   genre: z.string().min(2, "Por favor, insira pelo menos um género."),
   imageUrl: z.string().url("Por favor, insira uma URL válida para a imagem de capa."),
+  longDescription: z.string().optional(),
+  trailerUrl: z.string().url().optional(),
+  screenshots: z.string().url().optional(),
 })
 
 export default function SubmitGamePage() {
@@ -42,7 +44,6 @@ export default function SubmitGamePage() {
     const { toast } = useToast();
     const { user, firestore } = useFirebase();
     const { role, isLoading: isRoleLoading } = useRole();
-    const { isPurchased } = useGameStore();
     const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -53,6 +54,9 @@ export default function SubmitGamePage() {
             price: 0,
             genre: "",
             imageUrl: "",
+            longDescription: "",
+            trailerUrl: "",
+            screenshots: "",
         },
     });
 
@@ -66,7 +70,7 @@ export default function SubmitGamePage() {
             return router.push('/login');
         }
 
-        const hasDevAccess = role === 'dev' || role === 'admin' || isPurchased('dev-account-upgrade');
+        const hasDevAccess = role === 'dev' || role === 'admin';
 
         if (!hasDevAccess) {
              toast({
@@ -78,19 +82,23 @@ export default function SubmitGamePage() {
         }
 
         setIsSubmitting(true);
-        const gamesRef = collection(firestore, 'games');
+        
+        // This assumes a user who is a 'dev' has one DeveloperApplication.
+        // A more robust implementation would query for the application ID.
+        // For now, we use a placeholder or known ID if available. A simple approach
+        // is to use the userId as the document ID for the developer application.
+        const developerApplicationRef = doc(firestore, `users/${user.uid}/developer_applications`, user.uid);
+        const gameSubmissionsRef = collection(developerApplicationRef, 'game_submissions');
+        
         const newGameData = {
             ...values,
             developerId: user.uid,
             status: 'pending',
-            // Mocking some data that is not in the form yet
-            longDescription: values.description,
-            screenshots: [values.imageUrl],
-            rating: 0,
-            reviews: [],
+            submittedAt: serverTimestamp(),
+            screenshots: values.screenshots ? values.screenshots.split(',').map(s => s.trim()) : [],
         }
 
-        addDoc(gamesRef, newGameData)
+        addDoc(gameSubmissionsRef, newGameData)
           .then(() => {
               toast({
                   title: "Jogo Submetido!",
@@ -99,18 +107,12 @@ export default function SubmitGamePage() {
               router.push('/dev/dashboard');
           })
           .catch((error) => {
-              console.error("Error submitting game:", error); // Keep console for generic errors
               const permissionError = new FirestorePermissionError({
-                  path: gamesRef.path,
+                  path: gameSubmissionsRef.path,
                   operation: 'create',
                   requestResourceData: newGameData,
               });
               errorEmitter.emit('permission-error', permissionError);
-              toast({
-                  variant: 'destructive',
-                  title: 'Erro de Permissão',
-                  description: 'Não foi possível submeter o jogo. Verifique as permissões.',
-              });
           })
           .finally(() => {
               setIsSubmitting(false);
@@ -153,6 +155,13 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
+                                 <FormField control={form.control} name="longDescription" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Descrição Longa</FormLabel>
+                                        <FormControl><Textarea placeholder="Descreva em detalhe o seu jogo, a sua história, mecânicas, etc." {...field} rows={6} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="price" render={({ field }) => (
                                         <FormItem>
@@ -178,6 +187,21 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
+                                <FormField control={form.control} name="screenshots" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>URLs de Screenshots</FormLabel>
+                                        <FormControl><Textarea placeholder="https://exemplo.com/ss1.png, https://exemplo.com/ss2.png" {...field} /></FormControl>
+                                        <FormDescription className="text-xs">URLs separadas por vírgula.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                 <FormField control={form.control} name="trailerUrl" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>URL do Trailer (YouTube, etc.)</FormLabel>
+                                        <FormControl><Input placeholder="https://youtube.com/watch?v=..." {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
                                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                                     {isSubmitting ? (
                                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A Submeter...</>
@@ -194,3 +218,4 @@ export default function SubmitGamePage() {
         </div>
     )
 }
+

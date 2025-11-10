@@ -3,17 +3,19 @@
  *
  * Core Philosophy:
  * This ruleset enforces a strict user-ownership model for personal data and a role-based access control (RBAC)
- * system for game management.
+ * system for game management. A new submission system isolates pending games from the public catalog.
  *
  * Roles:
  * - user: Can browse and buy games, and write reviews.
- * - dev: Can create and update their own games (submissions).
- * - admin: Can manage games (approve/reject) and user roles.
+ * - dev: Can submit games and update their own submissions.
+ * - admin: Can manage games (approve/reject), user roles, and all submissions.
  *
  * Data Structure & Rules:
- * - /games/{gameId}: Public read for approved games. Creation limited to 'dev' role. Updates managed by 'dev' and 'admin' roles.
+ * - /games/{gameId}: Public read. Creation restricted to 'admin' role (via submission approval).
  * - /users/{userId}: Profiles are private. Role changes are restricted to 'admin' role or self-upgrade to 'dev'.
- * - /users/{userId}/...: Subcollections (cart, wishlist, library, developer_applications) are private to the user.
+ * - /users/{userId}/...: Subcollections (cart, wishlist, library) are private to the user.
+ * - /users/{userId}/developer_applications/{appId}: Private to the user, manageable by admin.
+ * - /users/{userId}/developer_applications/{appId}/game_submissions/{gameSubId}: Devs can create/update their own. Admins can manage all.
  * - /reviews/{reviewId}: Public read. Writes are restricted to the review owner.
  */
 rules_version = '2';
@@ -21,34 +23,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public can read approved games. Devs can create games. Admins can manage status.
+     * @description Public can read all games. Admins can create/delete games.
      * @path /games/{gameId}
-     * @allow get, list: Public can see approved games.
-     * @allow create: Any signed-in user can create a game submission for now.
-     * @allow update: Devs can update their own pending games. Admins can update any game's status.
-     * @allow delete: Admins can delete games.
      */
     match /games/{gameId} {
-      allow get, list: if resource.data.status == 'approved' || (isSignedIn() && isRole('admin'));
-
-      allow create: if isSignedIn();
-      
-      allow update: if isSignedIn() && (
-                      (isRole('admin')) ||
-                      (isRole('dev') && resource.data.developerId == request.auth.uid && resource.data.status != 'approved' && request.resource.data.status == resource.data.status)
-                    );
-
-      allow delete: if isSignedIn() && isRole('admin');
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isRole('admin');
     }
 
     /**
      * @description Users manage their own profile. Admins can manage user roles.
      * @path /users/{userId}
-     * @allow get: A user can read their own profile.
-     * @allow list: Admins can list users.
-     * @allow create: A user can create their own profile, with default 'user' role.
-     * @allow update: A user can update their own data. Admins or a user upgrading to 'dev' can update roles.
-     * @allow delete: A user can delete their own profile.
      */
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isRole('admin'));
@@ -60,12 +45,11 @@ service cloud.firestore {
                       && request.resource.data.role == 'user';
 
       allow update: if isSignedIn() && (
-                      // User can update their own data, but not their role (unless upgrading to dev)
                       (isOwner(userId) && (
-                        (request.resource.data.keys().hasAll(['role']) == false) || // Allow updates to any field except role
-                        (resource.data.role == 'user' && request.resource.data.role == 'dev') // Allow user to upgrade to dev
+                        (request.resource.data.keys().hasAll(['role']) == false) || 
+                        (resource.data.role == 'user' && request.resource.data.role == 'dev')
                       )) ||
-                      (isRole('admin')) // Admins can change anyone's role
+                      (isRole('admin'))
                     );
 
       allow delete: if isSignedIn() && isExistingOwner(userId);
@@ -76,6 +60,16 @@ service cloud.firestore {
        */
       match /developer_applications/{applicationId} {
         allow read, write: if isSignedIn() && (isOwner(userId) || isRole('admin'));
+
+        /**
+         * @description Devs can manage their own game submissions. Admins can manage all.
+         * @path /users/{userId}/developer_applications/{applicationId}/game_submissions/{gameSubId}
+         */
+        match /game_submissions/{gameSubId} {
+            allow create: if isSignedIn() && isOwner(userId) && getRole(userId) == 'dev';
+            allow read, update: if isSignedIn() && (isOwner(userId) || isRole('admin'));
+            allow delete: if isSignedIn() && isRole('admin');
+        }
       }
     }
 
@@ -120,7 +114,13 @@ service cloud.firestore {
      * @path /{path=**}/developer_applications/{applicationId}
      */
     match /{path=**}/developer_applications/{applicationId} {
-      // This rule allows an admin to use collection group queries.
+      allow list: if isSignedIn() && isRole('admin');
+    }
+     /**
+     * @description Admin can list game submissions across all users.
+     * @path /{path=**}/game_submissions/{gameSubId}
+     */
+    match /{path=**}/game_submissions/{gameSubId} {
       allow list: if isSignedIn() && isRole('admin');
     }
   }
@@ -143,10 +143,9 @@ service cloud.firestore {
   }
 
   function getRole(userId) {
-    // Gracefully handle cases where the user document might not exist yet
     let userData = get(/databases/$(database)/documents/users/$(userId));
     if (userData == null) {
-      return 'user'; // Default to 'user' if profile doesn't exist
+      return 'user';
     }
     return userData.data.role;
   }

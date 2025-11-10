@@ -69,22 +69,15 @@ export default function ManageDevelopersPage() {
                     refetch();
                 })
                 .catch((serverError) => {
-                    // This error could come from either update, so we should be general.
-                    // A more advanced implementation could try to pinpoint which one failed.
                     const permissionError = new FirestorePermissionError({
-                        path: `users/${application.userId}`, // The user update is the most likely to fail
-                        operation: 'write', // Batch write operation
+                        path: `users/${application.userId} and users/${application.userId}/developer_applications/${application.id}`,
+                        operation: 'write', 
                         requestResourceData: { 
                             applicationStatusUpdate: appUpdateData,
                             userRoleUpdate: userUpdateData,
                         },
                     });
                     errorEmitter.emit('permission-error', permissionError);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Erro de Permissão',
-                        description: `Não foi possível aprovar a candidatura.`,
-                    });
                 });
         } else { // 'rejected'
             const appUpdateData = { status: newStatus };
@@ -100,11 +93,6 @@ export default function ManageDevelopersPage() {
                         requestResourceData: appUpdateData,
                     });
                     errorEmitter.emit('permission-error', permissionError);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Erro de Permissão',
-                        description: `Não foi possível rejeitar a candidatura.`,
-                    });
                 });
         }
     };

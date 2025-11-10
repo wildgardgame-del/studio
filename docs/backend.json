@@ -48,15 +48,6 @@
           "type": "string",
           "description": "URL of the game's trailer.",
           "format": "uri"
-        },
-        "status": {
-          "type": "string",
-          "description": "The submission status of the game.",
-          "enum": [
-            "pending",
-            "approved",
-            "rejected"
-          ]
         }
       },
       "required": [
@@ -65,7 +56,6 @@
         "description",
         "price",
         "developerId",
-        "status",
         "imageUrl"
       ]
     },
@@ -259,6 +249,23 @@
         "status",
         "submittedAt"
       ]
+    },
+    "GameSubmission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameSubmission",
+      "type": "object",
+      "description": "A game submitted by a developer for review.",
+      "properties": {
+         "title": { "type": "string" },
+         "description": { "type": "string" },
+         "price": { "type": "number" },
+         "genre": { "type": "string" },
+         "imageUrl": { "type": "string", "format": "uri" },
+         "developerId": { "type": "string" },
+         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+         "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "price", "genre", "imageUrl", "developerId", "status", "submittedAt"]
     }
   },
   "auth": {
@@ -277,7 +284,7 @@
           "schema": {
             "$ref": "#/backend/entities/Game"
           },
-          "description": "Stores game information. Approved games are accessible to all users. Devs can create games, and admins can approve them.",
+          "description": "Stores approved, published games. Only admins can create documents here (by approving a submission).",
           "params": [
             {
               "name": "gameId",
@@ -397,9 +404,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/developer_applications/{applicationId}/game_submissions/{gameSubId}",
+        "definition": {
+          "entityName": "GameSubmission",
+          "schema": {
+            "$ref": "#/backend/entities/GameSubmission"
+          },
+          "description": "Stores game submissions from a developer. Devs can create/update their own, admins can manage all.",
+          "params": [
+            { "name": "userId", "description": "The developer's user ID." },
+            { "name": "applicationId", "description": "The developer's application ID." },
+            { "name": "gameSubId", "description": "The game submission's unique ID." }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support GameSphere's core features, focusing on scalability, security, and ease of maintenance. Authorization independence is achieved by avoiding hierarchical `get()` calls in security rules. The structure leverages path-based ownership and membership maps for collaborative data, while segregating data based on access needs.  \n\n**Authorization Independence:** For user-owned data such as shopping carts, wishlists, library, and developer applications, path-based ownership (`/users/{userId}/...`) is employed, eliminating the need to fetch parent data for authorization. Reviews include the `userId` and `gameId`, enabling direct rule application without parent document access.\n\n**Structural Segregation:** Games are stored in a single `/games` collection since they have a uniform security posture (accessible to all users for browsing). User-specific data, such as shopping carts, wishlists, library, and now developer applications are stored under `/users/{userId}` to ensure private access. Reviews, while associated with both games and users, are stored at the root level but contain the `userId` and `gameId` to facilitate independent security rules.\n\n**Access Modeling:** User-owned data follows the `/users/{userId}/{collection}/{documentId}` pattern. The reviews collection requires the `userId` and `gameId` to be present, to allow rules to validate that the authenticated user owns the review, and to allow listing reviews for a specific game (rules are not filters).\n\n**QAPs Support:** Secure `list` operations are ensured through structural segregation. Listing games is open to all, listing shopping carts, wishlists and library items are restricted to the owning user via path-based rules. Developer applications can now be securely listed by the user who owns them.\n\n**Role-Based Access Control:** The `User` entity now has a `role` field. The `Game` entity has `status` and `developerId` fields. Firestore rules will use these fields to enforce that only `dev` users can create games, and only `admin` users can change a game's `status` or a user's `role`."
+    "reasoning": "The Firestore data structure has been refactored to separate game submissions from the main game catalog, enhancing security and clarity. Game submissions are now stored in a subcollection under a developer's application, ensuring that only authorized developers can submit games and only admins can manage them. The main `/games` collection is now exclusively for published games, with creation rights restricted to admins who approve submissions. This prevents developers from writing directly to the public-facing game list, resolving previous permission issues."
   }
 }
     
