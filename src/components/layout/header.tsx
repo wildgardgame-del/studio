@@ -12,6 +12,7 @@ import {
   Sparkles,
   Shield,
   LayoutDashboard,
+  PlusCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -51,7 +52,6 @@ export default function Header() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
-  // Role logic is removed
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -98,12 +98,14 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-             <Link
-                href="/dev/dashboard"
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
-              >
-                Submit a Game
+            {user && (
+              <Link
+                  href="/dev/dashboard"
+                  className="transition-colors hover:text-foreground/80 text-foreground/60"
+                >
+                  Submit a Game
               </Link>
+            )}
           </nav>
         </div>
 
@@ -221,6 +223,12 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
+
+                  {user.email === 'ronneeh@gmail.com' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
+                    </DropdownMenuItem>
+                  )}
                   
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>

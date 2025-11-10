@@ -51,7 +51,7 @@ export default function SubmitGamePage() {
                 title: 'Não autenticado',
                 description: 'Você precisa fazer login para submeter um jogo.',
             });
-            return;
+            return router.push('/login');
         }
 
         setIsSubmitting(true);
@@ -65,8 +65,6 @@ export default function SubmitGamePage() {
             genres: ["Aventura"],
             coverImage: "https://picsum.photos/seed/newgame/600/800",
             screenshots: ["https://picsum.photos/seed/newgame-ss1/1920/1080"],
-            rating: 0,
-            reviews: [],
             developerId: user.uid,
             status: 'pending',
             submittedAt: serverTimestamp(),
@@ -78,7 +76,6 @@ export default function SubmitGamePage() {
                   title: "Jogo Submetido!",
                   description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
               });
-              // We can use docRef.id if we want to redirect to the new game page
               router.push('/dev/dashboard');
           })
           .catch((error) => {
