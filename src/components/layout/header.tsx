@@ -46,7 +46,7 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { cartItems, wishlistItems } = useGameStore();
+  const { cartItems, wishlistItems, isPurchased } = useGameStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,6 +78,8 @@ export default function Header() {
     if (!email) return 'U';
     return email.substring(0, 2).toUpperCase();
   }
+
+  const hasDevLicense = isPurchased('dev-account-upgrade');
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -218,12 +220,16 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/apply-for-dev">
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      <span>Become a Publisher</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  
+                  {role === 'user' && !hasDevLicense && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/apply-for-dev">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        <span>Become a Publisher</span>
+                        </Link>
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
