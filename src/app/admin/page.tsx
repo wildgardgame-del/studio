@@ -14,7 +14,7 @@ export default function AdminDashboardPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   
-  // Hardcoded admin check
+  // Hardcoded admin check based on email
   const isAdmin = user?.email === 'ronneeh@gmail.com';
 
   useEffect(() => {

@@ -92,22 +92,13 @@
           "type": "string",
   "description": "The date when the user registered.",
           "format": "date-time"
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the user.",
-          "enum": [
-            "user",
-            "admin"
-          ]
         }
       },
       "required": [
         "id",
         "username",
         "email",
-        "registrationDate",
-        "role"
+        "registrationDate"
       ]
     },
     "Review": {

@@ -10,7 +10,7 @@ service cloud.firestore {
     match /games/{gameId} {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isRole('admin');
+      allow update, delete: if isSignedIn() && isAdmin();
     }
 
     /**
@@ -19,14 +19,13 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isRole('admin');
+      allow list: if isSignedIn() && isAdmin();
 
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email
-                      && request.resource.data.role == 'user';
+                      && request.resource.data.email == request.auth.token.email;
 
-      allow update: if isSignedIn() && isRole('admin');
+      allow update: if isSignedIn() && isAdmin();
 
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
@@ -81,22 +80,7 @@ service cloud.firestore {
     return isSignedIn() && isOwner(userId) && resource != null;
   }
 
-  function getUserData(userId) {
-    return get(/databases/$(database)/documents/users/$(userId)).data;
-  }
-
-  function getRole(userId) {
-    let userData = get(/databases/$(database)/documents/users/$(userId));
-    if (userData == null) {
-      return 'user';
-    }
-    return userData.data.role;
-  }
-
-  function isRole(role) {
-    if (!isSignedIn()) {
-      return false;
-    }
-    return getRole(request.auth.uid) == role;
+  function isAdmin() {
+    return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
   }
 }
