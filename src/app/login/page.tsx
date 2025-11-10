@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +26,7 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -33,37 +35,30 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
+    setIsSigningIn(true);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+    
     try {
-      const auth = getAuth();
-      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, so we don't need to show an error.
         console.log("Google Sign-In cancelled by user.");
-        return;
-      }
-      
-      console.error("Error signing in with Google: ", error);
-      
-      if (error.code === 'auth/operation-not-allowed') {
-        toast({
-            variant: "destructive",
-            title: "Login Falhou",
-            description: "O Login com Google não está habilitado para este projeto. Por favor, habilite-o no console do Firebase.",
-        });
       } else {
+        console.error("Error signing in with Google: ", error);
         toast({
           variant: "destructive",
           title: "Login Falhou",
           description: error.message || "Ocorreu um erro inesperado durante o login com o Google.",
         });
       }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
-  if (isUserLoading || (!isUserLoading && user)) {
+  if (isUserLoading || user) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
             <p>Carregando...</p>
@@ -108,7 +103,8 @@ export default function LoginPage() {
                     <Button type="submit" className="w-full">
                         Login
                     </Button>
-                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn}>
+                        {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Login com Google
                     </Button>
                     </div>
