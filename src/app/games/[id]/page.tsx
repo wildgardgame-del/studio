@@ -18,8 +18,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
@@ -51,6 +49,7 @@ export default function GamePage() {
     );
   }
 
+  // This must come AFTER the isLoading check.
   if (!game) {
     notFound();
   }
@@ -109,7 +108,7 @@ export default function GamePage() {
               </div>
               <p className="mt-6 text-lg text-muted-foreground">{game.longDescription}</p>
               <div className="my-6">
-                <span className="text-4xl font-bold text-accent">${game.price}</span>
+                <span className="text-4xl font-bold text-accent">${game.price.toFixed(2)}</span>
               </div>
 
               <Tabs defaultValue="screenshots" className="w-full mt-8">
