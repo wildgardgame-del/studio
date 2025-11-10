@@ -84,8 +84,6 @@ export default function Home() {
                 loop: true,
               }}
               className="w-full"
-              onMouseEnter={plugin.current.stop}
-              onMouseLeave={plugin.current.reset}
             >
               <CarouselContent>
                 {(featuredGames || []).map((game) => (
