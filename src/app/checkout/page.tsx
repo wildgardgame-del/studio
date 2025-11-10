@@ -7,7 +7,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, setDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,7 +26,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import type { Game } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
@@ -66,7 +65,6 @@ export default function CheckoutPage() {
         
         // Simulate payment processing
         setTimeout(async () => {
-            const containsDevLicense = cartItems.some(item => item.id === 'dev-account-upgrade');
             const batch = writeBatch(firestore);
 
             // Add all purchased items to the user's library
@@ -74,12 +72,6 @@ export default function CheckoutPage() {
                 const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
                 batch.set(libraryRef, item);
             });
-
-            // If the dev license is being purchased, also update the user's role
-            if (containsDevLicense) {
-                const userRef = doc(firestore, `users/${user.uid}`);
-                batch.update(userRef, { role: 'dev' });
-            }
             
             try {
                 await batch.commit();
@@ -87,25 +79,16 @@ export default function CheckoutPage() {
                 clearCart();
                 setIsProcessing(false);
 
-                if (containsDevLicense) {
-                    toast({
-                        title: "Licença Ativada!",
-                        description: "Parabéns! Sua conta foi atualizada para Desenvolvedor.",
-                    });
-                    // Wait for role propagation before redirecting
-                    setTimeout(() => router.push('/dev/dashboard'), 1000); 
-                } else {
-                    toast({
-                        title: "Pagamento bem-sucedido!",
-                        description: "Seus jogos já estão disponíveis na sua biblioteca.",
-                    });
-                    router.push('/library');
-                }
+                toast({
+                    title: "Pagamento bem-sucedido!",
+                    description: "Seus itens já estão disponíveis na sua biblioteca.",
+                });
+                router.push('/library');
 
             } catch (error) {
                 console.error("Error committing purchase to Firestore:", error);
                  errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `users/${user.uid}`,
+                    path: `users/${user.uid}/library`,
                     operation: 'write',
                     requestResourceData: { cart: cartItems }
                 }));
