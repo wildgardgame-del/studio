@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Firestore Security Rules for GameSphere.
  *
@@ -27,7 +28,8 @@ service cloud.firestore {
      */
     match /games/{gameId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn() && isRole('admin');
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && isRole('admin');
     }
 
     /**

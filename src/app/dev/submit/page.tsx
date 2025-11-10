@@ -70,7 +70,7 @@ export default function SubmitGamePage() {
 
         setIsSubmitting(true);
         
-        const gameSubmissionsRef = collection(firestore, `users/${user.uid}/game_submissions`);
+        const gamesRef = collection(firestore, `games`);
         
         const newGameData = {
             ...values,
@@ -80,7 +80,7 @@ export default function SubmitGamePage() {
             screenshots: values.screenshots ? values.screenshots.split(',').map(s => s.trim()) : [],
         }
 
-        addDoc(gameSubmissionsRef, newGameData)
+        addDoc(gamesRef, newGameData)
           .then(() => {
               toast({
                   title: "Jogo Submetido!",
@@ -90,7 +90,7 @@ export default function SubmitGamePage() {
           })
           .catch((error) => {
               const permissionError = new FirestorePermissionError({
-                  path: gameSubmissionsRef.path,
+                  path: gamesRef.path,
                   operation: 'create',
                   requestResourceData: newGameData,
               });
