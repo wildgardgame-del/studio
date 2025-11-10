@@ -213,9 +213,11 @@ export default function Header() {
                     </DropdownMenuItem>
                   )}
                   
-                  <DropdownMenuItem>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />Dev Panel
-                  </DropdownMenuItem>
+                  {(role === 'dev' || role === 'admin' || hasDevLicense) && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dev Panel</Link>
+                    </DropdownMenuItem>
+                  )}
                   
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
