@@ -47,7 +47,7 @@ export default function Home() {
               <h1 className="font-headline text-5xl font-bold tracking-tighter md:text-7xl lg:text-8xl">
                 Your Universe of Games
               </h1>
-              <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
+              <p className="mt-4 max-w-2xl text-lg text-muted-foreground mx-auto">
                 Discover, purchase, and play your next favorite game. The ultimate destination for gamers.
               </p>
               <div className="mt-8 flex justify-center gap-4">
