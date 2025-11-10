@@ -15,7 +15,7 @@ import {
   Gamepad2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
@@ -50,6 +50,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
   
@@ -108,7 +109,10 @@ export default function Header() {
                     <Link
                     key={link.href}
                     href={link.href}
-                    className="transition-colors hover:text-foreground/80 text-foreground/60"
+                    className={cn(
+                        "transition-colors hover:text-foreground/80",
+                        pathname === link.href ? "text-foreground" : "text-foreground/60"
+                    )}
                     onClick={() => setIsMobileMenuOpen(false)}
                     >
                     {link.label}
@@ -116,7 +120,10 @@ export default function Header() {
                 ))}
                 <Link
                     href="/wishlist"
-                    className="transition-colors hover:text-foreground/80 text-foreground/60"
+                    className={cn(
+                        "transition-colors hover:text-foreground/80",
+                        pathname === "/wishlist" ? "text-foreground" : "text-foreground/60"
+                    )}
                     onClick={() => setIsMobileMenuOpen(false)}
                     >
                     Wishlist
@@ -160,7 +167,10 @@ export default function Header() {
                     <Link
                         key={link.href}
                         href={link.href}
-                        className="transition-colors hover:text-foreground/80 text-foreground/60"
+                        className={cn(
+                            "transition-colors hover:text-foreground/80",
+                            pathname === link.href ? "text-foreground" : "text-foreground/60"
+                        )}
                     >
                         {link.label}
                     </Link>
