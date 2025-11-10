@@ -4,9 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Upload } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,20 +28,37 @@ import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase"
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
   price: z.coerce.number().min(0, "O preço não pode ser negativo."),
   description: z.string().min(10, "A descrição curta deve ter pelo menos 10 caracteres."),
   longDescription: z.string().min(30, "A descrição longa deve ter pelo menos 30 caracteres."),
   genres: z.string().min(3, "Introduza pelo menos um género."),
-  coverImage: z.string().url("Introduza um URL de imagem válido."),
-  screenshots: z.string().min(10, "Introduza pelo menos um URL de captura de ecrã, separado por vírgulas se houver mais do que um."),
+  coverImage: z
+    .any()
+    .refine((files) => files?.length == 1, "A imagem de capa é obrigatória.")
+    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `O tamanho máximo do ficheiro é 5MB.`)
+    .refine(
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Apenas os formatos .jpg, .jpeg, .png e .webp são suportados."
+    ),
+  screenshots: z
+    .any()
+    .refine((files) => files?.length > 0, "É necessária pelo menos uma captura de ecrã.")
+    .refine((files) => Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `O tamanho máximo de cada ficheiro é 5MB.`)
+    .refine(
+      (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
+      "Apenas os formatos .jpg, .jpeg, .png e .webp são suportados."
+    ),
 });
 
 
 export default function SubmitGamePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { user, firestore } = useFirebase();
+    const { user, firestore, storage } = useFirebase();
     const { toast } = useToast();
     const router = useRouter();
 
@@ -51,10 +70,14 @@ export default function SubmitGamePage() {
             description: "",
             longDescription: "",
             genres: "",
-            coverImage: "",
-            screenshots: "",
         },
     });
+
+    const uploadFile = async (file: File, path: string): Promise<string> => {
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file);
+        return getDownloadURL(storageRef);
+    };
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!user || !firestore) {
@@ -68,39 +91,75 @@ export default function SubmitGamePage() {
 
         setIsSubmitting(true);
         
-        const gamesRef = collection(firestore, `games`);
-        
-        const newGameData = {
-            ...values,
-            genres: values.genres.split(',').map(g => g.trim()),
-            screenshots: values.screenshots.split(',').map(ss => ss.trim()),
-            developerId: user.uid,
-            status: 'pending',
-            submittedAt: serverTimestamp(),
-            rating: 0, // Initial rating
-            reviews: [], // Initial empty reviews
-        }
+        try {
+            // 1. Upload Cover Image
+            const coverImageFile = values.coverImage[0];
+            const coverImagePath = `games/${uuidv4()}-${coverImageFile.name}`;
+            const coverImageUrl = await uploadFile(coverImageFile, coverImagePath);
 
-        addDoc(gamesRef, newGameData)
-          .then((docRef) => {
-              toast({
-                  title: "Jogo Submetido!",
-                  description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
-              });
-              router.push('/dev/dashboard');
-          })
-          .catch((error) => {
-              const permissionError = new FirestorePermissionError({
-                  path: gamesRef.path,
-                  operation: 'create',
-                  requestResourceData: newGameData,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-          })
-          .finally(() => {
-              setIsSubmitting(false);
-          });
+            // 2. Upload Screenshots
+            const screenshotFiles = Array.from(values.screenshots as FileList);
+            const screenshotUrls = await Promise.all(
+                screenshotFiles.map(file => {
+                    const screenshotPath = `games/${uuidv4()}-${file.name}`;
+                    return uploadFile(file, screenshotPath);
+                })
+            );
+            
+            // 3. Prepare data for Firestore
+            const newGameData = {
+                title: values.title,
+                price: values.price,
+                description: values.description,
+                longDescription: values.longDescription,
+                genres: values.genres.split(',').map(g => g.trim()),
+                coverImage: coverImageUrl,
+                screenshots: screenshotUrls,
+                developerId: user.uid,
+                status: 'pending',
+                submittedAt: serverTimestamp(),
+                rating: 0,
+                reviews: [],
+            }
+            
+            // 4. Add document to Firestore
+            const gamesRef = collection(firestore, `games`);
+            await addDoc(gamesRef, newGameData);
+
+            toast({
+                title: "Jogo Submetido!",
+                description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
+            });
+            router.push('/dev/dashboard');
+
+        } catch (error: any) {
+            console.error("Error submitting game: ", error);
+            if (error.code?.includes('storage')) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Erro no Upload',
+                    description: 'Não foi possível carregar as imagens. Verifique as suas permissões de Storage.',
+                });
+            } else {
+                 const permissionError = new FirestorePermissionError({
+                    path: 'games',
+                    operation: 'create',
+                    requestResourceData: values,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                 toast({
+                    variant: 'destructive',
+                    title: 'Erro na Submissão',
+                    description: 'Não foi possível guardar os dados do jogo.',
+                });
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     }
+    
+    const { register } = form;
+
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -157,22 +216,35 @@ export default function SubmitGamePage() {
                                     </FormItem>
                                 )}/>
                                 
-                                <FormField control={form.control} name="coverImage" render={({ field }) => (
+                                <FormField
+                                  control={form.control}
+                                  name="coverImage"
+                                  render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>URL da Imagem de Capa</FormLabel>
-                                        <FormControl><Input placeholder="https://exemplo.com/capa.jpg" {...field} /></FormControl>
-                                        <FormMessage />
+                                      <FormLabel>Imagem de Capa</FormLabel>
+                                      <FormControl>
+                                         <Input type="file" accept="image/*" {...register("coverImage")} />
+                                      </FormControl>
+                                      <FormDescription>Ficheiro único de imagem (JPG, PNG, WEBP), máx 5MB.</FormDescription>
+                                      <FormMessage />
                                     </FormItem>
-                                )}/>
+                                  )}
+                                />
 
-                                <FormField control={form.control} name="screenshots" render={({ field }) => (
+                                <FormField
+                                  control={form.control}
+                                  name="screenshots"
+                                  render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>URLs das Capturas de Ecrã</FormLabel>
-                                        <FormControl><Textarea placeholder="https://exemplo.com/ss1.jpg, https://exemplo.com/ss2.jpg" {...field} /></FormControl>
-                                         <FormDescription>Separe os vários URLs por vírgulas.</FormDescription>
-                                        <FormMessage />
+                                      <FormLabel>Capturas de Ecrã</FormLabel>
+                                      <FormControl>
+                                         <Input type="file" accept="image/*" multiple {...register("screenshots")} />
+                                      </FormControl>
+                                      <FormDescription>Pode selecionar múltiplos ficheiros (JPG, PNG, WEBP), máx 5MB cada.</FormDescription>
+                                      <FormMessage />
                                     </FormItem>
-                                )}/>
+                                  )}
+                                />
 
                                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                                     {isSubmitting ? (
