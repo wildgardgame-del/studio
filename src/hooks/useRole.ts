@@ -11,24 +11,31 @@ type UserProfile = {
 export function useRole() {
     const { user, firestore, isUserLoading } = useFirebase();
 
+    // Memoize the document reference. It will be null until user and firestore are available.
+    // This query should NOT be run for the hardcoded admin, as their role is determined locally.
     const userDocRef = useMemoFirebase(() => {
-        if (!user || !firestore) return null;
-        // Don't fetch the profile for the hardcoded admin, as we'll override it anyway.
-        if (user.email === 'ronneeh@gmail.com') return null;
+        if (!user || !firestore || user.email === 'ronneeh@gmail.com') {
+            return null;
+        }
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
     
+    // Subscribe to the document. This will be inactive if userDocRef is null.
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-    // Specific override for the admin user. This check is now primary.
+    // Hardcoded override for the admin user. This check is fast and doesn't need Firestore.
     if (user && user.email === 'ronneeh@gmail.com') {
         return { role: 'admin' as const, isLoading: false };
     }
 
-    // For any other user, determine the loading state and role from Firestore.
-    const isLoading = isUserLoading || isProfileLoading;
+    // Determine the overall loading state.
+    // We are loading if the initial user object is loading, OR if we have a doc ref but the profile isn't loaded yet.
+    const isLoading = isUserLoading || (!!userDocRef && isProfileLoading);
     
-    // Return the role from the profile, but only when loading is complete.
-    // While loading, the role is undefined, which is the correct state.
-    return { role: isLoading ? undefined : userProfile?.role, isLoading };
+    // When loading is complete, and we have a user profile, return their role.
+    // If loading is finished and there's no profile, they are a 'user' by default (or something is wrong).
+    // While loading, the role is undefined.
+    const finalRole = isLoading ? undefined : userProfile?.role;
+
+    return { role: finalRole, isLoading };
 }
