@@ -1,0 +1,151 @@
+/**
+ * @fileoverview Firestore Security Rules for GameSphere.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for personal data (shopping carts, wishlists, user profiles)
+ * and allows public read access to game data. Reviews include userId and gameId for authorization.
+ *
+ * Data Structure:
+ * - /games/{gameId}: Publicly accessible game data.
+ * - /users/{userId}: User profiles, accessible only to the user themselves.
+ * - /users/{userId}/shopping_cart/{cartId}: Shopping carts, accessible only to the owning user.
+ * - /users/{userId}/wishlist/{wishlistId}: Wishlists, accessible only to the owning user.
+ * - /reviews/{reviewId}: Reviews, with userId and gameId for authorization.
+ *
+ * Key Security Decisions:
+ * - User listing is implicitly disallowed (no rule for listing the /users collection).
+ * - Write operations on the /games collection are implicitly denied (no `allow write` rule).
+ * - Reviews include the `userId` and `gameId` so we can validate ownership and enable listing reviews for a specific game.
+ *
+ * Denormalization for Authorization:
+ * - Reviews store both `userId` and `gameId` to enable efficient security rules without needing to fetch related documents.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows public read access to game data.
+     * @path /games/{gameId}
+     * @allow get, list: Any user can read game data.
+     * @allow create: create: Never allowed (explicitly denied).
+     * @deny create: Any user cannot create game data.
+     * @allow update: update: Never allowed (explicitly denied).
+     * @deny update: Any user cannot update game data.
+     * @allow delete: delete: Never allowed (explicitly denied).
+     * @deny delete: Any user cannot delete game data.
+     * @principle: Games are public read-only.
+     */
+    match /games/{gameId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Enforces user-ownership for profile data.
+     * @path /users/{userId}
+     * @allow get: The user can read their own profile.
+     * @allow create: The user can create their own profile, with ID validation.
+     * @allow update: The user can update their own profile.
+     * @allow delete: The user can delete their own profile.
+     * @deny get: Any other user cannot get another user's data.
+     * @deny create: Any other user cannot create data as if it belongs to another user.
+     * @deny update: Any other user cannot update data as if it belongs to another user.
+     * @deny delete: Any other user cannot delete another user's data.
+     * @principle: Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false; // User listing is not allowed
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for shopping cart data.
+     * @path /users/{userId}/shopping_cart/{cartId}
+     * @allow get: The user can read their own shopping cart.
+     * @allow list: The user can list their own shopping carts.
+     * @allow create: The user can create their own shopping cart.
+     * @allow update: The user can update their own shopping cart.
+     * @allow delete: The user can delete their own shopping cart.
+     * @deny get: Any other user cannot get another user's data.
+     * @deny create: Any other user cannot create data as if it belongs to another user.
+     * @deny update: Any other user cannot update data as if it belongs to another user.
+     * @deny delete: Any other user cannot delete another user's data.
+     * @principle: Enforces document ownership for all operations.
+     */
+    match /users/{userId}/shopping_cart/{cartId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId);
+
+      allow update: if isSignedIn() && isExistingOwner(userId);
+
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for wishlist data.
+     * @path /users/{userId}/wishlist/{wishlistId}
+     * @allow get: The user can read their own wishlist.
+     * @allow list: The user can list their own wishlists.
+     * @allow create: The user can create their own wishlist.
+     * @allow update: The user can update their own wishlist.
+     * @allow delete: The user can delete their own wishlist.
+     * @deny get: Any other user cannot get another user's data.
+     * @deny create: Any other user cannot create data as if it belongs to another user.
+     * @deny update: Any other user cannot update data as if it belongs to another user.
+     * @deny delete: Any other user cannot delete another user's data.
+     * @principle: Enforces document ownership for all operations.
+     */
+    match /users/{userId}/wishlist/{wishlistId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId);
+
+      allow update: if isSignedIn() && isExistingOwner(userId);
+
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows creating, reading, updating and deleting reviews.
+     * @path /reviews/{reviewId}
+     * @allow get, list: Any user can read any review.
+     * @allow create: Only authenticated user can create a review. The userId must match the authenticated user's ID.
+     * @allow update: Only the owner of the review can update it.
+     * @allow delete: Only the owner of the review can delete it.
+     * @deny create: Unauthenticated user cannot create a review.
+     * @deny update: User cannot update a review if not the owner.
+     * @deny delete: User cannot delete a review if not the owner.
+     * @principle: Enforces document ownership for writes.
+     */
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId);
+
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
+    }
+  }
+
+  // Helper functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
+  }
+}

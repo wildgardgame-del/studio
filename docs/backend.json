@@ -1,0 +1,301 @@
+{
+  "entities": {
+    "Game": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Game",
+      "type": "object",
+      "description": "Represents a game available in the GameSphere store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Game entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the game."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the game."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the game."
+        },
+        "releaseDate": {
+          "type": "string",
+          "description": "The date when the game was released.",
+          "format": "date-time"
+        },
+        "genre": {
+          "type": "string",
+          "description": "The genre of the game (e.g., Action, RPG, Strategy)."
+        },
+        "developer": {
+          "type": "string",
+          "description": "The developer of the game."
+        },
+        "publisher": {
+          "type": "string",
+          "description": "The publisher of the game."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the game's main image.",
+          "format": "uri"
+        },
+        "trailerUrl": {
+          "type": "string",
+          "description": "URL of the game's trailer.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "price",
+        "releaseDate",
+        "genre",
+        "developer",
+        "publisher",
+        "imageUrl",
+        "trailerUrl"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the GameSphere store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date when the user registered.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "registrationDate"
+      ]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a user review for a game.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Review entity."
+        },
+        "gameId": {
+          "type": "string",
+          "description": "Reference to Game. (Relationship: Game 1:N Review)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Review)"
+        },
+        "rating": {
+          "type": "number",
+          "description": "The rating given by the user (e.g., 1 to 5 stars)."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The text comment provided by the user."
+        },
+        "reviewDate": {
+          "type": "string",
+          "description": "The date when the review was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "gameId",
+        "userId",
+        "rating",
+        "comment",
+        "reviewDate"
+      ]
+    },
+    "ShoppingCart": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ShoppingCart",
+      "type": "object",
+      "description": "Represents the shopping cart for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ShoppingCart entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 ShoppingCart)"
+        },
+        "gameIds": {
+          "type": "array",
+          "description": "References to Games. (Relationship: ShoppingCart 1:N Game)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdDate": {
+          "type": "string",
+          "description": "The date when the shopping cart was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameIds",
+        "createdDate"
+      ]
+    },
+    "Wishlist": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wishlist",
+      "type": "object",
+      "description": "Represents a user's wishlist of games.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Wishlist entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Wishlist)"
+        },
+        "gameIds": {
+          "type": "array",
+          "description": "References to Games. (Relationship: Wishlist 1:N Game)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameIds"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/games/{gameId}",
+        "definition": {
+          "entityName": "Game",
+          "schema": {
+            "$ref": "#/backend/entities/Game"
+          },
+          "description": "Stores game information.  Accessible to all users.",
+          "params": [
+            {
+              "name": "gameId",
+              "description": "The unique identifier of the game."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Accessible only to the user and admins.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/shopping_cart/{cartId}",
+        "definition": {
+          "entityName": "ShoppingCart",
+          "schema": {
+            "$ref": "#/backend/entities/ShoppingCart"
+          },
+          "description": "Stores shopping cart information for a user.  Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "cartId",
+              "description": "The unique identifier of the shopping cart."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wishlist/{wishlistId}",
+        "definition": {
+          "entityName": "Wishlist",
+          "schema": {
+            "$ref": "#/backend/entities/Wishlist"
+          },
+          "description": "Stores wishlist information for a user. Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "wishlistId",
+              "description": "The unique identifier of the wishlist."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores user reviews for games. Requires 'userId' and 'gameId' to be present for security rules to validate ownership and enable listing reviews for a specific game.",
+          "params": [
+            {
+              "name": "reviewId",
+              "description": "The unique identifier of the review."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support GameSphere's core features, focusing on scalability, security, and ease of maintenance. Authorization independence is achieved by avoiding hierarchical `get()` calls in security rules. The structure leverages path-based ownership and membership maps for collaborative data, while segregating data based on access needs.  \n\n**Authorization Independence:** For user-owned data such as shopping carts and wishlists, path-based ownership (`/users/{userId}/shopping_cart/{cartId}`) is employed, eliminating the need to fetch parent data for authorization. Reviews include the `userId` and `gameId`, enabling direct rule application without parent document access.\n\n**Structural Segregation:** Games are stored in a single `/games` collection since they have a uniform security posture (accessible to all users for browsing). User-specific data, such as shopping carts and wishlists, are stored under `/users/{userId}` to ensure private access. Reviews, while associated with both games and users, are stored at the root level but contain the `userId` and `gameId` to facilitate independent security rules.\n\n**Access Modeling:** User-owned data follows the `/users/{userId}/{collection}/{documentId}` pattern. The reviews collection requires the `userId` and `gameId` to be present, to allow rules to validate that the authenticated user owns the review, and to allow listing reviews for a specific game.\n\n**QAPs Support:** Secure `list` operations are ensured through structural segregation. Listing games is open to all, listing shopping carts and wishlists are restricted to the owning user via path-based rules. Reviews can be listed, and rules can ensure that only reviews associated with a particular gameId are visible (rules are not filters).\n\nThis design facilitates simple, robust, and easily debuggable security rules."
+  }
+}
