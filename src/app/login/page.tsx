@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,11 +18,10 @@ import { Label } from "@/components/ui/label"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
-import { useAuth, useUser } from "@/firebase";
+import { useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -34,17 +33,9 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
-    if (!auth) {
-      console.error("Auth service is not available.");
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not connect to authentication service.",
-      });
-      return;
-    }
-    const provider = new GoogleAuthProvider();
     try {
+      const auth = getAuth();
+      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (error: any) {
