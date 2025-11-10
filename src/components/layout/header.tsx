@@ -212,9 +212,9 @@ export default function Header() {
                       <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
                     </DropdownMenuItem>
                   )}
-                  {role === 'dev' && (
+                  {(role === 'dev' || role === 'admin' || hasDevLicense) && (
                      <DropdownMenuItem asChild>
-                      <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Painel de Desenvolvedor</Link>
+                      <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dev Panel</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
