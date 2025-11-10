@@ -14,6 +14,8 @@ export type Game = {
     text: string;
     rating: number;
   }[];
+  status?: 'pending' | 'approved' | 'rejected';
+  developerId?: string;
 };
 
 // This type is no longer used, but kept for reference to avoid breaking other parts of the app.

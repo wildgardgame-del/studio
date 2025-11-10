@@ -4,12 +4,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public can read. Anyone can create. Admins can update/delete.
+     * @description Public can read. Signed-in users can create. Admins can update/delete.
      * @path /games/{gameId}
      */
     match /games/{gameId} {
       allow get, list: if true;
-      allow write: if true;
+      allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isRole('admin');
     }
 
     /**

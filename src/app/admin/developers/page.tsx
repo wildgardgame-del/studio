@@ -1,52 +1,74 @@
 'use client';
 
-import { collection, query, getDocs, writeBatch, doc, updateDoc, collectionGroup } from 'firebase/firestore';
+import { collection, query, getDocs, writeBatch, doc, updateDoc, where } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Check, Loader2, X } from 'lucide-react';
-import type { DeveloperApplication } from '@/lib/types';
+import type { Game } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 
-type ApplicationWithId = DeveloperApplication & { id: string };
+type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejected' };
 
-export default function ManageDevelopersPage() {
+export default function ManageGamesPage() {
     const { firestore } = useFirebase();
     const { toast } = useToast();
 
-    const fetchApplications = async () => {
+    const fetchPendingGames = async () => {
         if (!firestore) throw new Error("Firestore not available");
-        // This query is intentionally left to query a non-existent collection as the developer application
-        // system has been removed.
-        const q = query(collection(firestore, 'non_existent_collection_for_testing_rules'));
+        const gamesRef = collection(firestore, 'games');
+        const q = query(gamesRef, where("status", "==", "pending"));
         
         try {
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ApplicationWithId));
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameWithId));
         } catch (error) {
-            // Error handling is kept for robustness, but this part of the app is deprecated.
-            console.error("This feature is deprecated. No applications to fetch.");
+            console.error("Error fetching pending games:", error);
+            const permissionError = new FirestorePermissionError({
+                path: 'games',
+                operation: 'list'
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Error fetching games',
+                description: 'Could not fetch pending games. Check permissions.',
+            });
             return [];
         }
     };
     
-    const { data: allApplications, isLoading, refetch } = useQuery({
-        queryKey: ['all-developer-applications'],
-        queryFn: fetchApplications,
+    const { data: pendingGames, isLoading, refetch } = useQuery({
+        queryKey: ['pending-games'],
+        queryFn: fetchPendingGames,
         enabled: !!firestore,
     });
     
-    const handleApproval = (application: ApplicationWithId, newStatus: 'approved' | 'rejected') => {
-        toast({
-            variant: 'destructive',
-            title: 'Funcionalidade Descontinuada',
-            description: 'A gestão de candidaturas de desenvolvedores foi removida.',
-        });
+    const handleApproval = async (gameId: string, newStatus: 'approved' | 'rejected') => {
+        if (!firestore) return;
+        
+        const gameRef = doc(firestore, 'games', gameId);
+        
+        try {
+            await updateDoc(gameRef, { status: newStatus });
+            toast({
+                title: `Jogo ${newStatus === 'approved' ? 'Aprovado' : 'Rejeitado'}`,
+                description: `O status do jogo foi atualizado.`,
+            });
+            refetch();
+        } catch (error) {
+             const permissionError = new FirestorePermissionError({
+                path: gameRef.path,
+                operation: 'update',
+                requestResourceData: { status: newStatus },
+              });
+              errorEmitter.emit('permission-error', permissionError);
+        }
     };
 
     const renderContent = () => {
@@ -57,8 +79,38 @@ export default function ManageDevelopersPage() {
                 </div>
             );
         }
+        
+        if (!pendingGames || pendingGames.length === 0) {
+            return <p className="text-center text-muted-foreground py-8">Não há jogos pendentes para revisão.</p>
+        }
 
-        return <p className="text-center text-muted-foreground py-8">O sistema de candidatura de desenvolvedores foi descontinuado.</p>
+        return (
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Jogo</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {pendingGames.map(game => (
+                        <TableRow key={game.id}>
+                            <TableCell className="font-medium">{game.title}</TableCell>
+                            <TableCell>${game.price.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">
+                                <Button size="sm" variant="ghost" className="text-green-500 hover:text-green-600" onClick={() => handleApproval(game.id, 'approved')}>
+                                    <Check className="mr-2 h-4 w-4" /> Aprovar
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleApproval(game.id, 'rejected')}>
+                                    <X className="mr-2 h-4 w-4" /> Rejeitar
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        )
     }
 
     return (
@@ -66,13 +118,13 @@ export default function ManageDevelopersPage() {
             <Header />
             <main className="flex-1 bg-secondary/30">
                 <div className="container py-12">
-                    <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Gerenciar Desenvolvedores</h1>
-                    <p className="text-muted-foreground mt-2">A funcionalidade de candidatura de desenvolvedores foi descontinuada. Gerencie as submissões de jogos diretamente.</p>
+                    <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Gerenciar Submissões de Jogos</h1>
+                    <p className="text-muted-foreground mt-2">Aprove ou rejeite os jogos submetidos pelos desenvolvedores.</p>
                     
                     <Card className="mt-8">
                         <CardHeader>
-                            <CardTitle>Candidaturas de Desenvolvedores</CardTitle>
-                            <CardDescription>Esta secção está desativada. As candidaturas de desenvolvedores já não são utilizadas.</CardDescription>
+                            <CardTitle>Jogos Pendentes de Revisão</CardTitle>
+                            <CardDescription>Estes jogos foram submetidos e estão aguardando sua aprovação.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {renderContent()}

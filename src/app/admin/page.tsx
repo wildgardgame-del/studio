@@ -53,14 +53,16 @@ export default function AdminDashboardPage() {
           <p className="text-muted-foreground mt-2">Gerencie sua loja, aprove jogos e muito mais.</p>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Gerenciar Jogos</CardTitle>
-                    <CardDescription>Aprove ou rejeite jogos enviados por desenvolvedores.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Em breve...</p>
-                </CardContent>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/admin/developers">
+                    <CardHeader>
+                        <CardTitle>Gerenciar Jogos</CardTitle>
+                        <CardDescription>Aprove ou rejeite jogos enviados por desenvolvedores.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="link" className="p-0 text-accent">Revisar Submissões</Button>
+                    </CardContent>
+                </Link>
              </Card>
              <Card>
                 <CardHeader>
