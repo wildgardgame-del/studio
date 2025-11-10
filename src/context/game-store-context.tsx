@@ -68,6 +68,10 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
   }, [wishlistItems]);
 
   const isPurchased = useCallback((gameId: string) => {
+    // Also check if the dev license specifically is purchased
+    if (gameId === 'dev-account-upgrade') {
+        return purchasedGames?.some(item => item.id === 'dev-account-upgrade') ?? false;
+    }
     return purchasedGames?.some((item) => item.id === gameId) ?? false;
   }, [purchasedGames]);
 

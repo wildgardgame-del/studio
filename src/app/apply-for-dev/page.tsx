@@ -33,7 +33,7 @@ export default function ApplyForDevPage() {
             return;
         }
         if (devLicenseProduct) {
-            handleAddToCart(devLicenseProduct);
+            handleAddToCart({ ...devLicenseProduct });
             router.push('/checkout');
         }
     }
@@ -124,7 +124,7 @@ export default function ApplyForDevPage() {
                         </div>
                         <div>
                              <div className="bg-gradient-to-br from-primary/20 to-accent/20 p-8 rounded-lg aspect-square flex flex-col justify-center items-center text-center">
-                                {devLicenseProduct.title && (
+                                {devLicenseProduct.coverImage && (
                                     <Image 
                                         src={devLicenseProduct.coverImage} 
                                         alt={devLicenseProduct.title} 
