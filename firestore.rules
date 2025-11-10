@@ -24,16 +24,14 @@ service cloud.firestore {
      * @description Public can read approved games. Devs can create games. Admins can manage status.
      * @path /games/{gameId}
      * @allow get, list: Public can see approved games.
-     * @allow create: Devs can create games, setting status to 'pending'.
+     * @allow create: Any signed-in user can create a game submission for now.
      * @allow update: Devs can update their own pending games. Admins can update any game's status.
      * @allow delete: Admins can delete games.
      */
     match /games/{gameId} {
       allow get, list: if resource.data.status == 'approved' || (isSignedIn() && isRole('admin'));
 
-      allow create: if isSignedIn()
-                      && request.resource.data.developerId == request.auth.uid
-                      && request.resource.data.status == 'pending';
+      allow create: if isSignedIn();
       
       allow update: if isSignedIn() && (
                       (isRole('admin')) ||
