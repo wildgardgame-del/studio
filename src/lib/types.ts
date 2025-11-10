@@ -17,13 +17,15 @@ export type Game = {
 };
 
 export type DeveloperApplication = {
+  // This type is now obsolete with the new purchase flow, but kept for reference
+  // to avoid breaking changes in other parts of the app if it's referenced.
   id: string;
   userId: string;
   developerName: string;
   portfolio?: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
-  submittedAt?: { // Made optional to handle older data that might not have it
+  submittedAt?: {
     seconds: number;
     nanoseconds: number;
   };

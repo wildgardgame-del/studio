@@ -1,250 +1,122 @@
 'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { useState } from "react";
-import { CheckCircle, Clock, Info, Loader2, Send, XCircle } from "lucide-react";
-import { addDoc, collection, serverTimestamp, query, limit } from "firebase/firestore";
-
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import Header from "@/components/layout/header"
-import Footer from "@/components/layout/footer"
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { DeveloperApplication } from "@/lib/types";
+import { Code, Info, Rocket } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
+import { useFirebase } from "@/firebase";
+import { useGameStore } from "@/context/game-store-context";
 import { useRole } from "@/hooks/useRole";
+import type { Game } from "@/lib/types";
 
-const formSchema = z.object({
-  developerName: z.string().min(2, "O nome do desenvolvedor/estúdio deve ter pelo menos 2 caracteres."),
-  portfolio: z.string().url("Por favor, insira uma URL válida para o seu portfólio.").optional().or(z.literal('')),
-  reason: z.string().min(30, "Por favor, explique com pelo menos 30 caracteres por que você quer ser um desenvolvedor."),
-})
+// Create a special "product" for the developer account upgrade
+const devLicenseProduct: Game = {
+    id: 'dev-account-upgrade',
+    title: 'Licença de Desenvolvedor GameSphere',
+    description: 'Desbloqueie a capacidade de publicar e vender os seus jogos na plataforma GameSphere.',
+    longDescription: 'Ao adquirir esta licença, a sua conta será permanentemente atualizada para uma conta de Programador. Isto dar-lhe-á acesso ao Painel de Programador, onde poderá submeter os seus jogos para revisão, gerir as suas listagens e acompanhar as suas vendas. Junte-se à nossa comunidade de criadores e partilhe a sua visão com o mundo!',
+    price: 10.00,
+    genres: ['Utility'],
+    coverImage: 'https://picsum.photos/seed/dev-license/600/800',
+    screenshots: [],
+    rating: 5,
+    reviews: [],
+};
 
-const StatusCard = ({ status }: { status: 'pending' | 'approved' | 'rejected' }) => {
-    const statusInfo = {
-        pending: {
-            icon: <Clock className="h-12 w-12 text-yellow-500" />,
-            title: "Candidatura Pendente",
-            description: "A sua candidatura para se tornar um programador está atualmente a ser revista. Iremos notificá-lo assim que houver uma atualização."
-        },
-        approved: {
-            icon: <CheckCircle className="h-12 w-12 text-green-500" />,
-            title: "Candidatura Aprovada!",
-            description: "Parabéns! A sua candidatura foi aceite. Agora pode começar a submeter os seus jogos através do painel de programador."
-        },
-        rejected: {
-            icon: <XCircle className="h-12 w-12 text-destructive" />,
-            title: "Candidatura Rejeitada",
-            description: "Lamentamos informar que a sua candidatura não foi aprovada neste momento. Obrigado pelo seu interesse."
-        }
-    }
-
-    const { icon, title, description } = statusInfo[status];
-
-    return (
-        <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-secondary/50">
-            {icon}
-            <h2 className="mt-6 text-2xl font-bold">{title}</h2>
-            <p className="mt-2 text-muted-foreground">{description}</p>
-        </div>
-    )
-}
 
 export default function ApplyForDevPage() {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
-    const { user, firestore, isUserLoading } = useFirebase();
+    const { user, isUserLoading } = useFirebase();
     const { role, isLoading: isRoleLoading } = useRole();
     const router = useRouter();
+    const { handleAddToCart } = useGameStore();
 
-    const applicationQuery = useMemoFirebase(() => {
-        if (!user || !firestore || role === 'admin') return null; // Don't query for admins
-        return query(collection(firestore, `users/${user.uid}/developer_applications`), limit(1));
-    }, [user, firestore, role]);
-
-    const { data: applications, isLoading: isLoadingApplication } = useCollection<DeveloperApplication>(applicationQuery);
-    const existingApplication = applications?.[0];
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            developerName: "",
-            portfolio: "",
-            reason: "",
-        },
-    });
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!user || !firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Não autenticado',
-                description: 'Você precisa fazer login para se candidatar.',
-            });
-            return router.push('/login');
+    const handlePurchase = () => {
+        if (!user) {
+            router.push('/login');
+            return;
         }
-        if (existingApplication || role === 'admin') return;
+        handleAddToCart(devLicenseProduct);
+        router.push('/checkout');
+    }
+    
+    const isLoading = isUserLoading || isRoleLoading;
 
-        setIsSubmitting(true);
-        try {
-            const applicationsRef = collection(firestore, `users/${user.uid}/developer_applications`);
-            await addDoc(applicationsRef, {
-                ...values,
-                userId: user.uid,
-                status: 'pending',
-                submittedAt: serverTimestamp(),
-            });
-
-            toast({
-                title: "Aplicação Enviada!",
-                description: "Obrigado por se candidatar. Analisaremos sua aplicação em breve.",
-            });
-            form.reset();
-
-        } catch (error: any) {
-            console.error("Error submitting application:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erro ao Enviar',
-                description: error.message || 'Ocorreu um problema ao enviar sua aplicação. Tente novamente mais tarde.',
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
+    if (isLoading) {
+        return <div className="flex min-h-screen items-center justify-center"><p>Carregando...</p></div>
     }
 
-    const renderContent = () => {
-        const isLoading = isUserLoading || isRoleLoading || isLoadingApplication;
-
-        if (!user && !isLoading) {
-            return (
-                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-secondary/50">
-                    <Info className="h-12 w-12 text-primary" />
-                    <h2 className="mt-6 text-2xl font-bold">Inicie Sessão para se Candidatar</h2>
-                    <p className="mt-2 text-muted-foreground">Para se candidatar a programador, precisa de ter uma conta e iniciar sessão.</p>
+    if (role === 'dev' || role === 'admin') {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                     <Rocket className="h-16 w-16 text-primary mb-4" />
+                    <h1 className="text-3xl font-bold font-headline">Você já é um Desenvolvedor!</h1>
+                    <p className="mt-2 text-muted-foreground max-w-md">
+                        A sua conta já tem privilégios de desenvolvedor. Visite o seu painel para começar a submeter jogos.
+                    </p>
+                    <Button asChild className="mt-6">
+                        <a href="/dev/dashboard">Ir para o Painel</a>
+                    </Button>
+                </main>
+                <Footer />
+            </div>
+        )
+    }
+    
+     if (!user && !isLoading) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                     <Info className="h-16 w-16 text-primary mb-4" />
+                    <h1 className="text-3xl font-bold font-headline">Inicie Sessão para se Tornar um Desenvolvedor</h1>
+                    <p className="mt-2 text-muted-foreground max-w-md">Para comprar a Licença de Programador, precisa de ter uma conta e iniciar sessão.</p>
                     <Button asChild className="mt-4">
                         <a href="/login">Login</a>
                     </Button>
-                </div>
-            )
-        }
-
-        if (isLoading) {
-            return (
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                </div>
-            )
-        }
-        
-        if (role === 'admin') {
-             return (
-                <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg bg-secondary/50">
-                    <Info className="h-12 w-12 text-primary" />
-                    <h2 className="mt-6 text-2xl font-bold">Administradores não precisam se candidatar</h2>
-                    <p className="mt-2 text-muted-foreground">Como administrador, você já tem acesso a todos os recursos de desenvolvedor.</p>
-                </div>
-            )
-        }
-
-        if (existingApplication) {
-            return <StatusCard status={existingApplication.status} />
-        }
-
-        return (
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="developerName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Nome do Desenvolvedor/Estúdio</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Awesome Game Studio" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="portfolio"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Site/Portfólio (Opcional)</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="https://your.portfolio.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="reason"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Por que você quer publicar na GameSphere?</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                        placeholder="Fale um pouco sobre você e os jogos que você quer criar..."
-                                        className="min-h-[120px]"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormDescription>
-                                    Descreva sua experiência, seus projetos e seus objetivos.
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <Button type="submit" className="w-full" disabled={isSubmitting || !user || !!existingApplication}>
-                        {isSubmitting ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A enviar...</>
-                        ) : (
-                            <><Send className="mr-2 h-4 w-4" />Enviar Aplicação</>
-                        )}
-                    </Button>
-                </form>
-            </Form>
+                </main>
+                <Footer />
+            </div>
         )
     }
 
     return (
         <div className="flex min-h-screen flex-col">
             <Header />
-            <main className="flex-1 flex items-center justify-center py-12">
-                <Card className="mx-auto max-w-2xl w-full">
-                    <CardHeader>
-                        <CardTitle className="text-3xl font-headline text-center">Torne-se um Desenvolvedor</CardTitle>
-                        <CardDescription className="text-center">
-                            Preencha o formulário abaixo para se candidatar a publicar jogos na GameSphere.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {renderContent()}
-                    </CardContent>
-                </Card>
+            <main className="flex-1 bg-secondary/30">
+                <div className="container py-12">
+                    <div className="grid md:grid-cols-2 gap-12 items-center">
+                        <div className="space-y-4">
+                            <span className="inline-block px-3 py-1 text-sm font-semibold text-accent-foreground bg-accent rounded-full">Licença Única</span>
+                            <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Torne-se um Desenvolvedor GameSphere</h1>
+                            <p className="text-lg text-muted-foreground">
+                                Está pronto para partilhar os seus jogos com o mundo? Compre a Licença de Desenvolvedor para desbloquear o acesso ao nosso portal de submissão e comece a sua jornada como criador na GameSphere.
+                            </p>
+                            <div className="text-5xl font-bold text-primary pt-4">${devLicenseProduct.price.toFixed(2)}</div>
+                             <Button size="lg" className="w-full md:w-auto" onClick={handlePurchase}>
+                                <Rocket className="mr-2" /> Comprar Licença Agora
+                            </Button>
+                        </div>
+                        <div>
+                             <div className="bg-gradient-to-br from-primary/20 to-accent/20 p-8 rounded-lg aspect-square flex flex-col justify-center items-center text-center">
+                                <Code className="h-24 w-24 text-primary" />
+                                <h2 className="mt-6 text-2xl font-bold font-headline">O que está incluído?</h2>
+                                <ul className="mt-4 text-muted-foreground list-disc list-inside text-left">
+                                    <li>Acesso ao Painel de Desenvolvedor</li>
+                                    <li>Submissão ilimitada de jogos</li>
+                                    <li>Acompanhamento de estatísticas de vendas</li>
+                                    <li>Pagamentos seguros</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
             <Footer />
         </div>
     )
 }
-
-    

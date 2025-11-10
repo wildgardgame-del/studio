@@ -7,7 +7,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -53,8 +53,13 @@ export default function CheckoutPage() {
     const saveToLibrary = async (game: Game) => {
         if (!user || !firestore) return;
         const libraryRef = doc(firestore, `users/${user.uid}/library`, game.id);
-        // Note: We don't need to await this. We can optimistically continue.
         setDoc(libraryRef, game);
+    }
+    
+    const upgradeToDev = async () => {
+        if (!user || !firestore) return;
+        const userRef = doc(firestore, `users/${user.uid}`);
+        updateDoc(userRef, { role: 'dev' });
     }
 
     function onSubmit(values: z.infer<typeof formSchema>) {
@@ -73,16 +78,34 @@ export default function CheckoutPage() {
         
         // Simulate payment processing
         setTimeout(() => {
-            // Save each item to the user's library
-            cartItems.forEach(item => saveToLibrary(item));
+            const containsDevLicense = cartItems.some(item => item.id === 'dev-account-upgrade');
+
+            // Save each item to the user's library or upgrade account
+            cartItems.forEach(item => {
+                if (item.id === 'dev-account-upgrade') {
+                    upgradeToDev();
+                } else {
+                    saveToLibrary(item);
+                }
+            });
             
             setIsProcessing(false);
-            toast({
-                title: "Pagamento bem-sucedido!",
-                description: "Seus jogos já estão disponíveis na sua biblioteca.",
-            });
+
+            if (containsDevLicense) {
+                 toast({
+                    title: "Licença Ativada!",
+                    description: "Parabéns! Sua conta foi atualizada para Desenvolvedor.",
+                });
+                router.push('/dev/dashboard');
+            } else {
+                toast({
+                    title: "Pagamento bem-sucedido!",
+                    description: "Seus jogos já estão disponíveis na sua biblioteca.",
+                });
+                router.push('/library');
+            }
+            
             clearCart();
-            router.push('/library');
         }, 2000);
     }
     
@@ -141,7 +164,7 @@ export default function CheckoutPage() {
                                     <div key={item.id} className="flex justify-between items-center">
                                         <div className="flex items-center gap-3">
                                             <Image src={item.coverImage} alt={item.title} width={45} height={60} className="rounded-sm object-cover aspect-[3/4]" />
-                                            <span className="truncate">{item.title}</span>
+                                            <span className="truncate font-semibold">{item.title}</span>
                                         </div>
                                         <span>${item.price.toFixed(2)}</span>
                                     </div>
