@@ -11,7 +11,7 @@ export default function Footer() {
           </p>
         </div>
         <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} GameSphere Inc.
+          &copy; {new Date().getFullYear()} Forge Gate Hub Inc.
         </p>
       </div>
     </footer>
