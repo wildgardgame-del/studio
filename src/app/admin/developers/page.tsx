@@ -1,6 +1,6 @@
 'use client';
 
-import { collectionGroup, query, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, getDocs, writeBatch, doc, updateDoc, collectionGroup } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type ApplicationWithId = DeveloperApplication & { id: string };
 
@@ -21,17 +23,21 @@ export default function ManageDevelopersPage() {
 
     const fetchApplications = async () => {
         if (!firestore) throw new Error("Firestore not available");
-        
-        const applicationsRef = collectionGroup(firestore, 'developer_applications');
-        const q = query(applicationsRef); // Query for all applications
-        const querySnapshot = await getDocs(q);
 
-        const applications: ApplicationWithId[] = [];
-        querySnapshot.forEach((doc) => {
-            applications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
-        });
+        const allApplications: ApplicationWithId[] = [];
+        const usersSnapshot = await getDocs(collection(firestore, 'users'));
+
+        for (const userDoc of usersSnapshot.docs) {
+            const user = userDoc.data();
+            const appsCollectionRef = collection(firestore, `users/${userDoc.id}/developer_applications`);
+            const appsSnapshot = await getDocs(appsCollectionRef);
+            
+            appsSnapshot.forEach((doc) => {
+                allApplications.push({ id: doc.id, ...(doc.data() as DeveloperApplication) });
+            });
+        }
         
-        return applications; // Return all fetched applications
+        return allApplications;
     };
     
     const { data: allApplications, isLoading, refetch } = useQuery({
@@ -43,18 +49,18 @@ export default function ManageDevelopersPage() {
     const handleApproval = async (application: ApplicationWithId, newStatus: 'approved' | 'rejected') => {
         if (!firestore) return;
 
+        const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
+        const userRef = doc(firestore, 'users', application.userId);
+
         try {
-            const batch = writeBatch(firestore);
-
-            const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
-            batch.update(appRef, { status: newStatus });
-            
             if (newStatus === 'approved') {
-                const userRef = doc(firestore, 'users', application.userId);
+                const batch = writeBatch(firestore);
+                batch.update(appRef, { status: newStatus });
                 batch.update(userRef, { role: 'dev' });
+                await batch.commit();
+            } else {
+                 await updateDoc(appRef, { status: newStatus });
             }
-
-            await batch.commit();
 
             toast({
                 title: 'Sucesso!',
@@ -62,6 +68,24 @@ export default function ManageDevelopersPage() {
             });
             refetch();
         } catch (error: any) {
+             // Handle potential permission errors for each operation
+            if (error.code === 'permission-denied') {
+                const appUpdateError = new FirestorePermissionError({
+                    path: appRef.path,
+                    operation: 'update',
+                    requestResourceData: { status: newStatus },
+                });
+                errorEmitter.emit('permission-error', appUpdateError);
+
+                if (newStatus === 'approved') {
+                    const roleUpdateError = new FirestorePermissionError({
+                        path: userRef.path,
+                        operation: 'update',
+                        requestResourceData: { role: 'dev' },
+                    });
+                    errorEmitter.emit('permission-error', roleUpdateError);
+                }
+            }
             console.error('Error updating application status:', error);
             toast({
                 variant: 'destructive',
@@ -98,7 +122,7 @@ export default function ManageDevelopersPage() {
                     {allApplications.map((app) => (
                         <TableRow key={app.id}>
                             <TableCell className="font-medium">{app.developerName}</TableCell>
-                            <TableCell>{new Date(app.submittedAt.seconds * 1000).toLocaleDateString()}</TableCell>
+                            <TableCell>{app.submittedAt ? new Date(app.submittedAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>
                                 <Badge 
                                     variant={

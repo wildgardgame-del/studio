@@ -23,7 +23,7 @@ export type DeveloperApplication = {
   portfolio?: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
-  submittedAt: {
+  submittedAt?: { // Made optional to handle older data that might not have it
     seconds: number;
     nanoseconds: number;
   };
