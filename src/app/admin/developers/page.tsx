@@ -22,8 +22,23 @@ export default function ManageDevelopersPage() {
     const fetchApplications = async () => {
         if (!firestore) throw new Error("Firestore not available");
         const q = query(collectionGroup(firestore, 'developer_applications'));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ApplicationWithId));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ApplicationWithId));
+        } catch (error) {
+            const permissionError = new FirestorePermissionError({
+                path: 'developer_applications', // This is a collection group query
+                operation: 'list'
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Erro de Permissão',
+                description: 'Não foi possível carregar as candidaturas.'
+            });
+            return [];
+        }
     };
     
     const { data: allApplications, isLoading, refetch } = useQuery({
@@ -53,11 +68,16 @@ export default function ManageDevelopersPage() {
                     toast({ title: 'Sucesso!', description: successMessage });
                     refetch();
                 })
-                .catch((error) => {
+                .catch((serverError) => {
+                    // This error could come from either update, so we should be general.
+                    // A more advanced implementation could try to pinpoint which one failed.
                     const permissionError = new FirestorePermissionError({
-                        path: `users/${application.userId}`, 
-                        operation: 'write',
-                        requestResourceData: { appStatus: appUpdateData, userRole: userUpdateData },
+                        path: `users/${application.userId}`, // The user update is the most likely to fail
+                        operation: 'write', // Batch write operation
+                        requestResourceData: { 
+                            applicationStatusUpdate: appUpdateData,
+                            userRoleUpdate: userUpdateData,
+                        },
                     });
                     errorEmitter.emit('permission-error', permissionError);
                     toast({
@@ -73,7 +93,7 @@ export default function ManageDevelopersPage() {
                      toast({ title: 'Sucesso!', description: successMessage });
                      refetch();
                 })
-                .catch(error => {
+                .catch(serverError => {
                     const permissionError = new FirestorePermissionError({
                         path: appRef.path,
                         operation: 'update',
