@@ -23,13 +23,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public can read all games. Admins can create/delete games.
+     * @description Public can read all games. Any signed-in user can create. Admins can update/delete.
      * @path /games/{gameId}
      */
     match /games/{gameId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && isRole('admin');
+      allow write: if isSignedIn() && (request.method == 'create' || isRole('admin'));
     }
 
     /**
