@@ -7,7 +7,7 @@ import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, documentId } from "firebase/firestore";
 import type { Game } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
@@ -20,7 +20,12 @@ export default function BrowsePage() {
 
     const gamesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, "games"), where("status", "==", "approved"));
+        // Query for all approved games, but specifically exclude the dev license product.
+        return query(
+            collection(firestore, "games"), 
+            where("status", "==", "approved"),
+            where(documentId(), "!=", "dev-account-upgrade")
+        );
     }, [firestore]);
 
     const { data: approvedGames, isLoading } = useCollection<Game>(gamesQuery);
