@@ -2,7 +2,7 @@
 
 import type { Game } from '@/lib/types';
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 type GameStoreContextType = {
@@ -25,16 +25,20 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
   const handleAddToCart = useCallback((game: Game) => {
     setCartItems((prev) => {
       if (prev.find(item => item.id === game.id)) {
-        toast({
-          title: "Already in Cart",
-          description: `${game.title} is already in your shopping cart.`,
-        });
+        setTimeout(() => {
+            toast({
+              title: "Already in Cart",
+              description: `${game.title} is already in your shopping cart.`,
+            });
+        }, 0);
         return prev;
       }
-      toast({
-        title: "Added to Cart",
-        description: `${game.title} has been added to your cart.`,
-      });
+      setTimeout(() => {
+        toast({
+          title: "Added to Cart",
+          description: `${game.title} has been added to your cart.`,
+        });
+      }, 0);
       return [...prev, game];
     });
   }, [toast]);
@@ -55,14 +59,18 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
     setWishlistItems((prev) => {
       const isWishlisted = prev.some((item) => item.id === game.id);
       if (isWishlisted) {
-        toast({
-          description: `${game.title} removed from your wishlist.`,
-        });
+        setTimeout(() => {
+            toast({
+              description: `${game.title} removed from your wishlist.`,
+            });
+        }, 0);
         return prev.filter((item) => item.id !== game.id);
       } else {
-        toast({
-          description: `${game.title} added to your wishlist.`,
-        });
+        setTimeout(() => {
+            toast({
+              description: `${game.title} added to your wishlist.`,
+            });
+        }, 0);
         return [...prev, game];
       }
     });
