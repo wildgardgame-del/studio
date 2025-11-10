@@ -5,10 +5,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,13 +22,10 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
@@ -38,27 +33,13 @@ const formSchema = z.object({
   description: z.string().min(10, "A descrição curta deve ter pelo menos 10 caracteres."),
   longDescription: z.string().min(30, "A descrição longa deve ter pelo menos 30 caracteres."),
   genres: z.string().min(3, "Introduza pelo menos um género."),
-  coverImage: z
-    .any()
-    .refine((files) => files?.length == 1, "A imagem de capa é obrigatória.")
-    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `O tamanho máximo do ficheiro é 5MB.`)
-    .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-      "Apenas os formatos .jpg, .jpeg, .png e .webp são suportados."
-    ),
-  screenshots: z
-    .any()
-    .refine((files) => files?.length > 0, "É necessária pelo menos uma captura de ecrã.")
-    .refine((files) => Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `O tamanho máximo de cada ficheiro é 5MB.`)
-    .refine(
-      (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
-      "Apenas os formatos .jpg, .jpeg, .png e .webp são suportados."
-    ),
+  coverImage: z.string().url("Por favor, introduza um URL válido para a imagem de capa."),
+  screenshots: z.string().min(10, "Introduza pelo menos um URL de captura de ecrã."),
 });
 
 export default function SubmitGamePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, firestore, storage } = useFirebase();
+  const { user, firestore } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -70,43 +51,10 @@ export default function SubmitGamePage() {
       description: "",
       longDescription: "",
       genres: "",
-      coverImage: undefined,
-      screenshots: undefined,
+      coverImage: "",
+      screenshots: "",
     },
   });
-
-  const uploadFile = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      if (!storage) return reject(new Error("Firebase Storage not initialized"));
-      const path = `games/${uuidv4()}-${file.name}`;
-      const storageRef = ref(storage, path);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      const timeout = setTimeout(() => {
-        uploadTask.cancel();
-        reject(new Error("Upload timeout – verifique permissões do Firebase Storage."));
-      }, 30000);
-
-      uploadTask.on(
-        "state_changed",
-        null, // 'next' observer - não precisamos dele aqui
-        (error) => { // 'error' observer
-          clearTimeout(timeout);
-          console.error("Upload error:", error);
-          reject(error);
-        },
-        async () => { // 'complete' observer
-          clearTimeout(timeout);
-          try {
-            const url = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve(url);
-          } catch (e) {
-            reject(e);
-          }
-        }
-      );
-    });
-  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -121,40 +69,14 @@ export default function SubmitGamePage() {
     setIsSubmitting(true);
 
     try {
-      const coverImageFile = values.coverImage[0];
-      const screenshotFiles = Array.from(values.screenshots as FileList);
-
-      toast({
-        title: "A carregar imagens...",
-        description: "O upload pode demorar alguns segundos.",
-      });
-
-      const allUploadPromises = [
-        uploadFile(coverImageFile),
-        ...screenshotFiles.map(file => uploadFile(file))
-      ];
-
-      const uploadResults = await Promise.allSettled(allUploadPromises);
-
-      const successful = uploadResults
-        .filter(r => r.status === 'fulfilled')
-        .map(r => (r as PromiseFulfilledResult<string>).value);
-
-      if (successful.length < allUploadPromises.length) {
-        const firstError = uploadResults.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined;
-        throw new Error(firstError?.reason?.message || "Um ou mais uploads falharam.");
-      }
-
-      const [coverImageUrl, ...screenshotUrls] = successful;
-
       const newGameData = {
         title: values.title,
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
         genres: values.genres.split(',').map(g => g.trim()),
-        coverImage: coverImageUrl,
-        screenshots: screenshotUrls,
+        coverImage: values.coverImage,
+        screenshots: values.screenshots.split(',').map(url => url.trim()),
         developerId: user.uid,
         status: 'pending' as const,
         submittedAt: serverTimestamp(),
@@ -169,28 +91,22 @@ export default function SubmitGamePage() {
         title: "Jogo Submetido!",
         description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
       });
-
+      
       // Aguarda um pouco para o toast aparecer antes do redirecionamento
       await new Promise(res => setTimeout(res, 500));
       router.push('/dev/dashboard');
 
     } catch (error: any) {
       console.error("Error submitting game:", error);
-      
-      const isStorageError = error.code?.includes('storage') || error.message?.includes('Storage') || error.message?.includes('Upload');
-
       toast({
         variant: 'destructive',
-        title: isStorageError ? 'Erro no Upload' : 'Erro na Submissão',
-        description: error.message || 'Não foi possível completar a operação. Verifique as permissões.',
+        title: 'Erro na Submissão',
+        description: error.message || 'Não foi possível completar a operação.',
       });
-      
     } finally {
-      setIsSubmitting(false);
+        // A submissão é tão rápida agora que não precisamos de gerir o estado `isSubmitting`
     }
   }
-
-  const { register } = form;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -247,24 +163,19 @@ export default function SubmitGamePage() {
                   </FormItem>
                 )}/>
 
-                <FormField control={form.control} name="coverImage" render={() => (
+                <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Imagem de Capa</FormLabel>
-                    <FormControl>
-                      <Input type="file" accept="image/*" {...register("coverImage")} />
-                    </FormControl>
-                    <FormDescription>Ficheiro único de imagem (JPG, PNG, WEBP), máx 5MB.</FormDescription>
-                    <FormMessage />
+                    <FormLabel>URL da Imagem de Capa</FormLabel>
+                    <FormControl><Input type="text" placeholder="https://exemplo.com/capa.jpg" {...field} /></FormControl>
+                     <FormMessage />
                   </FormItem>
                 )}/>
 
-                <FormField control={form.control} name="screenshots" render={() => (
+                <FormField control={form.control} name="screenshots" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Capturas de Ecrã</FormLabel>
-                    <FormControl>
-                      <Input type="file" accept="image/*" multiple {...register("screenshots")} />
-                    </FormControl>
-                    <FormDescription>Pode selecionar múltiplos ficheiros (JPG, PNG, WEBP), máx 5MB cada.</FormDescription>
+                    <FormLabel>URLs das Capturas de Ecrã</FormLabel>
+                    <FormControl><Textarea placeholder="https://exemplo.com/ss1.jpg, https://exemplo.com/ss2.jpg" {...field} /></FormControl>
+                    <FormDescription>Cole os URLs separados por vírgulas.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>
