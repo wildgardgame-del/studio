@@ -16,16 +16,18 @@ export default function DevDashboardPage() {
   const { isPurchased, purchasedGames } = useGameStore();
   const router = useRouter();
   
-  const isLoading = isUserLoading || !purchasedGames;
+  const isLoading = isUserLoading || purchasedGames === undefined;
   const hasDevLicense = isPurchased('dev-account-upgrade');
 
   useEffect(() => {
+    // If we're done loading and the user is not logged in OR doesn't have the license, redirect.
     if (!isLoading && (!user || !hasDevLicense)) {
       router.push('/apply-for-dev');
     }
   }, [isLoading, user, hasDevLicense, router]);
 
-  if (isLoading || !user) {
+  // Show a loading state while we check for the user and their purchases.
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -33,7 +35,9 @@ export default function DevDashboardPage() {
     );
   }
   
-  if (!hasDevLicense) {
+  // This check is for after loading is complete. If they still don't have the license,
+  // show the access denied message before the redirect happens.
+  if (!user || !hasDevLicense) {
        return (
         <div className="flex min-h-screen flex-col items-center justify-center text-center">
             <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
@@ -46,6 +50,7 @@ export default function DevDashboardPage() {
     );
   }
 
+  // If loading is done and the user has the license, show the dashboard.
   return (
     <div className="flex min-h-screen flex-col">
       <Header />

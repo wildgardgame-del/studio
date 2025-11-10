@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public can read all games. Any user can create. Admins can update/delete.
+     * @description Public can read. Anyone can create. Admins can update/delete.
      * @path /games/{gameId}
      */
     match /games/{gameId} {
@@ -15,7 +15,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users manage their own profile. Admins can manage user roles.
+     * @description Users can read their own profile. Admins can manage user roles.
      * @path /users/{userId}
      */
     match /users/{userId} {
