@@ -6,7 +6,7 @@ import { z } from "zod"
 import { useState } from "react";
 import { Send, Loader2, Upload } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -62,23 +62,28 @@ export default function SubmitGamePage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            title: "",
-            price: 0,
-            description: "",
-            longDescription: "",
-            genres: "",
-        },
-    });
+    const uploadFile = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            if (!storage) {
+                return reject(new Error("Firebase Storage not initialized"));
+            }
+            const path = `games/${uuidv4()}-${file.name}`;
+            const storageRef = ref(storage, path);
+            const uploadTask = uploadBytesResumable(storageRef, file);
 
-    const uploadFile = async (file: File): Promise<string> => {
-        if (!storage) throw new Error("Firebase Storage not initialized");
-        const path = `games/${uuidv4()}-${file.name}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file);
-        return getDownloadURL(storageRef);
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    // Optional: handle progress updates
+                },
+                (error) => {
+                    console.error("Upload error:", error);
+                    reject(error);
+                },
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
+                }
+            );
+        });
     };
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
