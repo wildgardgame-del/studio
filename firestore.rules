@@ -111,10 +111,10 @@ service cloud.firestore {
      */
     match /developer_applications/{applicationId} {
       allow get: if isSignedIn() && isRole('admin');
-      allow list: if isSignedIn() && (
-                    isRole('admin') ||
-                    (request.query.limit == 1 && request.query.where.size() == 1 && request.query.where[0][0] == 'userId' && request.query.where[0][2] == request.auth.uid)
-                  );
+      allow list: if isSignedIn() && 
+                    (isRole('admin') || 
+                    (request.query.where[0][2] == request.auth.uid));
+
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isRole('admin');
     }
