@@ -53,6 +53,23 @@ export default function ApplyForDevPage() {
             </div>
         );
     }
+    
+     if (!user && !isUserLoading) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                     <Info className="h-16 w-16 text-primary mb-4" />
+                    <h1 className="text-3xl font-bold font-headline">Inicie Sessão para se Tornar um Desenvolvedor</h1>
+                    <p className="mt-2 text-muted-foreground max-w-md">Para comprar a Licença de Programador, precisa de ter uma conta e iniciar sessão.</p>
+                    <Button asChild className="mt-4">
+                        <Link href="/login">Login</Link>
+                    </Button>
+                </main>
+                <Footer />
+            </div>
+        )
+    }
 
     if (hasLicense) {
         return (
@@ -66,23 +83,6 @@ export default function ApplyForDevPage() {
                     </p>
                     <Button asChild className="mt-6">
                         <Link href="/dev/dashboard">Ir para o Painel</Link>
-                    </Button>
-                </main>
-                <Footer />
-            </div>
-        )
-    }
-    
-     if (!user && !isUserLoading) {
-        return (
-            <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                     <Info className="h-16 w-16 text-primary mb-4" />
-                    <h1 className="text-3xl font-bold font-headline">Inicie Sessão para se Tornar um Desenvolvedor</h1>
-                    <p className="mt-2 text-muted-foreground max-w-md">Para comprar a Licença de Programador, precisa de ter uma conta e iniciar sessão.</p>
-                    <Button asChild className="mt-4">
-                        <Link href="/login">Login</Link>
                     </Button>
                 </main>
                 <Footer />
@@ -117,7 +117,7 @@ export default function ApplyForDevPage() {
                             <p className="text-lg text-muted-foreground">
                                 {devLicenseProduct.longDescription}
                             </p>
-                            <div className="text-5xl font-bold text-primary pt-4">${devLicenseProduct.price.toFixed(2)}</div>
+                            <div className="text-5xl font-bold text-primary pt-4">${devLicenseProduct.price?.toFixed(2) || '0.00'}</div>
                              <Button size="lg" className="w-full md:w-auto" onClick={handlePurchase}>
                                 <Rocket className="mr-2" /> Comprar Licença Agora
                             </Button>
