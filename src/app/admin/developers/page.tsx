@@ -12,8 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 type ApplicationWithId = DeveloperApplication & { id: string };
 
@@ -56,24 +54,6 @@ export default function ManageDevelopersPage() {
             });
             refetch();
         } catch (error: any) {
-             // Handle potential permission errors for each operation
-            if (error.code === 'permission-denied') {
-                const appUpdateError = new FirestorePermissionError({
-                    path: appRef.path,
-                    operation: 'update',
-                    requestResourceData: { status: newStatus },
-                });
-                errorEmitter.emit('permission-error', appUpdateError);
-
-                if (newStatus === 'approved') {
-                    const roleUpdateError = new FirestorePermissionError({
-                        path: userRef.path,
-                        operation: 'update',
-                        requestResourceData: { role: 'dev' },
-                    });
-                    errorEmitter.emit('permission-error', roleUpdateError);
-                }
-            }
             console.error('Error updating application status:', error);
             toast({
                 variant: 'destructive',
