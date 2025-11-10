@@ -33,7 +33,20 @@ export default function ApplyForDevPage() {
             return;
         }
         if (devLicenseProduct) {
-            handleAddToCart({ ...devLicenseProduct });
+            // Explicitly create a Game object to ensure all fields are correctly typed and passed.
+            const gameToAdd: Game = {
+                id: devLicenseProduct.id,
+                title: devLicenseProduct.title,
+                description: devLicenseProduct.description,
+                longDescription: devLicenseProduct.longDescription,
+                price: devLicenseProduct.price,
+                genres: devLicenseProduct.genres || [],
+                coverImage: devLicenseProduct.coverImage,
+                screenshots: devLicenseProduct.screenshots || [],
+                rating: devLicenseProduct.rating || 0,
+                reviews: devLicenseProduct.reviews || [],
+            };
+            handleAddToCart(gameToAdd);
             router.push('/checkout');
         }
     }
