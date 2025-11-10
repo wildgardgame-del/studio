@@ -22,14 +22,14 @@ import { Separator } from './ui/separator';
 export function Cart({ children }: { children: ReactNode }) {
   const { cartItems, removeFromCart, clearCart } = useGameStore();
 
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
+  const subtotal = cartItems.reduce((acc, item) => acc + (item.price || 0), 0);
 
   return (
     <Sheet>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
         <SheetHeader className="px-6">
-          <SheetTitle>Shopping Cart ({cartItems.length})</SheetTitle>
+          <SheetTitle>Carrinho de Compras ({cartItems.length})</SheetTitle>
         </SheetHeader>
         <Separator />
         {cartItems.length > 0 ? (
@@ -39,7 +39,7 @@ export function Cart({ children }: { children: ReactNode }) {
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-4">
                     <Image
-                      src={item.coverImage}
+                      src={item.coverImage || `https://picsum.photos/seed/${item.id}/64/80`}
                       alt={item.title}
                       width={64}
                       height={80}
@@ -49,7 +49,7 @@ export function Cart({ children }: { children: ReactNode }) {
                       <Link href={`/games/${item.id}`} className="font-semibold hover:underline">
                         {item.title}
                       </Link>
-                      <p className="text-muted-foreground">${item.price.toFixed(2)}</p>
+                      <p className="text-muted-foreground">${(item.price || 0).toFixed(2)}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -74,11 +74,11 @@ export function Cart({ children }: { children: ReactNode }) {
                 <div className="flex flex-col gap-2">
                   <SheetClose asChild>
                     <Button asChild size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Link href="/checkout">Proceed to Checkout</Link>
+                      <Link href="/checkout">Ir para o Checkout</Link>
                     </Button>
                   </SheetClose>
                    <Button variant="outline" onClick={clearCart}>
-                      Clear Cart
+                      Limpar Carrinho
                     </Button>
                 </div>
               </div>
@@ -87,11 +87,11 @@ export function Cart({ children }: { children: ReactNode }) {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center px-6">
             <ShoppingCart className="h-16 w-16 text-muted-foreground" />
-            <h3 className="font-headline text-xl font-semibold">Your cart is empty</h3>
-            <p className="text-muted-foreground">Looks like you haven't added any games yet.</p>
+            <h3 className="font-headline text-xl font-semibold">O seu carrinho está vazio</h3>
+            <p className="text-muted-foreground">Parece que ainda não adicionou nenhuns jogos.</p>
             <SheetClose asChild>
                 <Button asChild variant="outline">
-                    <Link href="/browse">Start Browsing</Link>
+                    <Link href="/browse">Começar a Navegar</Link>
                 </Button>
             </SheetClose>
           </div>
