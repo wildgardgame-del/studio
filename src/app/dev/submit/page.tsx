@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase } from "@/firebase";
 import { useRole } from "@/hooks/useRole";
+import { useGameStore } from "@/context/game-store-context";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
@@ -41,6 +42,7 @@ export default function SubmitGamePage() {
     const { toast } = useToast();
     const { user, firestore } = useFirebase();
     const { role, isLoading: isRoleLoading } = useRole();
+    const { isPurchased } = useGameStore();
     const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -63,7 +65,10 @@ export default function SubmitGamePage() {
             });
             return router.push('/login');
         }
-        if (role !== 'dev' && role !== 'admin') {
+
+        const hasDevAccess = role === 'dev' || role === 'admin' || isPurchased('dev-account-upgrade');
+
+        if (!hasDevAccess) {
              toast({
                 variant: 'destructive',
                 title: 'Não autorizado',
