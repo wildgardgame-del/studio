@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card className="hover:border-primary transition-colors">
-                <Link href="/admin/developers">
+                <Link href="/admin/games">
                     <CardHeader>
                         <CardTitle>Gerenciar Jogos</CardTitle>
                         <CardDescription>Aprove ou rejeite jogos enviados por desenvolvedores.</CardDescription>
