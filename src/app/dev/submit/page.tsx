@@ -87,12 +87,15 @@ export default function SubmitGamePage() {
             uploadTask.on('state_changed',
                 (snapshot) => {
                     // Optional: handle progress updates
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log('Upload is ' + progress + '% done');
                 },
                 (error) => {
                     console.error("Upload error:", error);
                     reject(error);
                 },
                 () => {
+                    // Upload completed successfully, now we can get the download URL
                     getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
                 }
             );
