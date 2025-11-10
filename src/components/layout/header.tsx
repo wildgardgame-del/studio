@@ -41,8 +41,8 @@ import { useGameStore } from '@/context/game-store-context';
 import { useUser } from '@/firebase';
 
 const navLinks = [
-  { href: '/browse', label: 'Store' },
-  { href: '/library', label: 'Library' },
+  { href: '/browse', label: 'Store', colorClass: 'text-primary hover:text-primary' },
+  { href: '/library', label: 'Library', colorClass: 'text-accent hover:text-accent' },
 ];
 
 export default function Header() {
@@ -113,7 +113,7 @@ export default function Header() {
                           "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                           pathname === link.href
                           ? "bg-muted text-foreground"
-                          : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                          : `hover:bg-muted/50 ${link.colorClass}`
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
@@ -172,10 +172,10 @@ export default function Header() {
                           key={link.href}
                           href={link.href}
                           className={cn(
-                              "rounded-md px-3 py-2 transition-colors",
+                              "rounded-md px-3 py-2 transition-colors font-semibold",
                               pathname === link.href
                               ? "bg-muted text-foreground"
-                              : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                              : `hover:bg-muted/50 ${link.colorClass}`
                           )}
                       >
                           {link.label}
