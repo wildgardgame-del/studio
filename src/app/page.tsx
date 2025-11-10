@@ -1,7 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { games } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { GameCard } from '@/components/game-card';
 import {
@@ -12,13 +13,30 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import heroImage from '@/lib/placeholder-images.json';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, Loader2, Star } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
+import type { Game } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function Home() {
-  const featuredGames = games.slice(0, 4);
-  const newReleases = games.slice(2, 6);
+  const { firestore } = useFirebase();
+
+  const gamesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+        collection(firestore, "games"), 
+        where("status", "==", "approved")
+    );
+  }, [firestore]);
+
+  const { data: approvedGames, isLoading } = useCollection<Game>(gamesQuery);
+
+  const featuredGames = approvedGames?.slice(0, 4) || [];
+  const newReleases = approvedGames?.slice(2, 6) || [];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -45,8 +63,8 @@ export default function Home() {
                 <Button asChild size="lg" className="font-bold">
                   <Link href="/browse">Browse Games</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="font-bold">
-                  <Link href="/recommendations">Get Recommendations</Link>
+                 <Button asChild size="lg" variant="outline" className="font-bold" disabled>
+                  <Link href="#">Get Recommendations</Link>
                 </Button>
               </div>
             </div>
@@ -60,11 +78,17 @@ export default function Home() {
               <Link href="/browse">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredGames.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[450px] w-full" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredGames.map((game) => (
+                <GameCard key={game.id} game={game} />
+              ))}
+            </div>
+          )}
         </section>
         
         <section className="bg-secondary/50 py-16">
@@ -98,17 +122,25 @@ export default function Home() {
 
         <section className="container py-16">
           <h2 className="font-headline text-3xl font-bold md:text-4xl mb-8">New Releases</h2>
-          <Carousel opts={{ align: 'start', loop: true }}>
-            <CarouselContent>
-              {newReleases.map((game) => (
-                <CarouselItem key={game.id} className="md:basis-1/2 lg:basis-1/3">
-                  <GameCard game={game} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+           {isLoading ? (
+             <div className="flex space-x-4">
+                <Skeleton className="h-[450px] w-1/3" />
+                <Skeleton className="h-[450px] w-1/3" />
+                <Skeleton className="h-[450px] w-1/3" />
+             </div>
+           ) : (
+            <Carousel opts={{ align: 'start', loop: newReleases.length > 2 }}>
+                <CarouselContent>
+                {newReleases.map((game) => (
+                    <CarouselItem key={game.id} className="md:basis-1/2 lg:basis-1/3">
+                    <GameCard game={game} />
+                    </CarouselItem>
+                ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+            </Carousel>
+           )}
         </section>
       </main>
       <Footer />

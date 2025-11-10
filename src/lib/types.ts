@@ -2,7 +2,7 @@ export type Game = {
   id: string;
   title: string;
   description: string;
-  longDescription: string;
+  longDescription?: string;
   price: number;
   genres: string[];
   coverImage: string;
