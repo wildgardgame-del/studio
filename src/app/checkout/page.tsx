@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 
 const formSchema = z.object({
-  email: z.string().email("Por favor, insira um endereço de e-mail válido."),
+  email: z.string().email("Please enter a valid email address."),
 })
 
 export default function CheckoutPage() {
@@ -53,8 +53,8 @@ export default function CheckoutPage() {
         if (!user || !firestore) {
             toast({
                 variant: "destructive",
-                title: "Você não está logado",
-                description: "Por favor, faça login para completar a compra.",
+                title: "You are not logged in",
+                description: "Please log in to complete your purchase.",
             });
             router.push('/login');
             return;
@@ -79,8 +79,8 @@ export default function CheckoutPage() {
                     clearCart();
                     setIsProcessing(false);
                     toast({
-                        title: "Pagamento bem-sucedido!",
-                        description: "Seus itens já estão disponíveis na sua biblioteca.",
+                        title: "Payment successful!",
+                        description: "Your items are now available in your library.",
                     });
                     router.push('/library');
                 })
@@ -96,8 +96,8 @@ export default function CheckoutPage() {
                     
                     toast({
                         variant: "destructive",
-                        title: "Erro na Compra",
-                        description: "Não foi possível guardar a sua compra. Verifique as suas permissões e tente novamente.",
+                        title: "Purchase Error",
+                        description: "Could not save your purchase. Please check your permissions and try again.",
                     });
                     setIsProcessing(false);
                 });
@@ -110,8 +110,8 @@ export default function CheckoutPage() {
                 <Header />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                        <h1 className="font-headline text-2xl font-bold">Seu carrinho está vazio</h1>
-                        <p className="text-muted-foreground mt-2">Adicione alguns jogos antes de finalizar a compra.</p>
+                        <h1 className="font-headline text-2xl font-bold">Your cart is empty</h1>
+                        <p className="text-muted-foreground mt-2">Add some games before you checkout.</p>
                     </div>
                 </main>
                 <Footer />
@@ -129,19 +129,19 @@ export default function CheckoutPage() {
                 <div>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Confirmar Compra</CardTitle>
-                            <CardDescription>Insira seu e-mail para receber a confirmação do pedido.</CardDescription>
+                            <CardTitle>Confirm Purchase</CardTitle>
+                            <CardDescription>Enter your email to receive your order confirmation.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                     <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem><FormLabel>E-mail</FormLabel><FormControl><Input placeholder="voce@exemplo.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
                                     
                                     <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
                                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {isProcessing ? 'Processando...' : `Pagar $${total.toFixed(2)}`}
+                                        {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}
                                     </Button>
                                 </form>
                             </Form>
@@ -151,7 +151,7 @@ export default function CheckoutPage() {
                 <div>
                     <Card className="bg-secondary/50">
                         <CardHeader>
-                            <CardTitle>Resumo do Pedido</CardTitle>
+                            <CardTitle>Order Summary</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -168,7 +168,7 @@ export default function CheckoutPage() {
                             <Separator />
                             <div className="space-y-2 text-muted-foreground">
                                 <div className="flex justify-between"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span>Impostos</span><span>${tax.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span>Taxes</span><span>${tax.toFixed(2)}</span></div>
                             </div>
                             <Separator />
                             <div className="flex justify-between font-bold text-lg">

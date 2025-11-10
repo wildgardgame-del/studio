@@ -41,10 +41,10 @@ export default function DevDashboardPage() {
        return (
         <div className="flex min-h-screen flex-col items-center justify-center text-center">
             <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
-            <h1 className="text-3xl font-bold">Acesso Negado</h1>
-            <p className="text-muted-foreground mt-2">Você precisa de uma licença de desenvolvedor para aceder a esta página.</p>
+            <h1 className="text-3xl font-bold">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">You need a developer license to access this page.</p>
             <Button asChild className="mt-6">
-                <Link href="/apply-for-dev">Obter Licença</Link>
+                <Link href="/apply-for-dev">Get License</Link>
             </Button>
       </div>
     );
@@ -56,40 +56,40 @@ export default function DevDashboardPage() {
       <Header />
       <main className="flex-1 bg-secondary/30">
         <div className="container py-12">
-          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Painel de Contribuidor</h1>
-          <p className="text-muted-foreground mt-2">Submeta e gerencie os seus jogos.</p>
+          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Contributor Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Submit and manage your games.</p>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card className="hover:border-primary transition-colors md:col-span-1 lg:col-span-1">
                 <Link href="/dev/submit">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><PlusCircle className="text-accent"/>Submeter Novo Jogo</CardTitle>
-                        <CardDescription>Envie um novo jogo para revisão e publicação na loja.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><PlusCircle className="text-accent"/>Submit New Game</CardTitle>
+                        <CardDescription>Send a new game for review and release on the store.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button variant="link" className="p-0 text-accent">Começar Submissão</Button>
+                        <Button variant="link" className="p-0 text-accent">Start Submission</Button>
                     </CardContent>
                 </Link>
              </Card>
              <Card className="hover:border-primary transition-colors">
                 <Link href="/dev/my-games">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Gamepad2 className="text-accent" />Meus Jogos</CardTitle>
-                        <CardDescription>Visualize o status e as estatísticas dos seus jogos submetidos.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Gamepad2 className="text-accent" />My Games</CardTitle>
+                        <CardDescription>View the status and statistics of your submitted games.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <Button variant="link" className="p-0 text-accent">Gerenciar Jogos</Button>
+                       <Button variant="link" className="p-0 text-accent">Manage Games</Button>
                     </CardContent>
                 </Link>
              </Card>
              <Card className="hover:border-primary transition-colors">
                 <Link href="/apply-for-dev">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Award className="text-accent" />Gerir Licenças</CardTitle>
-                        <CardDescription>Adquira licenças adicionais, como a licença de desenvolvedor Android.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Award className="text-accent" />Manage Licenses</CardTitle>
+                        <CardDescription>Upgrade or purchase additional licenses, like the Android developer license.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <Button variant="link" className="p-0 text-accent">Ver Licenças</Button>
+                       <Button variant="link" className="p-0 text-accent">View Licenses</Button>
                     </CardContent>
                 </Link>
              </Card>

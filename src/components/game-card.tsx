@@ -32,7 +32,7 @@ export function GameCard({ game, className }: GameCardProps) {
       {gameIsPurchased && (
         <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">
           <Library className="h-3 w-3" />
-          <span>Na Biblioteca</span>
+          <span>In Library</span>
         </div>
       )}
       <CardHeader className="p-0">

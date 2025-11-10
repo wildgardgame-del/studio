@@ -28,13 +28,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const formSchema = z.object({
-  title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
-  price: z.coerce.number().min(0, "O preço não pode ser negativo."),
-  description: z.string().min(10, "A descrição curta deve ter pelo menos 10 caracteres."),
-  longDescription: z.string().min(30, "A descrição longa deve ter pelo menos 30 caracteres."),
-  genres: z.string().min(3, "Introduza pelo menos um género."),
-  coverImage: z.string().url("Por favor, introduza um URL válido para a imagem de capa."),
-  screenshots: z.string().min(10, "Introduza pelo menos um URL de captura de ecrã."),
+  title: z.string().min(2, "Game title must be at least 2 characters."),
+  price: z.coerce.number().min(0, "Price cannot be negative."),
+  description: z.string().min(10, "Short description must be at least 10 characters."),
+  longDescription: z.string().min(30, "Full description must be at least 30 characters."),
+  genres: z.string().min(3, "Please enter at least one genre."),
+  coverImage: z.string().url("Please enter a valid URL for the cover image."),
+  screenshots: z.string().min(10, "Please enter at least one screenshot URL."),
 });
 
 export default function SubmitGamePage() {
@@ -60,8 +60,8 @@ export default function SubmitGamePage() {
     if (!user || !firestore) {
       toast({
         variant: 'destructive',
-        title: 'Não autenticado',
-        description: 'Você precisa fazer login para submeter um jogo.',
+        title: 'Not Authenticated',
+        description: 'You must be logged in to submit a game.',
       });
       return router.push('/login');
     }
@@ -84,15 +84,15 @@ export default function SubmitGamePage() {
         reviews: [],
       };
 
-      // Usar a versão não-bloqueante para criar o documento
+      // Use the non-blocking version to create the document
       addDocumentNonBlocking(collection(firestore, `games`), newGameData);
 
       toast({
-        title: "Jogo Submetido!",
-        description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
+        title: "Game Submitted!",
+        description: "Thank you for submitting your game. It will be reviewed shortly.",
       });
       
-      // Aguarda um pouco para o toast aparecer antes do redirecionamento
+      // Wait a moment for the toast to appear before redirecting
       await new Promise(res => setTimeout(res, 500));
       router.push('/dev/dashboard');
 
@@ -100,11 +100,11 @@ export default function SubmitGamePage() {
       console.error("Error submitting game:", error);
       toast({
         variant: 'destructive',
-        title: 'Erro na Submissão',
-        description: error.message || 'Não foi possível completar a operação.',
+        title: 'Submission Error',
+        description: error.message || 'Could not complete the operation.',
       });
     } finally {
-        // A submissão é tão rápida agora que não precisamos de gerir o estado `isSubmitting`
+        // Submission is so fast now we don't need to manage the `isSubmitting` state
     }
   }
 
@@ -114,9 +114,9 @@ export default function SubmitGamePage() {
       <main className="flex-1 flex items-center justify-center py-12">
         <Card className="mx-auto max-w-2xl w-full">
           <CardHeader>
-            <CardTitle className="text-3xl font-headline text-center">Submeter um Novo Jogo</CardTitle>
+            <CardTitle className="text-3xl font-headline text-center">Submit a New Game</CardTitle>
             <CardDescription className="text-center">
-              Preencha os detalhes abaixo para adicionar o seu jogo à GameSphere.
+              Fill in the details below to add your game to GameSphere.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -124,15 +124,15 @@ export default function SubmitGamePage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField control={form.control} name="title" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título do Jogo</FormLabel>
-                    <FormControl><Input placeholder="Meu Jogo Incrível" {...field} /></FormControl>
+                    <FormLabel>Game Title</FormLabel>
+                    <FormControl><Input placeholder="My Awesome Game" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}/>
 
                 <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço (USD)</FormLabel>
+                    <FormLabel>Price (USD)</FormLabel>
                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -140,42 +140,42 @@ export default function SubmitGamePage() {
 
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descrição Curta</FormLabel>
-                    <FormControl><Textarea placeholder="Uma breve sinopse para o cartão do jogo." {...field} /></FormControl>
+                    <FormLabel>Short Description</FormLabel>
+                    <FormControl><Textarea placeholder="A brief synopsis for the game card." {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}/>
 
                 <FormField control={form.control} name="longDescription" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descrição Completa</FormLabel>
-                    <FormControl><Textarea rows={5} placeholder="Descreva o seu jogo em detalhe para a página da loja." {...field} /></FormControl>
+                    <FormLabel>Full Description</FormLabel>
+                    <FormControl><Textarea rows={5} placeholder="Describe your game in detail for the store page." {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}/>
 
                 <FormField control={form.control} name="genres" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Géneros</FormLabel>
-                    <FormControl><Input placeholder="Ação, RPG, Estratégia" {...field} /></FormControl>
-                    <FormDescription>Separe os vários géneros por vírgulas.</FormDescription>
+                    <FormLabel>Genres</FormLabel>
+                    <FormControl><Input placeholder="Action, RPG, Strategy" {...field} /></FormControl>
+                    <FormDescription>Separate multiple genres with commas.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>
 
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL da Imagem de Capa</FormLabel>
-                    <FormControl><Input type="text" placeholder="https://exemplo.com/capa.jpg" {...field} /></FormControl>
+                    <FormLabel>Cover Image URL</FormLabel>
+                    <FormControl><Input type="text" placeholder="https://example.com/cover.jpg" {...field} /></FormControl>
                      <FormMessage />
                   </FormItem>
                 )}/>
 
                 <FormField control={form.control} name="screenshots" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URLs das Capturas de Ecrã</FormLabel>
-                    <FormControl><Textarea placeholder="https://exemplo.com/ss1.jpg, https://exemplo.com/ss2.jpg" {...field} /></FormControl>
-                    <FormDescription>Cole os URLs separados por vírgulas.</FormDescription>
+                    <FormLabel>Screenshot URLs</FormLabel>
+                    <FormControl><Textarea placeholder="https://example.com/ss1.jpg, https://example.com/ss2.jpg" {...field} /></FormControl>
+                    <FormDescription>Paste URLs separated by commas.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>
@@ -184,12 +184,12 @@ export default function SubmitGamePage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      A Submeter...
+                      Submitting...
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
-                      Submeter Jogo para Revisão
+                      Submit Game for Review
                     </>
                   )}
                 </Button>

@@ -35,10 +35,10 @@ export default function AdminDashboardPage() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center text-center">
             <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
-            <h1 className="text-3xl font-bold">Acesso Negado</h1>
-            <p className="text-muted-foreground mt-2">Você não tem permissão para acessar esta página.</p>
+            <h1 className="text-3xl font-bold">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">You do not have permission to access this page.</p>
             <Button asChild className="mt-6">
-                <Link href="/">Voltar para a Loja</Link>
+                <Link href="/">Back to Store</Link>
             </Button>
       </div>
     );
@@ -49,28 +49,28 @@ export default function AdminDashboardPage() {
       <Header />
       <main className="flex-1 bg-secondary/30">
         <div className="container py-12">
-          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Painel de Administração</h1>
-          <p className="text-muted-foreground mt-2">Gerencie sua loja, aprove jogos e muito mais.</p>
+          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Manage your store, approve games, and more.</p>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card className="hover:border-primary transition-colors">
                 <Link href="/admin/games">
                     <CardHeader>
-                        <CardTitle>Gerenciar Jogos</CardTitle>
-                        <CardDescription>Aprove ou rejeite jogos enviados por desenvolvedores.</CardDescription>
+                        <CardTitle>Manage Games</CardTitle>
+                        <CardDescription>Approve or reject games submitted by developers.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button variant="link" className="p-0 text-accent">Revisar Submissões</Button>
+                        <Button variant="link" className="p-0 text-accent">Review Submissions</Button>
                     </CardContent>
                 </Link>
              </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle>Gerenciar Usuários</CardTitle>
-                    <CardDescription>Visualize e edite as roles dos usuários.</CardDescription>
+                    <CardTitle>Manage Users</CardTitle>
+                    <CardDescription>View and edit user roles.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">Em breve...</p>
+                    <p className="text-sm text-muted-foreground">Coming soon...</p>
                 </CardContent>
              </Card>
           </div>

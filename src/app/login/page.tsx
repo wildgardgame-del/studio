@@ -49,8 +49,8 @@ export default function LoginPage() {
         console.error("Error signing in with Google: ", error);
         toast({
           variant: "destructive",
-          title: "Login Falhou",
-          description: error.message || "Ocorreu um erro inesperado durante o login com o Google.",
+          title: "Login Failed",
+          description: error.message || "An unexpected error occurred during Google sign-in.",
         });
       }
     } finally {
@@ -61,7 +61,7 @@ export default function LoginPage() {
   if (isUserLoading || user) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <p>Carregando...</p>
+            <p>Loading...</p>
         </div>
     )
   }
@@ -75,27 +75,27 @@ export default function LoginPage() {
                     <div className="flex justify-center mb-4">
                         <Icons.Logo className="h-12 w-12 text-accent" />
                     </div>
-                    <CardTitle className="text-2xl font-headline text-center">Login no GameSphere</CardTitle>
+                    <CardTitle className="text-2xl font-headline text-center">Login to GameSphere</CardTitle>
                     <CardDescription className="text-center">
-                    Digite seu e-mail abaixo para fazer login em sua conta
+                    Enter your email below to login to your account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">E-mail</Label>
+                        <Label htmlFor="email">Email</Label>
                         <Input
                         id="email"
                         type="email"
-                        placeholder="m@exemplo.com"
+                        placeholder="m@example.com"
                         required
                         />
                     </div>
                     <div className="grid gap-2">
                         <div className="flex items-center">
-                        <Label htmlFor="password">Senha</Label>
+                        <Label htmlFor="password">Password</Label>
                         <Link href="#" className="ml-auto inline-block text-sm underline">
-                            Esqueceu sua senha?
+                            Forgot your password?
                         </Link>
                         </div>
                         <Input id="password" type="password" required />
@@ -105,13 +105,13 @@ export default function LoginPage() {
                     </Button>
                     <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn}>
                         {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Login com Google
+                        Login with Google
                     </Button>
                     </div>
                     <div className="mt-4 text-center text-sm">
-                    Não tem uma conta?{" "}
+                    Don't have an account?{" "}
                     <Link href="/signup" className="underline">
-                        Cadastre-se
+                        Sign up
                     </Link>
                     </div>
                 </CardContent>

@@ -29,7 +29,7 @@ export function Cart({ children }: { children: ReactNode }) {
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
         <SheetHeader className="px-6">
-          <SheetTitle>Carrinho de Compras ({cartItems.length})</SheetTitle>
+          <SheetTitle>Shopping Cart ({cartItems.length})</SheetTitle>
         </SheetHeader>
         <Separator />
         {cartItems.length > 0 ? (
@@ -74,11 +74,11 @@ export function Cart({ children }: { children: ReactNode }) {
                 <div className="flex flex-col gap-2">
                   <SheetClose asChild>
                     <Button asChild size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Link href="/checkout">Ir para o Checkout</Link>
+                      <Link href="/checkout">Go to Checkout</Link>
                     </Button>
                   </SheetClose>
                    <Button variant="outline" onClick={clearCart}>
-                      Limpar Carrinho
+                      Clear Cart
                     </Button>
                 </div>
               </div>
@@ -87,11 +87,11 @@ export function Cart({ children }: { children: ReactNode }) {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center px-6">
             <ShoppingCart className="h-16 w-16 text-muted-foreground" />
-            <h3 className="font-headline text-xl font-semibold">O seu carrinho está vazio</h3>
-            <p className="text-muted-foreground">Parece que ainda não adicionou nenhuns jogos.</p>
+            <h3 className="font-headline text-xl font-semibold">Your cart is empty</h3>
+            <p className="text-muted-foreground">Looks like you haven't added any games yet.</p>
             <SheetClose asChild>
                 <Button asChild variant="outline">
-                    <Link href="/browse">Começar a Navegar</Link>
+                    <Link href="/browse">Start Browsing</Link>
                 </Button>
             </SheetClose>
           </div>

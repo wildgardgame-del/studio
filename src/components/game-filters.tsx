@@ -30,25 +30,25 @@ export function GameFilters({
     return (
         <Card className="sticky top-20">
             <CardHeader>
-                <CardTitle>Filtros</CardTitle>
+                <CardTitle>Filters</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div>
-                    <h3 className="font-semibold mb-4">Ordenar por</h3>
+                    <h3 className="font-semibold mb-4">Sort by</h3>
                     <Select value={sortOrder} onValueChange={onSortOrderChange}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select sorting" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="newest">Mais Recentes</SelectItem>
-                            <SelectItem value="price-asc">Preço: Baixo para Alto</SelectItem>
-                            <SelectItem value="price-desc">Preço: Alto para Baixo</SelectItem>
+                            <SelectItem value="newest">Newest</SelectItem>
+                            <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                            <SelectItem value="price-desc">Price: High to Low</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 
                 <div>
-                    <h3 className="font-semibold mb-4">Géneros</h3>
+                    <h3 className="font-semibold mb-4">Genres</h3>
                     <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                         {genres.map(genre => (
                             <div key={genre} className="flex items-center space-x-2">

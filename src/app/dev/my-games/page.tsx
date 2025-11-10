@@ -47,10 +47,10 @@ export default function MyGamesPage() {
         if (!myGames || myGames.length === 0) {
             return (
                 <div className="text-center text-muted-foreground py-8">
-                    <p>Você ainda não submeteu nenhum jogo.</p>
+                    <p>You haven't submitted any games yet.</p>
                      <Button asChild className="mt-4">
                         <Link href="/dev/submit">
-                           <PlusCircle className="mr-2 h-4 w-4" /> Submeter Primeiro Jogo
+                           <PlusCircle className="mr-2 h-4 w-4" /> Submit Your First Game
                         </Link>
                     </Button>
                 </div>
@@ -61,8 +61,8 @@ export default function MyGamesPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Jogo</TableHead>
-                        <TableHead>Preço</TableHead>
+                        <TableHead>Game</TableHead>
+                        <TableHead>Price</TableHead>
                         <TableHead className="text-center">Status</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -90,13 +90,13 @@ export default function MyGamesPage() {
             <Header />
             <main className="flex-1 bg-secondary/30">
                 <div className="container py-12">
-                    <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Meus Jogos Submetidos</h1>
-                    <p className="text-muted-foreground mt-2">Acompanhe o status de revisão dos seus jogos.</p>
+                    <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">My Submitted Games</h1>
+                    <p className="text-muted-foreground mt-2">Track the review status of your games.</p>
                     
                     <Card className="mt-8">
                         <CardHeader>
-                            <CardTitle>Histórico de Submissões</CardTitle>
-                            <CardDescription>Aqui estão todos os jogos que você submeteu para a GameSphere.</CardDescription>
+                            <CardTitle>Submission History</CardTitle>
+                            <CardDescription>Here are all the games you've submitted to GameSphere.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {renderContent()}
