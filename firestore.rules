@@ -10,6 +10,7 @@
  * - /users/{userId}: User profiles, accessible only to the user themselves.
  * - /users/{userId}/shopping_cart/{cartId}: Shopping carts, accessible only to the owning user.
  * - /users/{userId}/wishlist/{wishlistId}: Wishlists, accessible only to the owning user.
+ * - /users/{userId}/library/{gameId}: User's purchased games, accessible only to the owning user.
  * - /reviews/{reviewId}: Reviews, with userId and gameId for authorization.
  *
  * Key Security Decisions:
@@ -111,6 +112,26 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingOwner(userId);
 
       allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+    
+    /**
+     * @description Enforces user-ownership for game library data.
+     * @path /users/{userId}/library/{gameId}
+     * @allow get: The user can read their own library.
+     * @allow list: The user can list their own library.
+     * @allow create: The user can add a game to their own library.
+     * @allow update: Updates are not typically needed.
+     * @allow delete: The user cannot remove games from their library.
+     * @deny get: Any other user cannot get another user's data.
+     * @deny create: Any other user cannot create data as if it belongs to another user.
+     * @deny update: Any other user cannot update data as if it belongs to another user.
+     * @deny delete: Any other user cannot delete another user's data.
+     * @principle: Enforces document ownership for reads and creates.
+     */
+    match /users/{userId}/library/{gameId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if false;
     }
 
     /**

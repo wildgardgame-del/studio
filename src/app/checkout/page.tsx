@@ -7,6 +7,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,6 +25,8 @@ import { useGameStore } from "@/context/game-store-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useFirebase } from "@/firebase";
+import type { Game } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email("Por favor, insira um endereço de e-mail válido."),
@@ -34,6 +37,7 @@ export default function CheckoutPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
+    const { user, firestore } = useFirebase();
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
     const tax = subtotal * 0.08;
@@ -45,18 +49,40 @@ export default function CheckoutPage() {
             email: "",
         },
     });
+    
+    const saveToLibrary = async (game: Game) => {
+        if (!user || !firestore) return;
+        const libraryRef = doc(firestore, `users/${user.uid}/library`, game.id);
+        // Note: We don't need to await this. We can optimistically continue.
+        setDoc(libraryRef, game);
+    }
 
     function onSubmit(values: z.infer<typeof formSchema>) {
+        if (!user) {
+            toast({
+                variant: "destructive",
+                title: "Você não está logado",
+                description: "Por favor, faça login para completar a compra.",
+            });
+            router.push('/login');
+            return;
+        }
+
         setIsProcessing(true);
         console.log("Processing fake payment for:", values);
+        
+        // Simulate payment processing
         setTimeout(() => {
+            // Save each item to the user's library
+            cartItems.forEach(item => saveToLibrary(item));
+            
             setIsProcessing(false);
             toast({
                 title: "Pagamento bem-sucedido!",
                 description: "Seus jogos já estão disponíveis na sua biblioteca.",
             });
             clearCart();
-            router.push('/');
+            router.push('/library');
         }, 2000);
     }
     

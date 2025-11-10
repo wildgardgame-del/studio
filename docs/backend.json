@@ -295,8 +295,28 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/library/{gameId}",
+        "definition": {
+          "entityName": "Game",
+          "schema": {
+            "$ref": "#/backend/entities/Game"
+          },
+          "description": "Stores purchased games for a user. Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "gameId",
+              "description": "The unique identifier of the game."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support GameSphere's core features, focusing on scalability, security, and ease of maintenance. Authorization independence is achieved by avoiding hierarchical `get()` calls in security rules. The structure leverages path-based ownership and membership maps for collaborative data, while segregating data based on access needs.  \n\n**Authorization Independence:** For user-owned data such as shopping carts and wishlists, path-based ownership (`/users/{userId}/shopping_cart/{cartId}`) is employed, eliminating the need to fetch parent data for authorization. Reviews include the `userId` and `gameId`, enabling direct rule application without parent document access.\n\n**Structural Segregation:** Games are stored in a single `/games` collection since they have a uniform security posture (accessible to all users for browsing). User-specific data, such as shopping carts and wishlists, are stored under `/users/{userId}` to ensure private access. Reviews, while associated with both games and users, are stored at the root level but contain the `userId` and `gameId` to facilitate independent security rules.\n\n**Access Modeling:** User-owned data follows the `/users/{userId}/{collection}/{documentId}` pattern. The reviews collection requires the `userId` and `gameId` to be present, to allow rules to validate that the authenticated user owns the review, and to allow listing reviews for a specific game (rules are not filters).\n\n**QAPs Support:** Secure `list` operations are ensured through structural segregation. Listing games is open to all, listing shopping carts and wishlists are restricted to the owning user via path-based rules. Reviews can be listed, and rules can ensure that only reviews associated with a particular gameId are visible (rules are not filters).\n\nThis design facilitates simple, robust, and easily debuggable security rules."
+    "reasoning": "The Firestore data structure is designed to support GameSphere's core features, focusing on scalability, security, and ease of maintenance. Authorization independence is achieved by avoiding hierarchical `get()` calls in security rules. The structure leverages path-based ownership and membership maps for collaborative data, while segregating data based on access needs.  \n\n**Authorization Independence:** For user-owned data such as shopping carts, wishlists, and library, path-based ownership (`/users/{userId}/...`) is employed, eliminating the need to fetch parent data for authorization. Reviews include the `userId` and `gameId`, enabling direct rule application without parent document access.\n\n**Structural Segregation:** Games are stored in a single `/games` collection since they have a uniform security posture (accessible to all users for browsing). User-specific data, such as shopping carts, wishlists and library, are stored under `/users/{userId}` to ensure private access. Reviews, while associated with both games and users, are stored at the root level but contain the `userId` and `gameId` to facilitate independent security rules.\n\n**Access Modeling:** User-owned data follows the `/users/{userId}/{collection}/{documentId}` pattern. The reviews collection requires the `userId` and `gameId` to be present, to allow rules to validate that the authenticated user owns the review, and to allow listing reviews for a specific game (rules are not filters).\n\n**QAPs Support:** Secure `list` operations are ensured through structural segregation. Listing games is open to all, listing shopping carts, wishlists and library items are restricted to the owning user via path-based rules. Reviews can be listed, and rules can ensure that only reviews associated with a particular gameId are visible (rules are not filters).\n\nThis design facilitates simple, robust, and easily debuggable security rules."
   }
 }
