@@ -5,13 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,18 +19,11 @@ import {
 import { Input } from "@/components/ui/input"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
   title: z.string().min(2, "O título do jogo deve ter pelo menos 2 caracteres."),
-  description: z.string().min(30, "A descrição curta deve ter pelo menos 30 caracteres."),
   price: z.coerce.number().min(0, "O preço não pode ser negativo."),
-  genre: z.string().min(2, "Por favor, insira pelo menos um género."),
-  imageUrl: z.string().url("Por favor, insira uma URL válida para a imagem de capa."),
-  longDescription: z.string().optional(),
-  trailerUrl: z.string().url().optional(),
-  screenshots: z.string().url().optional(),
 })
 
 export default function SubmitGamePage() {
@@ -41,13 +33,7 @@ export default function SubmitGamePage() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             title: "",
-            description: "",
             price: 0,
-            genre: "",
-            imageUrl: "",
-            longDescription: "",
-            trailerUrl: "",
-            screenshots: "",
         },
     });
 
@@ -78,57 +64,10 @@ export default function SubmitGamePage() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
-                                <FormField control={form.control} name="description" render={({ field }) => (
+                                <FormField control={form.control} name="price" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Descrição Curta</FormLabel>
-                                        <FormControl><Textarea placeholder="Uma breve e cativante descrição do seu jogo." {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                 <FormField control={form.control} name="longDescription" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descrição Longa</FormLabel>
-                                        <FormControl><Textarea placeholder="Descreva em detalhe o seu jogo, a sua história, mecânicas, etc." {...field} rows={6} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="price" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Preço (USD)</FormLabel>
-                                            <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name="genre" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Género(s)</FormLabel>
-                                            <FormControl><Input placeholder="Ação, RPG, Indie" {...field} /></FormControl>
-                                            <FormDescription className="text-xs">Separados por vírgula.</FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                </div>
-                                <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>URL da Imagem de Capa</FormLabel>
-                                        <FormControl><Input placeholder="https://exemplo.com/imagem.png" {...field} /></FormControl>
-                                        <FormDescription className="text-xs">Use um serviço como Imgur para alojar a sua imagem.</FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <FormField control={form.control} name="screenshots" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>URLs de Screenshots</FormLabel>
-                                        <FormControl><Textarea placeholder="https://exemplo.com/ss1.png, https://exemplo.com/ss2.png" {...field} /></FormControl>
-                                        <FormDescription className="text-xs">URLs separadas por vírgula.</FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                 <FormField control={form.control} name="trailerUrl" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>URL do Trailer (YouTube, etc.)</FormLabel>
-                                        <FormControl><Input placeholder="https://youtube.com/watch?v=..." {...field} /></FormControl>
+                                        <FormLabel>Preço (USD)</FormLabel>
+                                        <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
