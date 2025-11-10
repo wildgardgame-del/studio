@@ -34,8 +34,12 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      router.push('/');
+      if (auth) {
+        await signInWithPopup(auth, provider);
+        router.push('/');
+      } else {
+        console.error("Auth service is not available.");
+      }
     } catch (error) {
       console.error("Error signing in with Google: ", error);
     }
