@@ -31,7 +31,7 @@ export default function ApplyForDevPage() {
     const { user, isUserLoading } = useFirebase();
     const { role, isLoading: isRoleLoading } = useRole();
     const router = useRouter();
-    const { handleAddToCart } = useGameStore();
+    const { handleAddToCart, isPurchased } = useGameStore();
 
     const handlePurchase = () => {
         if (!user) {
@@ -43,12 +43,22 @@ export default function ApplyForDevPage() {
     }
     
     const isLoading = isUserLoading || isRoleLoading;
+    const hasLicense = isPurchased(devLicenseProduct.id);
+
 
     if (isLoading) {
-        return <div className="flex min-h-screen items-center justify-center"><p>Carregando...</p></div>
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 flex items-center justify-center">
+                    <p>Carregando...</p>
+                </main>
+                <Footer />
+            </div>
+        );
     }
 
-    if (role === 'dev' || role === 'admin') {
+    if (role === 'admin' || role === 'dev' || hasLicense) {
         return (
             <div className="flex min-h-screen flex-col">
                 <Header />
