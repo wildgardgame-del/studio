@@ -46,15 +46,13 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { cartItems, wishlistItems, isPurchased } = useGameStore();
+  const { cartItems, wishlistItems } = useGameStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
   const { role } = useRole();
-
-  const hasDevLicense = isPurchased('dev-account-upgrade');
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -212,7 +210,7 @@ export default function Header() {
                       <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
                     </DropdownMenuItem>
                   )}
-                  {(role === 'dev' || role === 'admin' || hasDevLicense) && (
+                  {role === 'dev' && (
                      <DropdownMenuItem asChild>
                       <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Painel de Desenvolvedor</Link>
                     </DropdownMenuItem>
@@ -220,14 +218,12 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
-                   {role === 'user' && !hasDevLicense && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/apply-for-dev">
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          <span>Become a Publisher</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
+                  <DropdownMenuItem asChild>
+                    <Link href="/apply-for-dev">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>Become a Publisher</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
