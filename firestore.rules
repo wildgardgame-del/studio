@@ -73,7 +73,7 @@ service cloud.firestore {
        */
       match /developer_applications/{applicationId} {
         allow read, write: if isSignedIn() && isOwner(userId);
-        allow update: if isSignedIn() && isRole('admin');
+        allow update: if isSignedIn() && (isOwner(userId) || isRole('admin'));
       }
     }
 
