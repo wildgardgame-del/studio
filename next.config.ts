@@ -52,6 +52,12 @@ const nextConfig: NextConfig = {
         hostname: 'files.catbox.moe',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn2.unrealengine.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
