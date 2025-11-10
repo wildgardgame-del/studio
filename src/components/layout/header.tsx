@@ -10,6 +10,7 @@ import {
   Library,
   LogOut,
   Sparkles,
+  Shield,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -36,6 +37,7 @@ import { Cart } from '@/components/cart';
 import { Icons } from '../icons';
 import { useGameStore } from '@/context/game-store-context';
 import { useUser } from '@/firebase';
+import { useRole } from '@/hooks/useRole';
 
 const navLinks = [
   { href: '/browse', label: 'Store' },
@@ -49,6 +51,7 @@ export default function Header() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
+  const { role } = useRole();
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -202,6 +205,11 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {role === 'admin' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin"><Shield className="mr-2" />Admin Panel</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2" />Library</Link>
                   </DropdownMenuItem>
