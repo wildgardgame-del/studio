@@ -18,6 +18,7 @@ export default function GamePage() {
 
   const { firestore } = useFirebase();
 
+  // Memoize the document reference to prevent re-renders
   const gameRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
     return doc(firestore, 'games', id);
@@ -25,22 +26,27 @@ export default function GamePage() {
 
   const { data: game, isLoading } = useDoc<Game>(gameRef);
 
+  // 1. Show a full-page loading indicator while fetching data.
+  // This is the most crucial step to prevent premature rendering.
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
         <main className="container flex flex-1 flex-col items-center justify-center py-12 text-center">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">A carregar os detalhes do jogo...</p>
         </main>
         <Footer />
       </div>
     );
   }
 
+  // 2. After loading, if the game is still not found, show the 404 page.
   if (!game) {
     notFound();
   }
 
+  // 3. Only if loading is complete AND the game exists, render the content.
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
