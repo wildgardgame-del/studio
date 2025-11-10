@@ -2,8 +2,10 @@
 
 import type { Game } from '@/lib/types';
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 
 type GameStoreContextType = {
   cartItems: Game[];
@@ -13,6 +15,8 @@ type GameStoreContextType = {
   wishlistItems: Game[];
   handleToggleWishlist: (game: Game) => void;
   isInWishlist: (gameId: string) => boolean;
+  purchasedGames: Game[];
+  isPurchased: (gameId: string) => boolean;
 };
 
 const GameStoreContext = createContext<GameStoreContextType | undefined>(undefined);
@@ -21,6 +25,14 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<Game[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Game[]>([]);
+  const { user, firestore } = useFirebase();
+
+  const libraryQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'users', user.uid, 'library'));
+  }, [user, firestore]);
+
+  const { data: purchasedGames } = useCollection<Game>(libraryQuery);
 
   const handleAddToCart = useCallback((game: Game) => {
     setCartItems((prev) => {
@@ -55,6 +67,10 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
     return wishlistItems.some((item) => item.id === gameId);
   }, [wishlistItems]);
 
+  const isPurchased = useCallback((gameId: string) => {
+    return purchasedGames?.some((item) => item.id === gameId) ?? false;
+  }, [purchasedGames]);
+
   const handleToggleWishlist = useCallback((game: Game) => {
     setWishlistItems((prev) => {
       const isWishlisted = prev.some((item) => item.id === game.id);
@@ -86,6 +102,8 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
         wishlistItems,
         handleToggleWishlist,
         isInWishlist,
+        purchasedGames: purchasedGames || [],
+        isPurchased,
       }}
     >
       {children}
