@@ -24,6 +24,8 @@ export default function GamePage() {
 
   const { data: game, isLoading } = useDoc<Game>(docRef);
 
+  // A lógica de renderização deve seguir esta ordem exata.
+  // 1. Mostrar o carregamento enquanto os dados estão a ser buscados.
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -36,23 +38,23 @@ export default function GamePage() {
     );
   }
 
+  // 2. Após o carregamento, se o jogo não existir, mostrar o erro 404.
   if (!game) {
     notFound();
   }
 
+  // 3. Se o carregamento terminou e o jogo existe, renderizar o conteúdo.
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1">
-        <div className="container py-12 text-center">
-          <h1 className="text-4xl font-bold font-headline mb-8">{game.title}</h1>
-          <Button asChild>
-            <Link href="/browse">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para a Loja
-            </Link>
-          </Button>
-        </div>
+      <main className="container py-12 text-center">
+        <h1 className="text-4xl font-bold font-headline mb-8">{game.title}</h1>
+        <Button asChild>
+          <Link href="/browse">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para a Loja
+          </Link>
+        </Button>
       </main>
       <Footer />
     </div>
