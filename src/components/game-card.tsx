@@ -37,7 +37,7 @@ export function GameCard({ game, className }: GameCardProps) {
       <CardHeader className="p-0">
         <Link href={`/games/${game.id}`} className="block overflow-hidden">
           <Image
-            src={game.coverImage}
+            src={game.coverImage || `https://picsum.photos/seed/${game.id}/600/800`}
             alt={`Cover art for ${game.title}`}
             width={600}
             height={800}
