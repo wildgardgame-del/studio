@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useState } from "react";
 import { CheckCircle, Clock, Info, Loader2, Send, XCircle } from "lucide-react";
-import { addDoc, collection, serverTimestamp, query, where, limit } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, query, limit } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -73,7 +73,7 @@ export default function ApplyForDevPage() {
 
     const applicationQuery = useMemoFirebase(() => {
         if (!user || !firestore || role === 'admin') return null; // Don't query for admins
-        return query(collection(firestore, "developer_applications"), where("userId", "==", user.uid), limit(1));
+        return query(collection(firestore, `users/${user.uid}/developer_applications`), limit(1));
     }, [user, firestore, role]);
 
     const { data: applications, isLoading: isLoadingApplication } = useCollection<DeveloperApplication>(applicationQuery);
@@ -101,7 +101,7 @@ export default function ApplyForDevPage() {
 
         setIsSubmitting(true);
         try {
-            const applicationsRef = collection(firestore, 'developer_applications');
+            const applicationsRef = collection(firestore, `users/${user.uid}/developer_applications`);
             await addDoc(applicationsRef, {
                 ...values,
                 userId: user.uid,
@@ -246,3 +246,5 @@ export default function ApplyForDevPage() {
         </div>
     )
 }
+
+    

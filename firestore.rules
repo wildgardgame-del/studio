@@ -13,9 +13,8 @@
  * Data Structure & Rules:
  * - /games/{gameId}: Public read for approved games. Creation limited to 'dev' role. Updates managed by 'dev' and 'admin' roles.
  * - /users/{userId}: Profiles are private. Role changes are restricted to 'admin' role.
- * - /users/{userId}/...: Subcollections (cart, wishlist, library) are private to the user.
+ * - /users/{userId}/...: Subcollections (cart, wishlist, library, developer_applications) are private to the user.
  * - /reviews/{reviewId}: Public read. Writes are restricted to the review owner.
- * - /developer_applications/{applicationId}: Writable by authenticated users, readable by admins.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -66,6 +65,15 @@ service cloud.firestore {
                     );
 
       allow delete: if isSignedIn() && isExistingOwner(userId);
+
+      /**
+       * @description User can read/write their own application. Admins can manage all.
+       * @path /users/{userId}/developer_applications/{applicationId}
+       */
+      match /developer_applications/{applicationId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+        allow list, update, delete: if isSignedIn() && isRole('admin'); // Admins can manage
+      }
     }
 
     /**
@@ -103,18 +111,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
-
-    /**
-     * @description Allows user to create an application. Admins can manage applications.
-     *              Users can read their own application status.
-     * @path /developer_applications/{applicationId}
-     */
-    match /developer_applications/{applicationId} {
-        allow get: if isSignedIn() && (isRole('admin') || isExistingOwner(resource.data.userId));
-        allow list: if isSignedIn() && (isRole('admin') || request.query.where.userId == request.auth.uid);
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isSignedIn() && isRole('admin');
-    }
   }
 
   // Helper functions
@@ -142,3 +138,5 @@ service cloud.firestore {
     return isSignedIn() && getRole(request.auth.uid) == role;
   }
 }
+
+    
