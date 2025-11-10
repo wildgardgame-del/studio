@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 import { Button } from "@/components/ui/button"
@@ -49,11 +49,20 @@ export default function LoginPage() {
       router.push('/');
     } catch (error: any) {
       console.error("Error signing in with Google: ", error);
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: error.message || "An unexpected error occurred during Google sign-in.",
-      });
+      
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "Google Sign-In is not enabled for this project. Please enable it in the Firebase console.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message || "An unexpected error occurred during Google sign-in.",
+        });
+      }
     }
   };
 
