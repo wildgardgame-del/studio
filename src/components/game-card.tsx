@@ -49,42 +49,44 @@ export function GameCard({ game, className }: GameCardProps) {
           />
         </Link>
       </CardHeader>
-      <CardContent className="p-4 flex-1">
-        <Link href={`/games/${game.id}`}>
-          <CardTitle className="font-headline text-lg truncate hover:text-primary">{game.title}</CardTitle>
-        </Link>
-        <p className="text-sm text-muted-foreground mt-1 h-10">{game.description.substring(0, 70)}{game.description.length > 70 && '...'}</p>
-        
-        <div className="flex flex-wrap gap-1 mt-2">
-            {(game.genres || []).slice(0, 2).map(genre => (
-                <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
-            ))}
-        </div>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between p-4 pt-0 mt-auto">
-        <p className="text-xl font-bold text-accent">${game.price.toFixed(2)}</p>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleToggleWishlist(game)}
-            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-            disabled={gameIsPurchased}
-          >
-            <Heart className={cn('h-5 w-5', isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground')} />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleAddToCart(game)}
-            aria-label="Add to cart"
-            className="hover:bg-accent hover:text-accent-foreground"
-            disabled={gameIsPurchased}
-          >
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
-        </div>
-      </CardFooter>
+      <div className="bg-primary/10 flex-1 flex flex-col">
+        <CardContent className="p-4 flex-1">
+          <Link href={`/games/${game.id}`}>
+            <CardTitle className="font-headline text-lg truncate hover:text-primary">{game.title}</CardTitle>
+          </Link>
+          <p className="text-sm text-muted-foreground mt-1 h-10">{game.description.substring(0, 70)}{game.description.length > 70 && '...'}</p>
+          
+          <div className="flex flex-wrap gap-1 mt-2">
+              {(game.genres || []).slice(0, 2).map(genre => (
+                  <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
+              ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex items-center justify-between p-4 pt-0 mt-auto">
+          <p className="text-xl font-bold text-accent">${game.price.toFixed(2)}</p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleToggleWishlist(game)}
+              aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+              disabled={gameIsPurchased}
+            >
+              <Heart className={cn('h-5 w-5', isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground')} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handleAddToCart(game)}
+              aria-label="Add to cart"
+              className="hover:bg-accent hover:text-accent-foreground"
+              disabled={gameIsPurchased}
+            >
+              <ShoppingCart className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardFooter>
+      </div>
     </Card>
   );
 }
