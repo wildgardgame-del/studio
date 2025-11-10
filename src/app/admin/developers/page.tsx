@@ -23,7 +23,8 @@ export default function ManageDevelopersPage() {
         if (!firestore) throw new Error("Firestore not available");
         
         const applicationsRef = collectionGroup(firestore, 'developer_applications');
-        const q = query(applicationsRef);
+        // Correctly query for pending applications directly from Firestore
+        const q = query(applicationsRef, where('status', '==', 'pending'));
         
         const querySnapshot = await getDocs(q);
         const applications: ApplicationWithId[] = [];
@@ -33,8 +34,9 @@ export default function ManageDevelopersPage() {
         return applications;
     };
     
-    const { data: applications, isLoading, refetch } = useQuery({
-        queryKey: ['developer-applications'],
+    const { data: pendingApplications, isLoading, refetch } = useQuery({
+        // Updated queryKey to be more specific
+        queryKey: ['pending-developer-applications'],
         queryFn: fetchApplications,
         enabled: !!firestore,
     });
@@ -45,6 +47,7 @@ export default function ManageDevelopersPage() {
         try {
             const batch = writeBatch(firestore);
 
+            // Path to the application document within the user's subcollection
             const appRef = doc(firestore, `users/${application.userId}/developer_applications`, application.id);
             batch.update(appRef, { status: newStatus });
             
@@ -69,8 +72,6 @@ export default function ManageDevelopersPage() {
             });
         }
     };
-    
-    const pendingApplications = applications?.filter(app => app.status === 'pending') || [];
 
     const renderContent = () => {
         if (isLoading) {
@@ -81,7 +82,7 @@ export default function ManageDevelopersPage() {
             );
         }
 
-        if (pendingApplications.length === 0) {
+        if (!pendingApplications || pendingApplications.length === 0) {
             return <p className="text-center text-muted-foreground py-8">Não existem candidaturas pendentes.</p>
         }
 
