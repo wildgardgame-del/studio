@@ -1,16 +1,16 @@
 'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { useState } from "react";
-import { Send, Loader2, Upload } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -19,10 +19,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import Header from "@/components/layout/header"
-import Footer from "@/components/layout/footer"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -55,237 +55,260 @@ const formSchema = z.object({
     ),
 });
 
-
 export default function SubmitGamePage() {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { user, firestore, storage } = useFirebase();
-    const { toast } = useToast();
-    const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, firestore, storage } = useFirebase();
+  const { toast } = useToast();
+  const router = useRouter();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            title: "",
-            price: 0,
-            description: "",
-            longDescription: "",
-            genres: "",
-            coverImage: undefined,
-            screenshots: undefined,
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      price: 0,
+      description: "",
+      longDescription: "",
+      genres: "",
+      coverImage: undefined,
+      screenshots: undefined,
+    },
+  });
+
+  // ---------------------------
+  //  Função de upload com timeout
+  // ---------------------------
+  const uploadFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!storage) return reject(new Error("Firebase Storage not initialized"));
+      const path = `games/${uuidv4()}-${file.name}`;
+      const storageRef = ref(storage, path);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      // Timeout de segurança
+      const timeout = setTimeout(() => {
+        uploadTask.cancel(); // Cancela o upload se demorar muito
+        reject(new Error("Upload timeout – verifique permissões do Firebase Storage."));
+      }, 30000); // 30 segundos
+
+      uploadTask.on(
+        "state_changed",
+        null, // Não precisamos de monitorizar o progresso aqui
+        (error) => {
+          clearTimeout(timeout);
+          console.error("Upload error:", error);
+          reject(error);
         },
+        async () => {
+          clearTimeout(timeout);
+          try {
+            const url = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(url);
+          } catch (e) {
+            reject(e);
+          }
+        }
+      );
     });
+  };
 
-    const uploadFile = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            if (!storage) {
-                return reject(new Error("Firebase Storage not initialized"));
-            }
-            const path = `games/${uuidv4()}-${file.name}`;
-            const storageRef = ref(storage, path);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    // Optional: handle progress updates
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    console.log('Upload is ' + progress + '% done');
-                },
-                (error) => {
-                    console.error("Upload error:", error);
-                    reject(error);
-                },
-                () => {
-                    // Upload completed successfully, now we can get the download URL
-                    getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
-                }
-            );
-        });
-    };
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!user || !firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Não autenticado',
-                description: 'Você precisa fazer login para submeter um jogo.',
-            });
-            return router.push('/login');
-        }
-
-        setIsSubmitting(true);
-        
-        try {
-            // 1. Prepare all file upload promises
-            const coverImageFile = values.coverImage[0];
-            const screenshotFiles = Array.from(values.screenshots as FileList);
-
-            const allUploadPromises = [
-                uploadFile(coverImageFile),
-                ...screenshotFiles.map(file => uploadFile(file))
-            ];
-
-            // 2. Execute all uploads in parallel
-            const uploadedUrls = await Promise.all(allUploadPromises);
-            
-            const coverImageUrl = uploadedUrls[0];
-            const screenshotUrls = uploadedUrls.slice(1);
-            
-            // 3. Prepare data for Firestore
-            const newGameData = {
-                title: values.title,
-                price: values.price,
-                description: values.description,
-                longDescription: values.longDescription,
-                genres: values.genres.split(',').map(g => g.trim()),
-                coverImage: coverImageUrl,
-                screenshots: screenshotUrls,
-                developerId: user.uid,
-                status: 'pending',
-                submittedAt: serverTimestamp(),
-                rating: 0,
-                reviews: [],
-            }
-            
-            // 4. Add document to Firestore
-            const gamesRef = collection(firestore, `games`);
-            await addDoc(gamesRef, newGameData);
-
-            toast({
-                title: "Jogo Submetido!",
-                description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
-            });
-            router.push('/dev/dashboard');
-
-        } catch (error: any) {
-            console.error("Error submitting game: ", error);
-            if (error.code?.includes('storage')) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Erro no Upload',
-                    description: 'Não foi possível carregar as imagens. Verifique as suas permissões de Storage.',
-                });
-            } else {
-                 const permissionError = new FirestorePermissionError({
-                    path: 'games',
-                    operation: 'create',
-                    requestResourceData: values,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                 toast({
-                    variant: 'destructive',
-                    title: 'Erro na Submissão',
-                    description: 'Não foi possível guardar os dados do jogo.',
-                });
-            }
-        } finally {
-            setIsSubmitting(false);
-        }
+  // ---------------------------
+  //  Submissão principal
+  // ---------------------------
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Não autenticado',
+        description: 'Você precisa fazer login para submeter um jogo.',
+      });
+      return router.push('/login');
     }
-    
-    const { register } = form;
+
+    setIsSubmitting(true);
+
+    try {
+      const coverImageFile = values.coverImage[0];
+      const screenshotFiles = Array.from(values.screenshots as FileList);
+
+      toast({
+        title: "A carregar imagens...",
+        description: "O upload pode demorar alguns segundos.",
+      });
+
+      // Uploads paralelos com fallback de erro
+      const allUploadPromises = [
+        uploadFile(coverImageFile),
+        ...screenshotFiles.map(file => uploadFile(file))
+      ];
+
+      const uploadResults = await Promise.allSettled(allUploadPromises);
+
+      const successful = uploadResults
+        .filter(r => r.status === 'fulfilled')
+        .map(r => (r as PromiseFulfilledResult<string>).value);
+
+      if (successful.length < allUploadPromises.length) {
+        // Encontra o primeiro erro para mostrar uma mensagem mais útil
+        const firstError = uploadResults.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined;
+        throw new Error(firstError?.reason?.message || "Um ou mais uploads falharam.");
+      }
+
+      const coverImageUrl = successful[0];
+      const screenshotUrls = successful.slice(1);
+
+      const newGameData = {
+        title: values.title,
+        price: values.price,
+        description: values.description,
+        longDescription: values.longDescription,
+        genres: values.genres.split(',').map(g => g.trim()),
+        coverImage: coverImageUrl,
+        screenshots: screenshotUrls,
+        developerId: user.uid,
+        status: 'pending',
+        submittedAt: serverTimestamp(),
+        rating: 0,
+        reviews: [],
+      };
+
+      const docRef = await addDoc(collection(firestore, `games`), newGameData);
+      
+      const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'create',
+          requestResourceData: newGameData,
+      });
+      errorEmitter.emit('permission-error', permissionError);
 
 
-    return (
-        <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1 flex items-center justify-center py-12">
-                <Card className="mx-auto max-w-2xl w-full">
-                    <CardHeader>
-                        <CardTitle className="text-3xl font-headline text-center">Submeter um Novo Jogo</CardTitle>
-                        <CardDescription className="text-center">
-                            Preencha os detalhes abaixo para adicionar o seu jogo à GameSphere.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <FormField control={form.control} name="title" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Título do Jogo</FormLabel>
-                                        <FormControl><Input placeholder="Meu Jogo Incrível" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
+      toast({
+        title: "Jogo Submetido!",
+        description: "Obrigado por submeter o seu jogo. Ele será revisto em breve.",
+      });
 
-                                <FormField control={form.control} name="price" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Preço (USD)</FormLabel>
-                                        <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                
-                                <FormField control={form.control} name="description" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descrição Curta</FormLabel>
-                                        <FormControl><Textarea placeholder="Uma breve sinopse para o cartão do jogo." {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
+      await new Promise(res => setTimeout(res, 300)); // evita redirecionar antes do toast
+      router.push('/dev/dashboard');
+    } catch (error: any) {
+      console.error("Error submitting game:", error);
+      
+      const isStorageError = error.code?.includes('storage') || error.message?.includes('Storage');
 
-                                <FormField control={form.control} name="longDescription" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descrição Completa</FormLabel>
-                                        <FormControl><Textarea rows={5} placeholder="Descreva o seu jogo em detalhe para a página da loja." {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
+      toast({
+        variant: 'destructive',
+        title: isStorageError ? 'Erro no Upload' : 'Erro na Submissão',
+        description: error.message || 'Não foi possível completar a operação.',
+      });
+      
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
-                                <FormField control={form.control} name="genres" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Géneros</FormLabel>
-                                        <FormControl><Input placeholder="Ação, RPG, Estratégia" {...field} /></FormControl>
-                                        <FormDescription>Separe os vários géneros por vírgulas.</FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                
-                                <FormField
-                                  control={form.control}
-                                  name="coverImage"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Imagem de Capa</FormLabel>
-                                      <FormControl>
-                                         <Input type="file" accept="image/*" {...register("coverImage")} />
-                                      </FormControl>
-                                      <FormDescription>Ficheiro único de imagem (JPG, PNG, WEBP), máx 5MB.</FormDescription>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+  const { register } = form;
 
-                                <FormField
-                                  control={form.control}
-                                  name="screenshots"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Capturas de Ecrã</FormLabel>
-                                      <FormControl>
-                                         <Input type="file" accept="image/*" multiple {...register("screenshots")} />
-                                      </FormControl>
-                                      <FormDescription>Pode selecionar múltiplos ficheiros (JPG, PNG, WEBP), máx 5MB cada.</FormDescription>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1 flex items-center justify-center py-12">
+        <Card className="mx-auto max-w-2xl w-full">
+          <CardHeader>
+            <CardTitle className="text-3xl font-headline text-center">Submeter um Novo Jogo</CardTitle>
+            <CardDescription className="text-center">
+              Preencha os detalhes abaixo para adicionar o seu jogo à GameSphere.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Campos principais */}
+                <FormField control={form.control} name="title" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título do Jogo</FormLabel>
+                    <FormControl><Input placeholder="Meu Jogo Incrível" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
 
-                                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                    {isSubmitting ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            A Submeter...
-                                        </>
-                                    ) : (
-                                        <><Send className="mr-2 h-4 w-4" />Submeter Jogo para Revisão</>
-                                    )}
-                                </Button>
-                            </form>
-                        </Form>
-                    </CardContent>
-                </Card>
-            </main>
-            <Footer />
-        </div>
-    )
+                <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço (USD)</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
+                <FormField control={form.control} name="description" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição Curta</FormLabel>
+                    <FormControl><Textarea placeholder="Uma breve sinopse para o cartão do jogo." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
+                <FormField control={form.control} name="longDescription" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição Completa</FormLabel>
+                    <FormControl><Textarea rows={5} placeholder="Descreva o seu jogo em detalhe para a página da loja." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
+                <FormField control={form.control} name="genres" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Géneros</FormLabel>
+                    <FormControl><Input placeholder="Ação, RPG, Estratégia" {...field} /></FormControl>
+                    <FormDescription>Separe os vários géneros por vírgulas.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
+                <FormField control={form.control} name="coverImage" render={() => (
+                  <FormItem>
+                    <FormLabel>Imagem de Capa</FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="image/*" {...register("coverImage")} />
+                    </FormControl>
+                    <FormDescription>Ficheiro único de imagem (JPG, PNG, WEBP), máx 5MB.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
+                <FormField control={form.control} name="screenshots" render={() => (
+                  <FormItem>
+                    <FormLabel>Capturas de Ecrã</FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="image/*" multiple {...register("screenshots")} />
+                    </FormControl>
+                    <FormDescription>Pode selecionar múltiplos ficheiros (JPG, PNG, WEBP), máx 5MB cada.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      A Submeter...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Submeter Jogo para Revisão
+                    </>
+                  )}
+                </Button>
+
+                {isSubmitting && (
+                  <p className="text-center text-sm text-muted-foreground mt-2">
+                    Submetendo jogo... (aguardando upload e Firestore)
+                  </p>
+                )}
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </main>
+      <Footer />
+    </div>
+  );
 }
