@@ -39,19 +39,25 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, so we don't need to show an error.
+        console.log("Google Sign-In cancelled by user.");
+        return;
+      }
+      
       console.error("Error signing in with Google: ", error);
       
       if (error.code === 'auth/operation-not-allowed') {
         toast({
             variant: "destructive",
-            title: "Login Failed",
-            description: "Google Sign-In is not enabled for this project. Please enable it in the Firebase console.",
+            title: "Login Falhou",
+            description: "O Login com Google não está habilitado para este projeto. Por favor, habilite-o no console do Firebase.",
         });
       } else {
         toast({
           variant: "destructive",
-          title: "Login Failed",
-          description: error.message || "An unexpected error occurred during Google sign-in.",
+          title: "Login Falhou",
+          description: error.message || "Ocorreu um erro inesperado durante o login com o Google.",
         });
       }
     }
@@ -60,7 +66,7 @@ export default function LoginPage() {
   if (isUserLoading || (!isUserLoading && user)) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <p>Loading...</p>
+            <p>Carregando...</p>
         </div>
     )
   }
@@ -74,27 +80,27 @@ export default function LoginPage() {
                     <div className="flex justify-center mb-4">
                         <Icons.Logo className="h-12 w-12 text-accent" />
                     </div>
-                    <CardTitle className="text-2xl font-headline text-center">Login to GameSphere</CardTitle>
+                    <CardTitle className="text-2xl font-headline text-center">Login no GameSphere</CardTitle>
                     <CardDescription className="text-center">
-                    Enter your email below to login to your account
+                    Digite seu e-mail abaixo para fazer login em sua conta
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">E-mail</Label>
                         <Input
                         id="email"
                         type="email"
-                        placeholder="m@example.com"
+                        placeholder="m@exemplo.com"
                         required
                         />
                     </div>
                     <div className="grid gap-2">
                         <div className="flex items-center">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">Senha</Label>
                         <Link href="#" className="ml-auto inline-block text-sm underline">
-                            Forgot your password?
+                            Esqueceu sua senha?
                         </Link>
                         </div>
                         <Input id="password" type="password" required />
@@ -103,13 +109,13 @@ export default function LoginPage() {
                         Login
                     </Button>
                     <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-                        Login with Google
+                        Login com Google
                     </Button>
                     </div>
                     <div className="mt-4 text-center text-sm">
-                    Don&apos;t have an account?{" "}
+                    Não tem uma conta?{" "}
                     <Link href="/signup" className="underline">
-                        Sign up
+                        Cadastre-se
                     </Link>
                     </div>
                 </CardContent>
