@@ -9,6 +9,7 @@ import {
   User,
   Library,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -203,6 +204,9 @@ export default function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/library"><Library className="mr-2" />Library</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/apply-for-dev"><Sparkles className="mr-2" />Torne-se um Desenvolvedor</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
