@@ -9,9 +9,7 @@ import {
   User,
   Library,
   LogOut,
-  Sparkles,
   Shield,
-  LayoutDashboard,
   PlusCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -100,9 +98,10 @@ export default function Header() {
             ))}
             {user && (
               <Link
-                  href="/dev/dashboard"
-                  className="transition-colors hover:text-foreground/80 text-foreground/60"
+                  href="/dev/submit"
+                  className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center"
                 >
+                  <PlusCircle className="mr-2 h-4 w-4" />
                   Submit a Game
               </Link>
             )}
@@ -146,13 +145,15 @@ export default function Header() {
                 >
                   Wishlist
                 </Link>
-                 <Link
-                  href="/dev/dashboard"
-                  className="transition-colors hover:text-foreground/80 text-foreground/60"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Submit a Game
-                </Link>
+                 {user && (
+                    <Link
+                        href="/dev/submit"
+                        className="transition-colors hover:text-foreground/80 text-foreground/60"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                        Submit a Game
+                    </Link>
+                 )}
             </div>
           </SheetContent>
         </Sheet>
