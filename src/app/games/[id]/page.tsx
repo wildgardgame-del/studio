@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 
@@ -15,7 +15,6 @@ import type { Game } from '@/lib/types';
 export default function GamePage() {
   const params = useParams();
   const id = params.id as string;
-
   const { firestore } = useFirebase();
 
   const gameRef = useMemoFirebase(() => {
@@ -25,6 +24,7 @@ export default function GamePage() {
 
   const { data: game, isLoading } = useDoc<Game>(gameRef);
 
+  // 1. Estado de Carregamento
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -38,15 +38,32 @@ export default function GamePage() {
     );
   }
 
-  if (!game) {
-    return notFound();
+  // 2. Jogo Encontrado
+  if (game) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="container flex flex-1 flex-col items-center justify-center py-12 text-center">
+          <h1 className="text-4xl font-bold font-headline mb-8">{game.title}</h1>
+          <Button asChild>
+            <Link href="/browse">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para a Loja
+            </Link>
+          </Button>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
+  // 3. Jogo NÃO encontrado (sem erro 404)
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="container flex flex-1 flex-col items-center justify-center py-12 text-center">
-        <h1 className="text-4xl font-bold font-headline mb-8">{game.title}</h1>
+        <h1 className="text-2xl font-bold font-headline mb-8">Jogo não encontrado.</h1>
+        <p className="text-muted-foreground mb-8">Não foi possível carregar os detalhes para este jogo.</p>
         <Button asChild>
           <Link href="/browse">
             <ArrowLeft className="mr-2 h-4 w-4" />
