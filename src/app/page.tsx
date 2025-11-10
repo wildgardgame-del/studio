@@ -10,7 +10,7 @@ import { ArrowRight, Star } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -18,13 +18,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Home() {
   const { firestore } = useFirebase();
 
+  // Reverted query to a simpler state to avoid permission issues.
   const gamesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
         collection(firestore, "games"), 
-        where("status", "==", "approved"),
-        orderBy("submittedAt", "desc"),
-        limit(4)
+        where("status", "==", "approved")
     );
   }, [firestore]);
 
@@ -73,7 +72,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {(featuredGames || []).map((game) => (
+              {(featuredGames || []).slice(0, 4).map((game) => (
                 <GameCard key={game.id} game={game} />
               ))}
             </div>
