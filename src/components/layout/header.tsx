@@ -215,7 +215,7 @@ export default function Header() {
                   
                   {(role === 'dev' || role === 'admin' || hasDevLicense) && (
                     <DropdownMenuItem asChild>
-                        <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dev Panel</Link>
+                      <Link href="/dev/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dev Panel</Link>
                     </DropdownMenuItem>
                   )}
                   
@@ -223,12 +223,12 @@ export default function Header() {
                     <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                   </DropdownMenuItem>
                   
-                  {role === 'user' && !hasDevLicense && (
+                  {role !== 'admin' && role !== 'dev' && !hasDevLicense && (
                     <DropdownMenuItem asChild>
-                        <Link href="/apply-for-dev">
+                      <Link href="/apply-for-dev">
                         <Sparkles className="mr-2 h-4 w-4" />
                         <span>Become a Publisher</span>
-                        </Link>
+                      </Link>
                     </DropdownMenuItem>
                   )}
 

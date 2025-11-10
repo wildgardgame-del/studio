@@ -4,11 +4,57 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useRole } from '@/hooks/useRole';
+import { useGameStore } from '@/context/game-store-context';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function DevDashboardPage() {
+  const { role, isLoading: isRoleLoading } = useRole();
+  const { isPurchased } = useGameStore();
+  const router = useRouter();
+
+  const hasDevLicense = isPurchased('dev-account-upgrade');
+  const isDev = role === 'dev' || role === 'admin';
+  const hasAccess = isDev || hasDevLicense;
+  
+  const isLoading = isRoleLoading; // Add other loading states if needed e.g. from isPurchased
+
+  useEffect(() => {
+    if (!isLoading && !hasAccess) {
+      // Optional: redirect to a specific "access-denied" page
+      // For now, we'll just show the message
+    }
+  }, [isLoading, hasAccess, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+     return (
+        <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
+                <h1 className="text-3xl font-bold">Acesso Negado</h1>
+                <p className="text-muted-foreground mt-2 max-w-md">Você não tem a Licença de Desenvolvedor para acessar esta página. Adquira uma para começar a publicar.</p>
+                <Button asChild className="mt-6">
+                    <Link href="/apply-for-dev">Obter Licença de Desenvolvedor</Link>
+                </Button>
+            </main>
+            <Footer />
+        </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
