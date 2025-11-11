@@ -15,8 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
@@ -44,7 +42,7 @@ export default function LoginPage() {
     setIsSigningIn(true);
     const auth = getAuth(firebaseApp);
 
-    // This is the crucial part for deployed environments like Vercel.
+    // This is the crucial part for deployed environments.
     // It tells Firebase to trust the domain the popup is originating from.
     if (typeof window !== 'undefined') {
         auth.config.authDomain = window.location.hostname;
@@ -53,7 +51,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     
     try {
-      // Set persistence to store the user session
+      // Set persistence to store the user session across browser sessions.
       await setPersistence(auth, browserLocalPersistence);
       // Now, attempt the sign-in
       await signInWithPopup(auth, provider);
@@ -108,42 +106,21 @@ export default function LoginPage() {
                     </div>
                     <CardTitle className="text-2xl font-headline text-center">Login to GameSphere</CardTitle>
                     <CardDescription className="text-center">
-                    Enter your email below to login to your account
+                        Use your Google account to continue.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                        id="email"
-                        type="email"
-                        placeholder="m@example.com"
-                        required
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <div className="flex items-center">
-                        <Label htmlFor="password">Password</Label>
-                        <Link href="#" className="ml-auto inline-block text-sm underline">
-                            Forgot your password?
-                        </Link>
-                        </div>
-                        <Input id="password" type="password" required />
-                    </div>
-                    <Button type="submit" className="w-full">
-                        Login
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn}>
-                        {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Login with Google
-                    </Button>
+                      <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn}>
+                          {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Login with Google
+                      </Button>
                     </div>
                     <div className="mt-4 text-center text-sm">
-                    Don't have an account?{" "}
-                    <Link href="/signup" className="underline">
-                        Sign up
-                    </Link>
+                      Don't have an account?{" "}
+                      <Link href="/signup" className="underline">
+                          Sign up
+                      </Link>
                     </div>
                 </CardContent>
             </Card>
