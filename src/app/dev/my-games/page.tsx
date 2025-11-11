@@ -1,6 +1,5 @@
 
-'use client';
-
+import { Suspense } from 'react';
 import { collection, query, where } from 'firebase/firestore';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,9 @@ import { cn } from '@/lib/utils';
 
 type GameWithId = Game & { id: string };
 
-export default function MyGamesPage() {
+function MyGamesPageContent() {
+    'use client';
+
     const { firestore, user } = useFirebase();
 
     const myGamesQuery = useMemoFirebase(() => {
@@ -107,4 +108,13 @@ export default function MyGamesPage() {
             <Footer />
         </div>
     );
+}
+
+
+export default function MyGamesPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <MyGamesPageContent />
+        </Suspense>
+    )
 }
