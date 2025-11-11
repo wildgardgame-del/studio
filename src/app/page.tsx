@@ -50,7 +50,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <div className="relative bottom-[-10%]">
-              <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={256} height={256} className="mx-auto mb-4" />
+              <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={256} height={256} className="mx-auto mb-4" />
               <h1 className="font-headline text-5xl font-bold tracking-tighter md:text-7xl lg:text-8xl">
                 Your Universe of Games
               </h1>
