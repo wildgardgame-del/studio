@@ -2,12 +2,6 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -57,7 +51,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn2.unrealengine.com',
         port: '',
-        pathname: '/**',
+pathname: '/**',
       }
     ],
   },
