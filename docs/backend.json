@@ -44,10 +44,18 @@
           "description": "URL of the game's main image.",
           "format": "uri"
         },
-        "trailerUrl": {
-          "type": "string",
-          "description": "URL of the game's trailer.",
-          "format": "uri"
+        "trailerUrls": {
+          "type": "array",
+          "description": "URLs of the game's trailers.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "websiteUrl": {
+            "type": "string",
+            "description": "URL of the game's official website.",
+            "format": "uri"
         },
         "status": {
           "type": "string",
@@ -66,7 +74,8 @@
         "price",
         "developerId",
         "imageUrl",
-        "status"
+        "status",
+        "publisher"
       ]
     },
     "User": {

@@ -16,6 +16,9 @@ export type Game = {
   }[];
   status?: 'pending' | 'approved' | 'rejected';
   developerId?: string;
+  publisher?: string;
+  websiteUrl?: string;
+  trailerUrls?: string[];
   submittedAt?: {
     seconds: number;
     nanoseconds: number;

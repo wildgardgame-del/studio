@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef } from "react";
-import { Send, Loader2, Upload, FileImage, X } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -33,10 +33,13 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 
 const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
+  publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
   genres: z.string().min(3, "Please enter at least one genre."),
+  websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  trailerUrls: z.string().optional(),
   coverImage: z.any()
     .refine((file) => !!file, "Cover image is required.")
     .refine((file) => file?.size <= 5_000_000, `Max file size is 5MB.`)
@@ -76,10 +79,13 @@ function SubmitGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      publisher: "",
       price: 0,
       description: "",
       longDescription: "",
       genres: "",
+      websiteUrl: "",
+      trailerUrls: "",
     },
   });
 
@@ -113,14 +119,19 @@ function SubmitGamePageContent() {
         })
       );
       toast({ title: "Screenshots uploaded!", description: "Finalizing submission..." });
+      
+      const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
       // 3. Prepare game data for Firestore
       const newGameData = {
         title: values.title,
+        publisher: values.publisher,
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
         genres: values.genres.split(',').map(g => g.trim()),
+        websiteUrl: values.websiteUrl,
+        trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         developerId: user.uid,
@@ -166,14 +177,24 @@ function SubmitGamePageContent() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField control={form.control} name="title" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Game Title</FormLabel>
-                    <FormControl><Input placeholder="My Awesome Game" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <FormField control={form.control} name="title" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Game Title</FormLabel>
+                      <FormControl><Input placeholder="My Awesome Game" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
 
+                  <FormField control={form.control} name="publisher" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Developer / Publisher</FormLabel>
+                      <FormControl><Input placeholder="Your Studio Name" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}/>
+                </div>
+                
                 <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Price (USD)</FormLabel>
@@ -207,6 +228,26 @@ function SubmitGamePageContent() {
                   </FormItem>
                 )}/>
 
+                 <div className="grid md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="websiteUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2"><LinkIcon /> Official Website</FormLabel>
+                        <FormControl><Input placeholder="https://my-awesome-game.com" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                    
+                    <FormField control={form.control} name="trailerUrls" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel>
+                        <FormControl><Input placeholder="https://youtube.com/watch?v=..." {...field} /></FormControl>
+                        <FormDescription>Separate multiple links with commas.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                </div>
+
+
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cover Image</FormLabel>
@@ -228,8 +269,9 @@ function SubmitGamePageContent() {
                     ) : (
                         <div className="relative w-48 mx-auto">
                             <Image src={URL.createObjectURL(coverImage)} alt="Cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
-                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}>
-                                <X className="h-4 w-4" />
+                             <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}>
+                                <span className="sr-only">Remove image</span>
+                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
                             </Button>
                         </div>
                     )}
