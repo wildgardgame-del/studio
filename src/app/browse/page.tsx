@@ -10,10 +10,10 @@ import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, documentId } from "firebase/firestore";
 import type { Game } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { GameFilters } from "@/components/game-filters";
 
-export default function BrowsePage() {
+function BrowsePageContent() {
     const searchParams = useSearchParams();
     const q = searchParams.get('q') || '';
     
@@ -141,5 +141,14 @@ export default function BrowsePage() {
             </main>
             <Footer />
         </div>
+    )
+}
+
+
+export default function BrowsePage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <BrowsePageContent />
+        </Suspense>
     )
 }
