@@ -50,7 +50,7 @@ export default function Home() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <div className="relative bottom-[0%]">
+            <div className="relative bottom-[10%]">
               <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={256} height={256} className="mx-auto mb-4" />
               <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl lg:text-6xl">
                 Enter the Forge
@@ -67,7 +67,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="container py-16">
+        <section className="container py-8">
           <div className="mb-8 flex items-center justify-between">
             <h2 className="font-headline text-3xl font-bold md:text-4xl">Featured Games</h2>
             <Button variant="link" asChild className="text-accent">
