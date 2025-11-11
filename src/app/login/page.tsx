@@ -19,11 +19,12 @@ import { Label } from "@/components/ui/label"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
-import { useUser } from "@/firebase";
+import { useUser, useFirebaseApp } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
+  const firebaseApp = useFirebaseApp(); // Use the hook to get the app instance
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -35,12 +36,13 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
+    if (!firebaseApp) return;
+
     setIsSigningIn(true);
-    const auth = getAuth();
+    const auth = getAuth(firebaseApp); // Get auth from the app instance
     
-    // Set the authDomain dynamically to match the current window's origin
-    // This is crucial for popup-based sign-in to work in different environments (like the "Open in new window" feature).
-    auth.tenantId = null; // Recommended for popup flows in some environments.
+    // This is the crucial part for deployed environments like Vercel.
+    // It tells Firebase to trust the domain the popup is originating from.
     if (typeof window !== 'undefined') {
         auth.config.authDomain = window.location.hostname;
     }
@@ -48,11 +50,19 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     
     try {
-      // Ensure persistence is set, which helps with redirects.
+      // Set persistence to store the user session
       await setPersistence(auth, browserLocalPersistence);
+      // Now, attempt the sign-in
       await signInWithPopup(auth, provider);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
       router.push('/');
+
     } catch (error: any) {
+      // Handle common popup errors gracefully
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         console.log("Google Sign-In cancelled by user.");
       } else {
@@ -60,7 +70,7 @@ export default function LoginPage() {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: error.message || "An unexpected error occurred during Google sign-in.",
+          description: error.message || "An unexpected error occurred. Please ensure popups are enabled and try again.",
         });
       }
     } finally {
@@ -71,7 +81,7 @@ export default function LoginPage() {
   if (isUserLoading || user) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
-            <p>Loading...</p>
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
     )
   }
