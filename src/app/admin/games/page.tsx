@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, query, getDocs, writeBatch, doc, updateDoc, where } from 'firebase/firestore';
@@ -6,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, Eye, Loader2, X } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Suspense } from 'react';
+import Link from 'next/link';
 
 type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejected' };
 
@@ -99,7 +101,12 @@ function ManageGamesPageContent() {
                         <TableRow key={game.id}>
                             <TableCell className="font-medium">{game.title}</TableCell>
                             <TableCell>${game.price.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right space-x-1">
+                                <Button size="sm" variant="ghost" asChild>
+                                    <Link href={`/games/${game.id}`} target="_blank">
+                                        <Eye className="mr-2 h-4 w-4" /> View
+                                    </Link>
+                                </Button>
                                 <Button size="sm" variant="ghost" className="text-green-500 hover:text-green-600" onClick={() => handleApproval(game.id, 'approved')}>
                                     <Check className="mr-2 h-4 w-4" /> Approve
                                 </Button>
