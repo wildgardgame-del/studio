@@ -40,7 +40,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <section className="relative h-[60vh] w-full">
+        <section className="relative h-[50vh] w-full">
           <Image
             src={heroImage.placeholderImages[0].imageUrl}
             alt={heroImage.placeholderImages[0].description}
