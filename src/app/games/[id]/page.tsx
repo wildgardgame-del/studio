@@ -3,7 +3,7 @@
 import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Heart, ShoppingCart, Star } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube } from 'lucide-react';
 import Image from 'next/image';
 
 import Header from '@/components/layout/header';
@@ -39,6 +39,21 @@ function GamePageContent() {
   
   const isWishlisted = game ? isInWishlist(game.id) : false;
   const gameIsPurchased = game ? isPurchased(game.id) : false;
+  
+  const getYouTubeVideoId = (url: string): string | null => {
+      try {
+          const videoUrl = new URL(url);
+          if (videoUrl.hostname === 'www.youtube.com' || videoUrl.hostname === 'youtube.com') {
+              return videoUrl.searchParams.get('v');
+          }
+          if (videoUrl.hostname === 'youtu.be') {
+              return videoUrl.pathname.slice(1);
+          }
+      } catch (e) {
+          console.error('Invalid URL for YouTube video', url);
+      }
+      return null;
+  }
 
   if (isLoading) {
     return (
@@ -96,11 +111,30 @@ function GamePageContent() {
                     {isWishlisted ? 'On Wishlist' : 'Add to Wishlist'}
                 </Button>
               </div>
+                <div className="space-y-2">
+                    {game.websiteUrl && (
+                        <Button asChild variant="secondary" className="w-full">
+                            <a href={game.websiteUrl} target="_blank" rel="noopener noreferrer">
+                                <LinkIcon className="mr-2" /> Official Website
+                            </a>
+                        </Button>
+                    )}
+                    {game.trailerUrls && game.trailerUrls.length > 0 && (
+                         <Button asChild variant="secondary" className="w-full">
+                            <a href={game.trailerUrls[0]} target="_blank" rel="noopener noreferrer">
+                                <Youtube className="mr-2" /> Watch Trailer
+                            </a>
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Right Column */}
-            <div className="md:col-span-2 lg:col-span-3 space-y-6">
-               <h1 className="text-4xl lg:text-5xl font-bold font-headline">{game.title}</h1>
+            <div className="md:col-span-2 lg:col-span-3 space-y-8">
+               <div>
+                    <h1 className="text-4xl lg:text-5xl font-bold font-headline">{game.title}</h1>
+                    {game.publisher && <p className="text-xl text-muted-foreground mt-1">by {game.publisher}</p>}
+                </div>
                
                <div className="flex flex-wrap gap-2">
                   {game.genres.map(genre => (
@@ -111,6 +145,34 @@ function GamePageContent() {
                <div className="prose prose-invert max-w-none text-muted-foreground text-lg">
                   <p>{game.longDescription || game.description}</p>
                </div>
+
+                {game.trailerUrls && game.trailerUrls.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold font-headline mb-4">Trailers</h2>
+                         <Carousel opts={{ align: "start", loop: false, }} className="w-full">
+                            <CarouselContent>
+                                {game.trailerUrls.map((url, index) => {
+                                    const videoId = getYouTubeVideoId(url);
+                                    return videoId ? (
+                                        <CarouselItem key={index} className="md:basis-full lg:basis-1/2">
+                                            <div className="aspect-video">
+                                                <iframe
+                                                    className="w-full h-full rounded-lg"
+                                                    src={`https://www.youtube.com/embed/${videoId}`}
+                                                    title={`YouTube video player for ${game.title} - Trailer ${index + 1}`}
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            </div>
+                                        </CarouselItem>
+                                    ) : null;
+                                })}
+                            </CarouselContent>
+                            <CarouselPrevious className="-ml-2" />
+                            <CarouselNext className="-mr-2" />
+                        </Carousel>
+                    </div>
+                )}
 
                <div>
                  <h2 className="text-2xl font-bold font-headline mb-4">Screenshots</h2>
