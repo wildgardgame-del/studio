@@ -6,7 +6,7 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
@@ -64,6 +64,7 @@ function MyGamesPageContent() {
                         <TableHead>Game</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -78,6 +79,14 @@ function MyGamesPageContent() {
                                     {game.status ? game.status.charAt(0).toUpperCase() + game.status.slice(1) : 'Unknown'}
                                 </Badge>
                             </TableCell>
+                            <TableCell className="text-right">
+                                <Button asChild variant="ghost" size="sm">
+                                    <Link href={`/dev/edit/${game.id}`}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </Link>
+                                </Button>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
@@ -91,7 +100,7 @@ function MyGamesPageContent() {
             <main className="flex-1 bg-secondary/30">
                 <div className="container py-12">
                     <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">My Submitted Games</h1>
-                    <p className="text-muted-foreground mt-2">Track the review status of your games.</p>
+                    <p className="text-muted-foreground mt-2">Track the review status and edit your games.</p>
                     
                     <Card className="mt-8">
                         <CardHeader>
