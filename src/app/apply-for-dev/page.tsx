@@ -14,9 +14,10 @@ import { useGameStore } from "@/context/game-store-context";
 import type { Game } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
 
-export default function ApplyForDevPage() {
+function ApplyForDevPageContent() {
     const { user, isUserLoading, firestore } = useFirebase();
     const router = useRouter();
     const { handleAddToCart, isPurchased } = useGameStore();
@@ -166,5 +167,13 @@ export default function ApplyForDevPage() {
             </main>
             <Footer />
         </div>
+    )
+}
+
+export default function ApplyForDevPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <ApplyForDevPageContent />
+        </Suspense>
     )
 }
