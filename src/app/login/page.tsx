@@ -39,8 +39,8 @@ export default function LoginPage() {
     if (!firebaseApp) return;
 
     setIsSigningIn(true);
-    const auth = getAuth(firebaseApp); // Get auth from the app instance
-    
+    const auth = getAuth(firebaseApp);
+
     // This is the crucial part for deployed environments like Vercel.
     // It tells Firebase to trust the domain the popup is originating from.
     if (typeof window !== 'undefined') {
