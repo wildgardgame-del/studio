@@ -321,6 +321,9 @@ function SubmitGamePageContent() {
                             </Button>
                         </div>
                     )}
+                    <FormDescription>
+                      Recommended resolution: 600x800px (3:4 aspect ratio).
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>

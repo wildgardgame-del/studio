@@ -317,6 +317,9 @@ function EditGamePageContent() {
                             <Upload className="h-8 w-8"/><span>Upload a cover image</span><span className="text-xs">(Max 5MB)</span>
                         </button>
                     )}
+                    <FormDescription>
+                      Recommended resolution: 600x800px (3:4 aspect ratio).
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>
