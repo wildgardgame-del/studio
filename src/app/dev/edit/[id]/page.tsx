@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -104,12 +106,11 @@ function EditGamePageContent() {
   const screenshotsFiles = form.watch("screenshots");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore || !gameId) {
+    if (!user || !firestore || !gameId || !gameRef) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not update game. Invalid context.' });
       return;
     }
     
-    // Security check: ensure the user editing is the developer
     if(gameData?.developerId !== user.uid) {
        toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to edit this game.' });
        if (gameRef) {
@@ -118,21 +119,19 @@ function EditGamePageContent() {
        return;
     }
 
-
     setIsSubmitting(true);
     toast({ title: "Updating game...", description: "Please wait while we upload your files." });
 
     try {
       let coverImageUrl = existingCoverImage;
-      // 1. Upload new Cover Image if provided
+      let screenshotUrls = existingScreenshots;
+
       if (values.coverImage) {
         const coverImageDataUri = await fileToDataUri(values.coverImage);
         coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
         toast({ title: "New cover image uploaded!" });
       }
 
-      // 2. Upload new Screenshots if provided
-      let screenshotUrls = existingScreenshots;
       if (values.screenshots && values.screenshots.length > 0) {
         screenshotUrls = await Promise.all(
           Array.from(values.screenshots).map(async (file: any) => {
@@ -145,7 +144,6 @@ function EditGamePageContent() {
       
       const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
-      // 3. Prepare updated game data
       const updatedGameData = {
         title: values.title,
         publisher: values.publisher,
@@ -157,23 +155,13 @@ function EditGamePageContent() {
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
-        // Keep existing fields not in the form
         developerId: user.uid,
-        status: 'pending', // IMPORTANT: Set status to pending for re-approval
-        submittedAt: gameData?.submittedAt || serverTimestamp(), // Keep original submission date
+        status: 'pending' as const,
+        submittedAt: gameData?.submittedAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
       
-      // 4. Update in Firestore
-      const gameDocRef = doc(firestore, 'games', gameId);
-      await updateDoc(gameDocRef, updatedGameData)
-        .catch(err => {
-            throw new FirestorePermissionError({
-                path: gameDocRef.path,
-                operation: 'update',
-                requestResourceData: updatedGameData,
-            });
-        });
+      await updateDoc(gameRef, updatedGameData);
 
       toast({
         title: "Changes Submitted!",
@@ -183,15 +171,22 @@ function EditGamePageContent() {
       router.push('/dev/my-games');
 
     } catch (error: any) {
-      console.error("Error updating game:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Update Error',
-        description: error.message || 'Could not complete the operation. Check the console for details.',
-      });
-      if (!(error instanceof FirestorePermissionError)) {
+        console.error("Error updating game:", error);
+
+        if (error.code && error.code.includes('permission-denied') && gameRef) {
+           errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: gameRef.path,
+                operation: 'update',
+            }));
+        }
+
+        toast({
+            variant: 'destructive',
+            title: 'Update Error',
+            description: error.message || 'Could not complete the operation. Check the console for details.',
+        });
+    } finally {
         setIsSubmitting(false);
-      }
     }
   }
 
@@ -218,7 +213,6 @@ function EditGamePageContent() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 
-                {/* Text fields */}
                 <div className="grid md:grid-cols-2 gap-6">
                   <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Game Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                   <FormField control={form.control} name="publisher" render={({ field }) => ( <FormItem><FormLabel>Developer / Publisher</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
@@ -232,7 +226,6 @@ function EditGamePageContent() {
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 </div>
 
-                {/* Cover Image */}
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cover Image</FormLabel>
@@ -258,7 +251,6 @@ function EditGamePageContent() {
                   </FormItem>
                 )}/>
 
-                {/* Screenshots */}
                 <FormField control={form.control} name="screenshots" render={({ field }) => (
                    <FormItem>
                     <FormLabel>Screenshots</FormLabel>
