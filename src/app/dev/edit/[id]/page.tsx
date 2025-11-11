@@ -29,17 +29,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadImage } from "@/ai/flows/upload-image-flow";
 import type { Game } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { availableGenres } from "@/lib/genres";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-// Make image fields optional for editing
 const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
   publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
-  genres: z.string().min(3, "Please enter at least one genre."),
+  genres: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one genre.",
+  }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
   coverImage: z.any().optional(),
@@ -80,7 +83,7 @@ function EditGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "", publisher: "", price: 0, description: "", longDescription: "",
-      genres: "", websiteUrl: "", trailerUrls: ""
+      genres: [], websiteUrl: "", trailerUrls: ""
     },
   });
 
@@ -92,7 +95,7 @@ function EditGamePageContent() {
         price: gameData.price,
         description: gameData.description,
         longDescription: gameData.longDescription || "",
-        genres: gameData.genres?.join(', ') || "",
+        genres: gameData.genres || [],
         websiteUrl: gameData.websiteUrl || "",
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
       });
@@ -152,7 +155,7 @@ function EditGamePageContent() {
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
-        genres: values.genres.split(',').map(g => g.trim()),
+        genres: values.genres,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
@@ -174,6 +177,11 @@ function EditGamePageContent() {
 
     } catch (error: any) {
         console.error("Error updating game:", error);
+        
+        let errorData = {};
+        try {
+            errorData = JSON.parse(JSON.stringify(error));
+        } catch {}
 
         if (gameRef && error.code && error.code.includes('permission-denied')) {
             const permissionError = new FirestorePermissionError({
@@ -231,7 +239,58 @@ function EditGamePageContent() {
                 <FormField control={form.control} name="price" render={({ field }) => ( <FormItem><FormLabel>Price (USD)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Short Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="longDescription" render={({ field }) => ( <FormItem><FormLabel>Full Description</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                <FormField control={form.control} name="genres" render={({ field }) => ( <FormItem><FormLabel>Genres</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple genres with commas.</FormDescription><FormMessage /></FormItem> )}/>
+                
+                <FormField
+                  control={form.control}
+                  name="genres"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel>Genres</FormLabel>
+                        <FormDescription>
+                          Select all genres that apply to your game.
+                        </FormDescription>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {availableGenres.map((item) => (
+                          <FormField
+                            key={item}
+                            control={form.control}
+                            name="genres"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={item}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(item)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), item])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== item
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    {item}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><LinkIcon /> Official Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>

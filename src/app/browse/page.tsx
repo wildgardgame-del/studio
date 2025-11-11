@@ -12,6 +12,7 @@ import type { Game } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { GameFilters } from "@/components/game-filters";
+import { availableGenres } from "@/lib/genres";
 
 function BrowsePageContent() {
     const searchParams = useSearchParams();
@@ -33,17 +34,6 @@ function BrowsePageContent() {
     }, [firestore]);
 
     const { data: approvedGames, isLoading } = useCollection<Game>(gamesQuery);
-
-    const allGenres = useMemo(() => {
-        if (!approvedGames) return [];
-        const genresSet = new Set<string>();
-        approvedGames.forEach(game => {
-            if(game.genres) {
-                game.genres.forEach(genre => genresSet.add(genre));
-            }
-        });
-        return Array.from(genresSet).sort();
-    }, [approvedGames]);
 
     const filteredAndSortedGames = useMemo(() => {
         if (!approvedGames) return [];
@@ -94,7 +84,7 @@ function BrowsePageContent() {
                     <div className="grid lg:grid-cols-4 gap-8">
                         <aside className="lg:col-span-1">
                            <GameFilters 
-                                genres={allGenres}
+                                genres={availableGenres as unknown as string[]}
                                 selectedGenres={selectedGenres}
                                 onGenreChange={setSelectedGenres}
                                 sortOrder={sortOrder}

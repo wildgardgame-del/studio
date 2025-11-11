@@ -7,6 +7,7 @@ import { Suspense, useState, useRef } from "react";
 import { Send, Loader2, Upload, Link as LinkIcon, Youtube } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +28,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { uploadImage } from "@/ai/flows/upload-image-flow";
-import Image from "next/image";
+import { Checkbox } from "@/components/ui/checkbox";
+import { availableGenres } from "@/lib/genres";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -37,7 +39,9 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price cannot be negative."),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
-  genres: z.string().min(3, "Please enter at least one genre."),
+  genres: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one genre.",
+  }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
   coverImage: z.any()
@@ -83,7 +87,7 @@ function SubmitGamePageContent() {
       price: 0,
       description: "",
       longDescription: "",
-      genres: "",
+      genres: [],
       websiteUrl: "",
       trailerUrls: "",
     },
@@ -129,7 +133,7 @@ function SubmitGamePageContent() {
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
-        genres: values.genres.split(',').map(g => g.trim()),
+        genres: values.genres,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
@@ -219,14 +223,56 @@ function SubmitGamePageContent() {
                   </FormItem>
                 )}/>
 
-                <FormField control={form.control} name="genres" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Genres</FormLabel>
-                    <FormControl><Input placeholder="Action, RPG, Strategy" {...field} /></FormControl>
-                    <FormDescription>Separate multiple genres with commas.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                <FormField
+                  control={form.control}
+                  name="genres"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel>Genres</FormLabel>
+                        <FormDescription>
+                          Select all genres that apply to your game.
+                        </FormDescription>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {availableGenres.map((item) => (
+                          <FormField
+                            key={item}
+                            control={form.control}
+                            name="genres"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={item}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(item)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), item])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== item
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    {item}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                  <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => (
