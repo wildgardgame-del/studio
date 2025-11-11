@@ -38,7 +38,9 @@ function BrowsePageContent() {
         if (!approvedGames) return [];
         const genresSet = new Set<string>();
         approvedGames.forEach(game => {
-            game.genres.forEach(genre => genresSet.add(genre));
+            if(game.genres) {
+                game.genres.forEach(genre => genresSet.add(genre));
+            }
         });
         return Array.from(genresSet).sort();
     }, [approvedGames]);
@@ -61,7 +63,7 @@ function BrowsePageContent() {
         // Genre filter
         if (selectedGenres.length > 0) {
             games = games.filter(game => 
-                selectedGenres.every(selectedGenre => game.genres.includes(selectedGenre))
+                game.genres && selectedGenres.every(selectedGenre => game.genres.includes(selectedGenre))
             );
         }
 

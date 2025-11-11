@@ -12,10 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import { Suspense } from 'react';
 
 type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejected' };
 
-export default function ManageGamesPage() {
+function ManageGamesPageContent() {
     const { firestore } = useFirebase();
     const { toast } = useToast();
 
@@ -135,4 +136,13 @@ export default function ManageGamesPage() {
             <Footer />
         </div>
     );
+}
+
+
+export default function ManageGamesPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <ManageGamesPageContent />
+        </Suspense>
+    )
 }
