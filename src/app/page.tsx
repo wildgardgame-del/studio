@@ -55,7 +55,7 @@ export default function Home() {
                 Your Universe of Games
               </h1>
               <p className="mt-4 max-w-2xl text-lg text-muted-foreground mx-auto">
-                Discover, master, and conquer in worlds built for champions.
+                Forge your adventures and conquer epic worlds.
               </p>
               <div className="mt-8 flex justify-center gap-4">
                 <Button asChild size="lg" className="font-bold">
