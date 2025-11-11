@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, writeBatch } from "firebase/firestore";
 
@@ -31,7 +31,7 @@ const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
 })
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
     const { cartItems, clearCart } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
@@ -184,4 +184,13 @@ export default function CheckoutPage() {
       <Footer />
     </div>
   );
+}
+
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <CheckoutPageContent />
+        </Suspense>
+    )
 }
