@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Code, Info, Loader2, Rocket, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Info, Loader2, ShoppingCart, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { doc } from "firebase/firestore";
 
@@ -13,11 +13,12 @@ import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
 import { useGameStore } from "@/context/game-store-context";
 import type { Game } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 
 
 function ApplyForDevPageContent() {
+    'use client';
+    
     const { user, isUserLoading, firestore } = useFirebase();
     const router = useRouter();
     const { handleAddToCart, isPurchased } = useGameStore();
@@ -159,7 +160,7 @@ function ApplyForDevPageContent() {
                                 <div className="text-4xl font-bold text-primary text-center">${androidLicenseProduct.price?.toFixed(2) || '0.00'}</div>
                                 <Button size="lg" className="w-full" onClick={() => handlePurchase(androidLicenseProduct)} disabled={hasAndroidLicense || true}>
                                     {hasAndroidLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : 'Coming Soon'}
-                                </Button>
+                                 </Button>
                             </CardFooter>
                         </Card>
                     ) : <div className="border rounded-lg p-8 text-center text-muted-foreground">Android License Unavailable</div>}
