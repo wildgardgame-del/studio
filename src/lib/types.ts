@@ -15,6 +15,7 @@ export type Game = {
     rating: number;
   }[];
   status?: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
   developerId?: string;
   publisher?: string;
   websiteUrl?: string;

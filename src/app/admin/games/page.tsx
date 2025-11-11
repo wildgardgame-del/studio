@@ -27,14 +27,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejected' };
+
+type GameToReview = {
+    id: string;
+    title: string;
+    action: 'reject';
+}
 
 function ManageGamesPageContent() {
     const { firestore } = useFirebase();
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [gameToDelete, setGameToDelete] = useState<GameWithId | null>(null);
+    const [gameToReview, setGameToReview] = useState<GameToReview | null>(null);
+    const [rejectionReason, setRejectionReason] = useState("");
 
     const fetchAllGames = async () => {
         if (!firestore) throw new Error("Firestore not available");
@@ -73,10 +83,14 @@ function ManageGamesPageContent() {
     const rejectedGames = useMemo(() => allGames?.filter(g => g.status === 'rejected') || [], [allGames]);
     
     const statusMutation = useMutation({
-        mutationFn: async ({ gameId, newStatus }: { gameId: string, newStatus: 'approved' | 'rejected' }) => {
+        mutationFn: async ({ gameId, newStatus, reason }: { gameId: string, newStatus: 'approved' | 'rejected', reason?: string }) => {
             if (!firestore) throw new Error("Firestore not available");
             const gameRef = doc(firestore, 'games', gameId);
-            await updateDoc(gameRef, { status: newStatus });
+            const updateData: { status: 'approved' | 'rejected', rejectionReason?: string } = { status: newStatus };
+            if (newStatus === 'rejected' && reason) {
+                updateData.rejectionReason = reason;
+            }
+            await updateDoc(gameRef, updateData);
         },
         onSuccess: (_, variables) => {
             toast({
@@ -93,6 +107,10 @@ function ManageGamesPageContent() {
               });
               errorEmitter.emit('permission-error', permissionError);
         },
+        onSettled: () => {
+            setGameToReview(null);
+            setRejectionReason("");
+        }
     });
 
     const deleteMutation = useMutation({
@@ -120,6 +138,18 @@ function ManageGamesPageContent() {
             setGameToDelete(null);
         }
     });
+
+    const handleRejectSubmit = () => {
+        if (!gameToReview || rejectionReason.trim() === '') {
+            toast({
+                variant: 'destructive',
+                title: 'Rejection reason required',
+                description: 'Please provide a reason for rejecting the game.',
+            });
+            return;
+        }
+        statusMutation.mutate({ gameId: gameToReview.id, newStatus: 'rejected', reason: rejectionReason });
+    };
     
     const GameTable = ({ games, status }: { games: GameWithId[], status: 'pending' | 'approved' | 'rejected' | 'all' }) => {
         if (isLoading) {
@@ -159,7 +189,7 @@ function ManageGamesPageContent() {
                                         <Button size="sm" variant="ghost" className="text-green-500 hover:text-green-600" onClick={() => statusMutation.mutate({ gameId: game.id, newStatus: 'approved' })}>
                                             <Check className="mr-2 h-4 w-4" /> Approve
                                         </Button>
-                                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => statusMutation.mutate({ gameId: game.id, newStatus: 'rejected' })}>
+                                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => setGameToReview({ id: game.id, title: game.title, action: 'reject' })}>
                                             <X className="mr-2 h-4 w-4" /> Reject
                                         </Button>
                                     </>
@@ -198,6 +228,40 @@ function ManageGamesPageContent() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            <AlertDialog open={!!gameToReview} onOpenChange={(open) => !open && setGameToReview(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Reject Submission: {gameToReview?.title}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Please provide a reason for rejecting this submission. This will be visible to the developer.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                        <Label htmlFor="rejection-reason">Rejection Reason</Label>
+                        <Textarea
+                            id="rejection-reason"
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="e.g., The game does not meet our quality standards due to..."
+                        />
+                        </div>
+                    </div>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleRejectSubmit}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        disabled={statusMutation.isPending}
+                    >
+                        {statusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirm Rejection
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
 
             <div className="flex min-h-screen flex-col">
                 <Header />

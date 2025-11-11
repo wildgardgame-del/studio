@@ -65,6 +65,10 @@
             "rejected"
           ],
           "description": "The review status of the game."
+        },
+        "rejectionReason": {
+          "type": "string",
+          "description": "The reason why a game submission was rejected by an admin."
         }
       },
       "required": [

@@ -6,13 +6,20 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, PlusCircle, Pencil } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Info } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 type GameWithId = Game & { id: string };
 
@@ -58,39 +65,55 @@ function MyGamesPageContent() {
         }
 
         return (
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Game</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {myGames.map(game => (
-                        <TableRow key={game.id}>
-                            <TableCell className="font-medium">{game.title}</TableCell>
-                            <TableCell>${game.price ? game.price.toFixed(2) : '0.00'}</TableCell>
-                            <TableCell className="text-center">
-                                <Badge variant={getStatusVariant(game.status)} className={cn(
-                                    game.status === 'approved' && 'bg-green-600',
-                                )}>
-                                    {game.status ? game.status.charAt(0).toUpperCase() + game.status.slice(1) : 'Unknown'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <Button asChild variant="ghost" size="sm">
-                                    <Link href={`/dev/edit/${game.id}`}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        Edit
-                                    </Link>
-                                </Button>
-                            </TableCell>
+            <TooltipProvider>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Game</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {myGames.map(game => (
+                            <TableRow key={game.id}>
+                                <TableCell className="font-medium">{game.title}</TableCell>
+                                <TableCell>${game.price ? game.price.toFixed(2) : '0.00'}</TableCell>
+                                <TableCell className="text-center">
+                                    {game.status === 'rejected' && game.rejectionReason ? (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Badge variant={getStatusVariant(game.status)} className="cursor-help">
+                                                    <Info className="mr-1 h-3 w-3" />
+                                                    Rejected
+                                                </Badge>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className="max-w-xs">{game.rejectionReason}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ) : (
+                                        <Badge variant={getStatusVariant(game.status)} className={cn(
+                                            game.status === 'approved' && 'bg-green-600',
+                                        )}>
+                                            {game.status ? game.status.charAt(0).toUpperCase() + game.status.slice(1) : 'Unknown'}
+                                        </Badge>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button asChild variant="ghost" size="sm">
+                                        <Link href={`/dev/edit/${game.id}`}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Edit
+                                        </Link>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TooltipProvider>
         )
     }
 
