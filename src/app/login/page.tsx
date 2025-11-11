@@ -93,7 +93,7 @@ export default function LoginPage() {
             <Card className="mx-auto max-w-sm bg-background/80">
                 <CardHeader>
                     <div className="flex justify-center mb-4">
-                        <Image src="/logo.png" alt="Forge Gate Hub Logo" width={56} height={56} />
+                        <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={56} height={56} />
                     </div>
                     <CardTitle className="text-2xl font-headline text-center">Login to GameSphere</CardTitle>
                     <CardDescription className="text-center">
