@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Suspense, useState } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Suspense, useState, useRef } from "react";
+import { Send, Loader2, Upload, FileImage, X } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -26,6 +26,10 @@ import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { uploadImage } from "@/ai/flows/upload-image-flow";
+import Image from "next/image";
+
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
@@ -33,15 +37,40 @@ const formSchema = z.object({
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
   genres: z.string().min(3, "Please enter at least one genre."),
-  coverImage: z.string().url("Please enter a valid URL for the cover image."),
-  screenshots: z.string().min(10, "Please enter at least one screenshot URL."),
+  coverImage: z.any()
+    .refine((file) => !!file, "Cover image is required.")
+    .refine((file) => file?.size <= 5_000_000, `Max file size is 5MB.`)
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      ".jpg, .jpeg, .png and .webp files are accepted."
+    ),
+  screenshots: z.any()
+    .refine((files) => files?.length > 0, "At least one screenshot is required.")
+    .refine((files) => files?.length <= 5, "You can upload a maximum of 5 screenshots.")
+    .refine((files) => Array.from(files).every((file: any) => file.size <= 5_000_000), `Max file size per screenshot is 5MB.`)
+    .refine(
+      (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
+      "Only .jpg, .jpeg, .png and .webp files are accepted."
+    ),
 });
+
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
 
 function SubmitGamePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
+
+  const coverImageRef = useRef<HTMLInputElement>(null);
+  const screenshotsRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,10 +80,11 @@ function SubmitGamePageContent() {
       description: "",
       longDescription: "",
       genres: "",
-      coverImage: "",
-      screenshots: "",
     },
   });
+
+  const coverImage = form.watch("coverImage");
+  const screenshots = form.watch("screenshots");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -67,16 +97,32 @@ function SubmitGamePageContent() {
     }
 
     setIsSubmitting(true);
+    toast({ title: "Starting submission...", description: "Please wait while we upload your files." });
 
     try {
+      // 1. Upload Cover Image
+      const coverImageDataUri = await fileToDataUri(values.coverImage);
+      const coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
+      toast({ title: "Cover image uploaded!", description: "Now uploading screenshots..." });
+      
+      // 2. Upload Screenshots
+      const screenshotUrls = await Promise.all(
+        Array.from(values.screenshots).map(async (file: any) => {
+            const dataUri = await fileToDataUri(file);
+            return uploadImage({ fileDataUri: dataUri, fileName: file.name });
+        })
+      );
+      toast({ title: "Screenshots uploaded!", description: "Finalizing submission..." });
+
+      // 3. Prepare game data for Firestore
       const newGameData = {
         title: values.title,
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
         genres: values.genres.split(',').map(g => g.trim()),
-        coverImage: values.coverImage,
-        screenshots: values.screenshots.split(',').map(url => url.trim()),
+        coverImage: coverImageUrl,
+        screenshots: screenshotUrls,
         developerId: user.uid,
         status: 'pending' as const,
         submittedAt: serverTimestamp(),
@@ -84,15 +130,14 @@ function SubmitGamePageContent() {
         reviews: [],
       };
 
-      // Use the non-blocking version to create the document
+      // 4. Save to Firestore (non-blocking)
       addDocumentNonBlocking(collection(firestore, `games`), newGameData);
 
       toast({
         title: "Game Submitted!",
-        description: "Thank you for submitting your game. It will be reviewed shortly.",
+        description: "Thank you! Your game will be reviewed shortly.",
       });
       
-      // Wait a moment for the toast to appear before redirecting
       await new Promise(res => setTimeout(res, 500));
       router.push('/dev/dashboard');
 
@@ -101,10 +146,9 @@ function SubmitGamePageContent() {
       toast({
         variant: 'destructive',
         title: 'Submission Error',
-        description: error.message || 'Could not complete the operation.',
+        description: error.message || 'Could not complete the operation. Check the console for details.',
       });
-    } finally {
-        // Submission is so fast now we don't need to manage the `isSubmitting` state
+       setIsSubmitting(false);
     }
   }
 
@@ -165,20 +209,65 @@ function SubmitGamePageContent() {
 
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cover Image URL</FormLabel>
-                    <FormControl><Input type="text" placeholder="https://example.com/cover.jpg" {...field} /></FormControl>
-                     <FormMessage />
+                    <FormLabel>Cover Image</FormLabel>
+                    <FormControl>
+                        <Input
+                            type="file"
+                            className="hidden"
+                            ref={coverImageRef}
+                            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                            onChange={(e) => field.onChange(e.target.files?.[0])}
+                        />
+                    </FormControl>
+                    {!coverImage ? (
+                        <button type="button" onClick={() => coverImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                            <Upload className="h-8 w-8"/>
+                            <span>Click to upload a cover image</span>
+                            <span className="text-xs">(Max 5MB)</span>
+                        </button>
+                    ) : (
+                        <div className="relative w-48 mx-auto">
+                            <Image src={URL.createObjectURL(coverImage)} alt="Cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
+                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                    <FormMessage />
                   </FormItem>
                 )}/>
 
                 <FormField control={form.control} name="screenshots" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Screenshot URLs</FormLabel>
-                    <FormControl><Textarea placeholder="https://example.com/ss1.jpg, https://example.com/ss2.jpg" {...field} /></FormControl>
-                    <FormDescription>Paste URLs separated by commas.</FormDescription>
+                   <FormItem>
+                    <FormLabel>Screenshots</FormLabel>
+                    <FormControl>
+                        <Input
+                            type="file"
+                            className="hidden"
+                            ref={screenshotsRef}
+                            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                            multiple
+                            onChange={(e) => field.onChange(e.target.files)}
+                        />
+                    </FormControl>
+                    <button type="button" onClick={() => screenshotsRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                        <Upload className="h-8 w-8"/>
+                        <span>Click to upload screenshots</span>
+                        <span className="text-xs">(Up to 5 images, 5MB each)</span>
+                    </button>
+                     {screenshots && screenshots.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                            {Array.from(screenshots).map((file: any, index) => (
+                                <div key={index} className="relative">
+                                    <Image src={URL.createObjectURL(file)} alt={`Screenshot preview ${index + 1}`} width={160} height={90} className="rounded-md object-cover aspect-video" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <FormMessage />
-                  </FormItem>
+                   </FormItem>
                 )}/>
+
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? (
