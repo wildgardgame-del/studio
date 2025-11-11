@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -52,7 +53,7 @@ export default function Home() {
             <div className="relative bottom-[-10%]">
               <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={256} height={256} className="mx-auto mb-4" />
               <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl lg:text-6xl">
-                Forge, Play, Conquer, Repeat
+                Enter the Forge
               </h1>
               <p className="mt-4 max-w-2xl text-lg text-muted-foreground mx-auto">
                 Your Universe of Games
@@ -123,7 +124,7 @@ export default function Home() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary mb-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9.09 9.91 5.82 5.82"/><path d="m14.91 9.91-5.82 5.82"/></svg>
                 </div>
-                <h3 className="font-headline text-base font-bold">Seamless Experience</h3>
+                <h3 className="font-headline textBase font-bold">Seamless Experience</h3>
                 <p className="text-muted-foreground text-xs">A user-friendly interface that makes finding and playing games a breeze.</p>
               </div>
             </div>
