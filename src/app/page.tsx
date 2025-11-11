@@ -52,10 +52,10 @@ export default function Home() {
             <div className="relative bottom-[-10%]">
               <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={256} height={256} className="mx-auto mb-4" />
               <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl lg:text-6xl">
-                Your Universe of Games
+                Forge, Play, Conquer, Repeat
               </h1>
               <p className="mt-4 max-w-2xl text-lg text-muted-foreground mx-auto">
-                Forge, Play, Conquer, Repeat
+                Your Universe of Games
               </p>
               <div className="mt-8 flex justify-center gap-4">
                 <Button asChild size="lg" className="font-bold">
