@@ -231,7 +231,7 @@ function SubmitGamePageContent() {
                       <div className="mb-4">
                         <FormLabel>Genres</FormLabel>
                         <FormDescription>
-                          Select all genres that apply to your game.
+                          Select all genres that apply to your game. (Choosing irrelevant tags may lead to your submission being rejected)
                         </FormDescription>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
