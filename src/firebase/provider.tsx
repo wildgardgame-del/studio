@@ -6,7 +6,7 @@ import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -192,3 +192,5 @@ export const useUser = (): UserHookResult => { // Renamed from useAuthUser
   const { user, isUserLoading, userError } = useFirebase(); // Leverages the main hook
   return { user, isUserLoading, userError };
 };
+
+export { useQuery };
