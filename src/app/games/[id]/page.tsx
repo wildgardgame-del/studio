@@ -146,6 +146,27 @@ function GamePageContent() {
                   <p>{game.longDescription || game.description}</p>
                </div>
 
+               <div>
+                 <h2 className="text-2xl font-bold font-headline mb-4">Screenshots</h2>
+                  <Carousel
+                    opts={{
+                      align: "start",
+                      loop: true,
+                    }}
+                    className="w-full"
+                  >
+                    <CarouselContent>
+                      {(game.screenshots || []).map((ss, index) => (
+                        <CarouselItem key={index} className="md:basis-1/2">
+                          <Image src={ss} alt={`Screenshot ${index + 1} of ${game.title}`} width={1920} height={1080} className="rounded-lg aspect-video object-cover" />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="ml-14" />
+                    <CarouselNext className="mr-14" />
+                  </Carousel>
+               </div>
+               
                 {game.trailerUrls && game.trailerUrls.length > 0 && (
                     <div>
                         <h2 className="text-2xl font-bold font-headline mb-4">Trailers</h2>
@@ -173,27 +194,6 @@ function GamePageContent() {
                         </Carousel>
                     </div>
                 )}
-
-               <div>
-                 <h2 className="text-2xl font-bold font-headline mb-4">Screenshots</h2>
-                  <Carousel
-                    opts={{
-                      align: "start",
-                      loop: true,
-                    }}
-                    className="w-full"
-                  >
-                    <CarouselContent>
-                      {(game.screenshots || []).map((ss, index) => (
-                        <CarouselItem key={index} className="md:basis-1/2">
-                          <Image src={ss} alt={`Screenshot ${index + 1} of ${game.title}`} width={1920} height={1080} className="rounded-lg aspect-video object-cover" />
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious className="ml-14" />
-                    <CarouselNext className="mr-14" />
-                  </Carousel>
-               </div>
             </div>
           </div>
         </div>
