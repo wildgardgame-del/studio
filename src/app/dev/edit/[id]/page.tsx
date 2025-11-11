@@ -157,7 +157,7 @@ function EditGamePageContent() {
         screenshots: screenshotUrls,
         // Keep existing fields not in the form
         developerId: user.uid,
-        status: gameData?.status || 'pending', // Keep existing status
+        status: 'pending', // IMPORTANT: Set status to pending for re-approval
         submittedAt: gameData?.submittedAt || serverTimestamp(), // Keep original submission date
         updatedAt: serverTimestamp(),
       };
@@ -174,8 +174,8 @@ function EditGamePageContent() {
         });
 
       toast({
-        title: "Game Updated!",
-        description: `${values.title} has been successfully updated.`,
+        title: "Changes Submitted!",
+        description: `${values.title} has been sent for re-approval.`,
       });
       
       router.push('/dev/my-games');
@@ -280,7 +280,7 @@ function EditGamePageContent() {
                 )}/>
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating... </> ) : ( <><Send className="mr-2 h-4 w-4" /> Save Changes </> )}
+                  {isSubmitting ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating... </> ) : ( <><Send className="mr-2 h-4 w-4" /> Save and Submit for Review </> )}
                 </Button>
               </form>
             </Form>
