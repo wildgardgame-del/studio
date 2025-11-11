@@ -112,7 +112,9 @@ function EditGamePageContent() {
     // Security check: ensure the user editing is the developer
     if(gameData?.developerId !== user.uid) {
        toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to edit this game.' });
-       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: gameRef.path, operation: 'update' }));
+       if (gameRef) {
+         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: gameRef.path, operation: 'update' }));
+       }
        return;
     }
 
@@ -223,7 +225,7 @@ function EditGamePageContent() {
                 </div>
                 <FormField control={form.control} name="price" render={({ field }) => ( <FormItem><FormLabel>Price (USD)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Short Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                <FormField control={form.control} name="longDescription" render={({ field }) => ( <FormItem><FormLabel>Full Description</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField control={form.control} name="longDescription" render={({ field }) => ( <FormItem><FormLabel>Full Description</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="genres" render={({ field }) => ( <FormItem><FormLabel>Genres</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple genres with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><LinkIcon /> Official Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
