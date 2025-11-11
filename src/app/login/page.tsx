@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAuth, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +22,8 @@ import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
 import { useUser, useFirebaseApp } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import heroImage from '@/lib/placeholder-images.json';
+
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
@@ -87,10 +90,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
+        <Image
+            src={heroImage.placeholderImages[0].imageUrl}
+            alt="Futuristic city background"
+            data-ai-hint="cyberpunk city"
+            fill
+            className="object-cover -z-10"
+        />
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm -z-10" />
         <Header />
         <main className="flex-1 flex items-center justify-center">
-            <Card className="mx-auto max-w-sm">
+            <Card className="mx-auto max-w-sm bg-background/80">
                 <CardHeader>
                     <div className="flex justify-center mb-4">
                         <Icons.Logo className="h-12 w-12 text-accent" />
