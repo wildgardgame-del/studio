@@ -6,12 +6,12 @@ import Footer from '@/components/layout/footer';
 import { Loader2, PlusCircle, ShieldAlert, Gamepad2, Award } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useGameStore } from '@/context/game-store-context';
 
-export default function DevDashboardPage() {
+function DevDashboardPageContent() {
   const { user, isUserLoading } = useUser();
   const { isPurchased, purchasedGames } = useGameStore();
   const router = useRouter();
@@ -99,4 +99,12 @@ export default function DevDashboardPage() {
       <Footer />
     </div>
   );
+}
+
+export default function DevDashboardPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <DevDashboardPageContent />
+        </Suspense>
+    )
 }

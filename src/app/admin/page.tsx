@@ -2,7 +2,7 @@
 
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
@@ -10,7 +10,8 @@ import { Loader2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-export default function AdminDashboardPage() {
+
+function AdminDashboardPageContent() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   
@@ -79,4 +80,12 @@ export default function AdminDashboardPage() {
       <Footer />
     </div>
   );
+}
+
+export default function AdminDashboardPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <AdminDashboardPageContent />
+        </Suspense>
+    )
 }

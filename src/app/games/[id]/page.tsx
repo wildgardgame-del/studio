@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Loader2, Heart, ShoppingCart, Star } from 'lucide-react';
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/carousel"
 
 
-export default function GamePage() {
+function GamePageContent() {
   const params = useParams();
   const id = params.id as string;
   const { firestore } = useFirebase();
@@ -139,4 +139,12 @@ export default function GamePage() {
       <Footer />
     </div>
   );
+}
+
+export default function GamePage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <GamePageContent />
+        </Suspense>
+    )
 }

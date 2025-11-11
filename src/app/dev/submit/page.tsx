@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -37,7 +37,7 @@ const formSchema = z.object({
   screenshots: z.string().min(10, "Please enter at least one screenshot URL."),
 });
 
-export default function SubmitGamePage() {
+function SubmitGamePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
@@ -201,4 +201,12 @@ export default function SubmitGamePage() {
       <Footer />
     </div>
   );
+}
+
+export default function SubmitGamePage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <SubmitGamePageContent />
+        </Suspense>
+    )
 }
