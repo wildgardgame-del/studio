@@ -1,9 +1,8 @@
 'use client';
 
-import Link from "next/link"
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getAuth, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
@@ -18,14 +17,14 @@ import {
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { Icons } from "@/components/icons"
-import { useUser, useFirebaseApp } from "@/firebase";
+import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from '@/lib/placeholder-images.json';
 
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
-  const firebaseApp = useFirebaseApp(); // Use the hook to get the app instance
+  const auth = useAuth(); // Use the hook to get the auth instance
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -37,22 +36,15 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   const handleGoogleSignIn = async () => {
-    if (!firebaseApp) return;
+    if (!auth) return;
 
     setIsSigningIn(true);
-    const auth = getAuth(firebaseApp);
-
-    // This is the crucial part for deployed environments.
-    // It tells Firebase to trust the domain the popup is originating from.
-    if (typeof window !== 'undefined') {
-        auth.config.authDomain = window.location.hostname;
-    }
-
     const provider = new GoogleAuthProvider();
     
     try {
-      // Set persistence to store the user session across browser sessions.
+      // Set persistence to store the user session across browser sessions. This is key for Vercel.
       await setPersistence(auth, browserLocalPersistence);
+      
       // Now, attempt the sign-in
       await signInWithPopup(auth, provider);
       
