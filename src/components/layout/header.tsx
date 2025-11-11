@@ -102,7 +102,7 @@ export default function Header() {
                 className="mb-4 flex items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
                 >
-                <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={32} height={32} className="mr-2" />
+                <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={40} height={40} className="mr-2" />
                 <span className="font-bold font-headline">Forge Gate Hub</span>
                 </Link>
                 <div className="flex flex-col space-y-3">
@@ -159,7 +159,7 @@ export default function Header() {
         <div className="flex w-full items-center justify-between">
             <div className="flex items-center">
                 <Link href="/" className="mr-6 flex items-center space-x-2">
-                    <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={32} height={32} />
+                    <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={40} height={40} />
                     <span className="hidden font-bold sm:inline-block font-headline">
                     Forge Gate Hub
                     </span>
