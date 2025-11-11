@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,14 +10,30 @@ import Footer from '@/components/layout/footer';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
 
 
 function AdminDashboardPageContent() {
   const { user, isUserLoading } = useUser();
+  const { firestore } = useFirebase();
   const router = useRouter();
   
   // Hardcoded admin check based on email
   const isAdmin = user?.email === 'ronneeh@gmail.com';
+
+  const { data: pendingCount } = useQuery({
+    queryKey: ['pending-games-count'],
+    queryFn: async () => {
+      if (!firestore || !isAdmin) return 0;
+      const q = query(collection(firestore, 'games'), where('status', '==', 'pending'));
+      const snapshot = await getDocs(q);
+      return snapshot.size;
+    },
+    enabled: !!firestore && !!isAdmin, // Only run if firestore is available and user is admin
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   useEffect(() => {
     if (!isUserLoading && !isAdmin) {
@@ -57,7 +74,12 @@ function AdminDashboardPageContent() {
              <Card className="hover:border-primary transition-colors">
                 <Link href="/admin/games">
                     <CardHeader>
-                        <CardTitle>Manage Games</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Manage Games</CardTitle>
+                            {pendingCount !== undefined && pendingCount > 0 && (
+                               <Badge className="bg-accent text-accent-foreground">{pendingCount}</Badge>
+                            )}
+                        </div>
                         <CardDescription>Approve or reject games submitted by developers.</CardDescription>
                     </CardHeader>
                     <CardContent>
