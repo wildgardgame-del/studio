@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/card"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
-import { Icons } from "@/components/icons"
 import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from '@/lib/placeholder-images.json';
@@ -94,7 +93,7 @@ export default function LoginPage() {
             <Card className="mx-auto max-w-sm bg-background/80">
                 <CardHeader>
                     <div className="flex justify-center mb-4">
-                        <Icons.Logo className="h-12 w-12 text-accent" />
+                        <Image src="/logo.png" alt="Forge Gate Hub Logo" width={56} height={56} />
                     </div>
                     <CardTitle className="text-2xl font-headline text-center">Login to GameSphere</CardTitle>
                     <CardDescription className="text-center">

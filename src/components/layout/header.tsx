@@ -39,6 +39,7 @@ import { Cart } from '@/components/cart';
 import { Icons } from '../icons';
 import { useGameStore } from '@/context/game-store-context';
 import { useUser } from '@/firebase';
+import Image from 'next/image';
 
 const navLinks = [
   { href: '/browse', label: 'Store', activeColorClass: 'text-primary' },
@@ -101,7 +102,7 @@ export default function Header() {
                 className="mb-4 flex items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
                 >
-                <Icons.Logo className="mr-2 h-6 w-6 text-accent" />
+                <Image src="/logo.png" alt="Forge Gate Hub Logo" width={32} height={32} className="mr-2" />
                 <span className="font-bold font-headline">Forge Gate Hub</span>
                 </Link>
                 <div className="flex flex-col space-y-3">
@@ -158,7 +159,7 @@ export default function Header() {
         <div className="flex w-full items-center justify-between">
             <div className="flex items-center">
                 <Link href="/" className="mr-6 flex items-center space-x-2">
-                    <Icons.Logo className="h-6 w-6 text-accent" />
+                    <Image src="/logo.png" alt="Forge Gate Hub Logo" width={32} height={32} />
                     <span className="hidden font-bold sm:inline-block font-headline">
                     Forge Gate Hub
                     </span>
