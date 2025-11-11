@@ -1,3 +1,4 @@
+'use client';
 
 import { Suspense } from 'react';
 import { collection, query, where } from 'firebase/firestore';
@@ -16,8 +17,6 @@ import { cn } from '@/lib/utils';
 type GameWithId = Game & { id: string };
 
 function MyGamesPageContent() {
-    'use client';
-
     const { firestore, user } = useFirebase();
 
     const myGamesQuery = useMemoFirebase(() => {
