@@ -4,14 +4,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public can read. Signed-in users can create. Admins can update/delete.
+     * @description Public can read. Signed-in users can create. Admins or the original developer can update. Admins can delete.
      * @path /games/{gameId}
      */
     match /games/{gameId} {
       allow get: if true;
       allow list: if resource.data.status == 'approved' || (isSignedIn() && isAdmin());
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
+      allow delete: if isSignedIn() && isAdmin();
     }
 
     /**
