@@ -8,6 +8,8 @@ import Header from '@/components/layout/header';
 import { Library as LibraryIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { Game } from '@/lib/types';
+import Image from 'next/image';
+import heroImage from '@/lib/placeholder-images.json';
 
 export default function LibraryPage() {
   const { user, firestore } = useFirebase();
@@ -32,7 +34,15 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
+        <Image
+            src={heroImage.placeholderImages[0].imageUrl}
+            alt="Futuristic city background"
+            data-ai-hint="cyberpunk city"
+            fill
+            className="object-cover -z-10"
+        />
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm -z-10" />
       <Header />
       <main className="flex-1">
         <div className="container py-12">
@@ -46,7 +56,7 @@ export default function LibraryPage() {
               ))}
             </div>
           ) : (
-            <div className="mt-16 flex flex-col items-center justify-center text-center">
+            <div className="mt-16 flex flex-col items-center justify-center text-center rounded-lg bg-background/50 p-12">
               <LibraryIcon className="h-20 w-20 text-muted-foreground/50" />
               <h2 className="mt-6 font-headline text-2xl font-bold">Your library is empty</h2>
               <p className="mt-2 text-muted-foreground">Games you purchase will appear here.</p>
