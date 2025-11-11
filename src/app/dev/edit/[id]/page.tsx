@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,13 +109,13 @@ function EditGamePageContent() {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not update game. Invalid context.' });
       return;
     }
-    
-    if(gameData?.developerId !== user.uid) {
-       toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to edit this game.' });
-       if (gameRef) {
-         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: gameRef.path, operation: 'update' }));
-       }
-       return;
+
+    if (gameData?.developerId !== user.uid) {
+      toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to edit this game.' });
+      if (gameRef) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: gameRef.path, operation: 'update' }));
+      }
+      return;
     }
 
     setIsSubmitting(true);
@@ -124,24 +123,27 @@ function EditGamePageContent() {
 
     try {
       let coverImageUrl = existingCoverImage;
-      let screenshotUrls = existingScreenshots;
+      let screenshotUrls = [...existingScreenshots]; // Start with a copy of existing screenshots
 
-      if (values.coverImage) {
+      // Handle new cover image upload
+      if (values.coverImage && values.coverImage.name) {
         const coverImageDataUri = await fileToDataUri(values.coverImage);
         coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
         toast({ title: "New cover image uploaded!" });
       }
 
+      // Handle new screenshots upload
       if (values.screenshots && values.screenshots.length > 0) {
-        screenshotUrls = await Promise.all(
+        const newScreenshotUrls = await Promise.all(
           Array.from(values.screenshots).map(async (file: any) => {
-              const dataUri = await fileToDataUri(file);
-              return uploadImage({ fileDataUri: dataUri, fileName: file.name });
+            const dataUri = await fileToDataUri(file);
+            return uploadImage({ fileDataUri: dataUri, fileName: file.name });
           })
         );
+        screenshotUrls = [...screenshotUrls, ...newScreenshotUrls]; // Append new screenshots
         toast({ title: "New screenshots uploaded!", description: "Finalizing submission..." });
       }
-      
+
       const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
       const updatedGameData = {
@@ -156,7 +158,7 @@ function EditGamePageContent() {
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         developerId: user.uid,
-        status: 'pending' as const,
+        status: 'pending' as const, // Always return to pending status for re-approval
         submittedAt: gameData?.submittedAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -167,19 +169,20 @@ function EditGamePageContent() {
         title: "Changes Submitted!",
         description: `${values.title} has been sent for re-approval.`,
       });
-      
+
       router.push('/dev/my-games');
 
     } catch (error: any) {
         console.error("Error updating game:", error);
 
-        if (error.code && error.code.includes('permission-denied') && gameRef) {
-           errorEmitter.emit('permission-error', new FirestorePermissionError({
+        if (gameRef && error.code && error.code.includes('permission-denied')) {
+            const permissionError = new FirestorePermissionError({
                 path: gameRef.path,
                 operation: 'update',
-            }));
+            });
+            errorEmitter.emit('permission-error', permissionError);
         }
-
+        
         toast({
             variant: 'destructive',
             title: 'Update Error',
@@ -195,6 +198,14 @@ function EditGamePageContent() {
           <div className="flex min-h-screen items-center justify-center">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
           </div>
+      )
+  }
+
+  if (!gameData) {
+      return (
+           <div className="flex min-h-screen flex-col items-center justify-center">
+                <p>Game not found or you don't have permission to edit it.</p>
+           </div>
       )
   }
 
@@ -219,7 +230,7 @@ function EditGamePageContent() {
                 </div>
                 <FormField control={form.control} name="price" render={({ field }) => ( <FormItem><FormLabel>Price (USD)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Short Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                <FormField control={form.control} name="longDescription" render={({ field }) => ( <FormItem><FormLabel>Full Description</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormMessage /></FormItem> )}/>
+                <FormField control={form.control} name="longDescription" render={({ field }) => ( <FormItem><FormLabel>Full Description</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="genres" render={({ field }) => ( <FormItem><FormLabel>Genres</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple genres with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><LinkIcon /> Official Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
@@ -232,7 +243,7 @@ function EditGamePageContent() {
                     <FormControl>
                         <Input type="file" className="hidden" ref={coverImageRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => field.onChange(e.target.files?.[0])} />
                     </FormControl>
-                     {coverImageFile ? (
+                     {coverImageFile && coverImageFile.name ? (
                         <div className="relative w-48 mx-auto">
                             <Image src={URL.createObjectURL(coverImageFile)} alt="New cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
                             <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}> <Trash2 className="h-4 w-4"/> </Button>
@@ -259,7 +270,7 @@ function EditGamePageContent() {
                     </FormControl>
                     <button type="button" onClick={() => screenshotsRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
                         <Upload className="h-8 w-8"/>
-                        <span>{screenshotsFiles?.length > 0 || existingScreenshots.length > 0 ? 'Replace screenshots' : 'Upload screenshots'}</span>
+                        <span>{screenshotsFiles?.length > 0 || existingScreenshots.length > 0 ? 'Add or replace screenshots' : 'Upload screenshots'}</span>
                         <span className="text-xs">(Up to 5 images, 5MB each)</span>
                     </button>
                     <div className="grid grid-cols-3 gap-2 mt-2">
