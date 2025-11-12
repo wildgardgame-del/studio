@@ -104,7 +104,7 @@ function MyGamesPageContent() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Tooltip>
-                                        <TooltipTrigger asChild>
+                                        <TooltipTrigger>
                                             <div className="inline-block"> 
                                                 <Button asChild variant="ghost" size="sm" disabled={game.status === 'pending'}>
                                                     <Link href={`/dev/edit/${game.id}`}>
