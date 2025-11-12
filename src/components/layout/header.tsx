@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -267,13 +268,12 @@ export default function Header() {
                     )}
                 </div>
 
-                <Separator className="my-4" />
-
-                <div className="mt-auto">
+                <div className="mt-4">
                   {isUserLoading ? (
-                     <div className='h-10 w-full rounded-md bg-muted animate-pulse' />
+                     <div className='h-10 w-full rounded-md bg-muted animate-pulse mt-auto' />
                   ) : user ? (
                     <div className="flex flex-col gap-2">
+                       <Separator className="my-2" />
                        <div className="flex items-center gap-3 px-3">
                           <Avatar className="h-9 w-9">
                             <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
@@ -297,11 +297,15 @@ export default function Header() {
                        </Button>
                     </div>
                   ) : (
-                    <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Link href="/login">Login / Sign Up</Link>
-                    </Button>
+                     <div className="mt-auto">
+                        <Separator className="my-4" />
+                        <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                            <Link href="/login">Login / Sign Up</Link>
+                        </Button>
+                    </div>
                   )}
                 </div>
+                <div className="mt-auto"></div>
             </SheetContent>
             </Sheet>
         </div>
