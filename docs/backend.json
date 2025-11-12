@@ -1,5 +1,22 @@
 {
   "entities": {
+    "AdminMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin Message",
+      "type": "object",
+      "description": "Represents a message sent from a user to an administrator.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the message." },
+        "userId": { "type": "string", "description": "The ID of the user who sent the message." },
+        "username": { "type": "string", "description": "The username of the user who sent the message." },
+        "userEmail": { "type": "string", "description": "The email of the user who sent the message.", "format": "email" },
+        "subject": { "type": "string", "description": "The subject of the message." },
+        "message": { "type": "string", "description": "The content of the message." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the message was created." },
+        "isRead": { "type": "boolean", "description": "Whether the admin has read the message." }
+      },
+      "required": ["id", "userId", "username", "userEmail", "subject", "message", "createdAt", "isRead"]
+    },
     "Game": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Game",
@@ -272,6 +289,22 @@
   "firestore": {
     "structure": [
       {
+        "path": "/admin_messages/{messageId}",
+        "definition": {
+          "entityName": "AdminMessage",
+          "schema": {
+            "$ref": "#/backend/entities/AdminMessage"
+          },
+          "description": "Stores messages sent from users to administrators. Any signed-in user can create a message. Only admins can read/update/delete.",
+          "params": [
+            {
+              "name": "messageId",
+              "description": "The unique identifier of the message."
+            }
+          ]
+        }
+      },
+      {
         "path": "/games/{gameId}",
         "definition": {
           "entityName": "Game",
@@ -401,5 +434,3 @@
     "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
   }
 }
-
-    

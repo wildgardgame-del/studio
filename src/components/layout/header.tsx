@@ -15,6 +15,7 @@ import {
   Gamepad2,
   Bell,
   CheckCheck,
+  MessageSquare,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -349,6 +350,10 @@ export default function Header() {
                     
                     <DropdownMenuItem asChild>
                         <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
+                    </DropdownMenuItem>
+
+                     <DropdownMenuItem asChild>
+                        <Link href="/contact"><MessageSquare className="mr-2 h-4 w-4" />Contact Admin</Link>
                     </DropdownMenuItem>
                     
                     {hasDevLicense ? (

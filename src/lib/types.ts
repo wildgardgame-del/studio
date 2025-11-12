@@ -54,4 +54,17 @@ export type Notification = {
   link?: string;
 };
 
+export type AdminMessage = {
+  id: string;
+  userId: string;
+  username: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  isRead: boolean;
+};
     

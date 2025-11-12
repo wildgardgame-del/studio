@@ -6,7 +6,7 @@ import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert, Gamepad2, Bell, Users } from 'lucide-react';
+import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -32,6 +32,18 @@ function AdminDashboardPageContent() {
     },
     enabled: !!firestore && !!isAdmin, // Only run if firestore is available and user is admin
     refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  
+  const { data: unreadMessageCount } = useQuery({
+    queryKey: ['unread-messages-count'],
+    queryFn: async () => {
+        if (!firestore || !isAdmin) return 0;
+        const q = query(collection(firestore, 'admin_messages'), where('isRead', '==', false));
+        const snapshot = await getDocs(q);
+        return snapshot.size;
+    },
+    enabled: !!firestore && !!isAdmin,
+    refetchInterval: 30000,
   });
 
   useEffect(() => {
@@ -106,6 +118,22 @@ function AdminDashboardPageContent() {
                   <CardContent>
                       <Button variant="link" className="p-0 text-accent">View Users</Button>
                   </CardContent>
+                </Link>
+             </Card>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/admin/inbox">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-2"><Inbox className="text-accent"/>Inbox</CardTitle>
+                            {unreadMessageCount !== undefined && unreadMessageCount > 0 && (
+                               <Badge className="bg-accent text-accent-foreground">{unreadMessageCount}</Badge>
+                            )}
+                        </div>
+                        <CardDescription>View and manage messages from users.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="link" className="p-0 text-accent">View Messages</Button>
+                    </CardContent>
                 </Link>
              </Card>
           </div>

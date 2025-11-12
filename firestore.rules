@@ -79,6 +79,15 @@ service cloud.firestore {
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false;
     }
+    
+    /**
+     * @description Allows any signed-in user to send a message to admin. Only admin can read/manage.
+     * @path /admin_messages/{messageId}
+     */
+    match /admin_messages/{messageId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete, list: if isSignedIn() && isAdmin();
+    }
   }
 
   // Helper functions
