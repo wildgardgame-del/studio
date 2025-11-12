@@ -147,13 +147,13 @@ export default function SignupPage() {
                                 </PopoverContent>
                             </Popover>
                             
-                            {isAdult === true && (
+                            {dateOfBirth && (
                                 <>
                                  <Alert>
                                     <AlertTriangle className="h-4 w-4" />
                                     <AlertTitle>Confirm Your Age</AlertTitle>
                                     <AlertDescription className="text-xs">
-                                        By creating an account, you confirm that you are over 18. Providing false information may result in a permanent ban.
+                                        By creating an account, you confirm your date of birth is correct. Providing false information may result in a permanent ban.
                                     </AlertDescription>
                                 </Alert>
                                 <Button onClick={handleGoogleSignUp} className="w-full" disabled={isSigningUp}>
@@ -161,16 +161,6 @@ export default function SignupPage() {
                                     Sign Up with Google
                                 </Button>
                                 </>
-                            )}
-                            
-                            {isAdult === false && (
-                                <Alert variant="destructive">
-                                    <AlertTriangle className="h-4 w-4" />
-                                    <AlertTitle>Age Restriction</AlertTitle>
-                                    <AlertDescription>
-                                        You must be at least 18 years old to create an account.
-                                    </AlertDescription>
-                                </Alert>
                             )}
 
                         </div>
