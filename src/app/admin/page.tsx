@@ -6,7 +6,7 @@ import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert, Gamepad2, Bell } from 'lucide-react';
+import { Loader2, ShieldAlert, Gamepad2, Bell, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -97,14 +97,16 @@ function AdminDashboardPageContent() {
                     </CardContent>
                 </Link>
              </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Manage Users</CardTitle>
-                    <CardDescription>View and edit user roles.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Coming soon...</p>
-                </CardContent>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/admin/users">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Users className="text-accent"/>Manage Users</CardTitle>
+                      <CardDescription>View all registered users.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <Button variant="link" className="p-0 text-accent">View Users</Button>
+                  </CardContent>
+                </Link>
              </Card>
           </div>
         </div>
