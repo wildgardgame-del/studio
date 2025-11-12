@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, query, getDocs, orderBy } from 'firebase/firestore';
@@ -8,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Suspense } from 'react';
-import { Loader2 } "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
