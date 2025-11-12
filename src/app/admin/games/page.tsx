@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, updateDoc, doc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,7 @@ type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejecte
 type GameAction = {
     id: string;
     title: string;
+    developerId?: string;
 }
 
 function ManageGamesPageContent() {
@@ -82,32 +83,64 @@ function ManageGamesPageContent() {
     const pendingGames = useMemo(() => allGames?.filter(g => g.status === 'pending') || [], [allGames]);
     const approvedGames = useMemo(() => allGames?.filter(g => g.status === 'approved') || [], [allGames]);
     const rejectedGames = useMemo(() => allGames?.filter(g => g.status === 'rejected') || [], [allGames]);
+
+    const createNotification = async (game: GameAction, title: string, message: string) => {
+        if (!firestore || !game.developerId) return;
+        const notificationsRef = collection(firestore, `users/${game.developerId}/notifications`);
+        await addDoc(notificationsRef, {
+            userId: game.developerId,
+            title: title,
+            message: message,
+            isRead: false,
+            createdAt: serverTimestamp(),
+            type: 'game-status',
+            link: '/dev/my-games'
+        });
+    };
     
     const statusMutation = useMutation({
-        mutationFn: async ({ gameId, newStatus, reason }: { gameId: string, newStatus: 'approved' | 'rejected' | 'pending', reason?: string }) => {
+        mutationFn: async ({ game, newStatus, reason }: { game: GameAction, newStatus: 'approved' | 'rejected' | 'pending', reason?: string }) => {
             if (!firestore) throw new Error("Firestore not available");
-            const gameRef = doc(firestore, 'games', gameId);
-            const updateData: { status: 'approved' | 'rejected' | 'pending', rejectionReason?: string } = { status: newStatus };
+            const gameRef = doc(firestore, 'games', game.id);
+            const updateData: { status: 'approved' | 'rejected' | 'pending', rejectionReason?: string | null } = { status: newStatus, rejectionReason: null };
             if (reason) {
                 updateData.rejectionReason = reason;
             }
             await updateDoc(gameRef, updateData);
+            return { game, newStatus, reason }; // Pass context to onSuccess
         },
-        onSuccess: (_, variables) => {
+        onSuccess: ({ game, newStatus, reason }) => {
             let title = 'Game Status Updated';
-            if (variables.newStatus === 'approved') title = 'Game Approved';
-            if (variables.newStatus === 'rejected') title = 'Game Rejected';
-            if (variables.newStatus === 'pending') title = 'Revision Requested';
+            let notificationTitle = '';
+            let notificationMessage = '';
+            
+            if (newStatus === 'approved') {
+                title = 'Game Approved';
+                notificationTitle = `Game Approved: ${game.title}`;
+                notificationMessage = `Congratulations! Your game, ${game.title}, has been approved and is now live on the store.`;
+            }
+            if (newStatus === 'rejected') {
+                title = 'Game Rejected';
+                notificationTitle = `Submission Rejected: ${game.title}`;
+                notificationMessage = `Your submission for ${game.title} was rejected. Reason: ${reason}`;
+            }
+            if (newStatus === 'pending') {
+                title = 'Revision Requested';
+                notificationTitle = `Revision Requested for ${game.title}`;
+                notificationMessage = `A revision has been requested for your game, ${game.title}. Reason: ${reason}`;
+            }
+
+            createNotification(game, notificationTitle, notificationMessage);
             
             toast({
                 title: title,
-                description: `The game's status has been updated.`,
+                description: `The game's status has been updated. A notification was sent to the developer.`,
             });
             queryClient.invalidateQueries({ queryKey: ['all-games'] });
         },
         onError: (error, variables) => {
              const permissionError = new FirestorePermissionError({
-                path: `games/${variables.gameId}`,
+                path: `games/${variables.game.id}`,
                 operation: 'update',
                 requestResourceData: { status: variables.newStatus },
               });
@@ -158,7 +191,7 @@ function ManageGamesPageContent() {
         }
 
         const newStatus = action === 'reject' ? 'rejected' : 'pending';
-        statusMutation.mutate({ gameId: game.id, newStatus: newStatus, reason: actionReason });
+        statusMutation.mutate({ game, newStatus: newStatus, reason: actionReason });
     };
     
     const GameTable = ({ games, status }: { games: GameWithId[], status: 'pending' | 'approved' | 'rejected' | 'all' }) => {
@@ -196,16 +229,16 @@ function ManageGamesPageContent() {
                                 </Button>
                                 {status === 'pending' && (
                                     <>
-                                        <Button size="sm" variant="ghost" className="text-green-500 hover:text-green-600" onClick={() => statusMutation.mutate({ gameId: game.id, newStatus: 'approved' })}>
+                                        <Button size="sm" variant="ghost" className="text-green-500 hover:text-green-600" onClick={() => statusMutation.mutate({ game, newStatus: 'approved' })}>
                                             <Check className="mr-2 h-4 w-4" /> Approve
                                         </Button>
-                                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => setGameToReject({ id: game.id, title: game.title })}>
+                                        <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => setGameToReject({ id: game.id, title: game.title, developerId: game.developerId })}>
                                             <X className="mr-2 h-4 w-4" /> Reject
                                         </Button>
                                     </>
                                 )}
                                 {status === 'approved' && (
-                                     <Button size="sm" variant="ghost" className="text-yellow-500 hover:text-yellow-600" onClick={() => setGameForRevision({ id: game.id, title: game.title })}>
+                                     <Button size="sm" variant="ghost" className="text-yellow-500 hover:text-yellow-600" onClick={() => setGameForRevision({ id: game.id, title: game.title, developerId: game.developerId })}>
                                         <ShieldQuestion className="mr-2 h-4 w-4" /> Request Revision
                                     </Button>
                                 )}
@@ -366,3 +399,5 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
+
+    

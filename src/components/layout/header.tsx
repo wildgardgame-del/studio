@@ -13,10 +13,15 @@ import {
   PlusCircle,
   Award,
   Gamepad2,
+  Bell,
+  CheckCheck,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
+import { collection, query, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
+import { formatDistanceToNow } from 'date-fns';
+
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -36,15 +41,111 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
-import { Icons } from '../icons';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import Image from 'next/image';
+import type { Notification } from '@/lib/types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Separator } from '../ui/separator';
 
 const navLinks = [
   { href: '/browse', label: 'Store', activeColorClass: 'text-primary' },
   { href: '/library', label: 'Library', activeColorClass: 'text-accent' },
 ];
+
+function NotificationsMenu() {
+    const { user, firestore } = useFirebase();
+    const queryClient = useQueryClient();
+
+    const notificationsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(collection(firestore, `users/${user.uid}/notifications`), orderBy('createdAt', 'desc'), limit(10));
+    }, [user, firestore]);
+
+    const { data: notifications } = useCollection<Notification>(notificationsQuery);
+    
+    const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
+
+    const markAsReadMutation = useMutation({
+        mutationFn: async (notificationId: string) => {
+            if (!user || !firestore) throw new Error("Missing user or firestore");
+            const notifRef = doc(firestore, `users/${user.uid}/notifications`, notificationId);
+            return updateDoc(notifRef, { isRead: true });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications', user?.uid] });
+        }
+    });
+    
+    const markAllAsReadMutation = useMutation({
+        mutationFn: async () => {
+             if (!user || !firestore || !notifications) throw new Error("Missing user, firestore or notifications");
+             const batch = (await import('firebase/firestore')).writeBatch(firestore);
+             notifications.forEach(n => {
+                if (!n.isRead) {
+                    const notifRef = doc(firestore, `users/${user.uid}/notifications`, n.id);
+                    batch.update(notifRef, { isRead: true });
+                }
+             });
+             return batch.commit();
+        },
+        onSuccess: () => {
+             queryClient.invalidateQueries({ queryKey: ['notifications', user?.uid] });
+        }
+    })
+
+    const handleNotificationClick = (notification: Notification) => {
+        if (!notification.isRead) {
+            markAsReadMutation.mutate(notification.id);
+        }
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">{unreadCount}</span>
+                    )}
+                    <span className="sr-only">Notifications</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80 md:w-96" align="end">
+                <DropdownMenuLabel className="flex justify-between items-center">
+                    Notifications
+                    {unreadCount > 0 && (
+                        <Button variant="ghost" size="sm" onClick={() => markAllAsReadMutation.mutate()} disabled={markAllAsReadMutation.isPending}>
+                            <CheckCheck className="mr-2 h-4 w-4"/>
+                            Mark all as read
+                        </Button>
+                    )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications && notifications.length > 0 ? (
+                    <div className="max-h-96 overflow-y-auto">
+                        {notifications.map(notification => (
+                            <DropdownMenuItem key={notification.id} asChild onSelect={(e) => e.preventDefault()}>
+                                <Link href={notification.link || '#'}
+                                      className={cn("flex flex-col items-start gap-1 p-2", !notification.isRead && "bg-secondary")}
+                                      onClick={() => handleNotificationClick(notification)}
+                                >
+                                    <p className="font-semibold text-sm">{notification.title}</p>
+                                    <p className="text-xs text-muted-foreground whitespace-normal">{notification.message}</p>
+                                     <p className="text-xs text-muted-foreground/70 self-end">
+                                        {formatDistanceToNow(notification.createdAt.seconds * 1000, { addSuffix: true })}
+                                    </p>
+                                </Link>
+                            </DropdownMenuItem>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="p-4 text-center text-sm text-muted-foreground">You have no new notifications.</p>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
 
 export default function Header() {
   const { cartItems, wishlistItems, isPurchased } = useGameStore();
@@ -224,6 +325,8 @@ export default function Header() {
                 {isUserLoading ? (
                 <div className='h-8 w-8 rounded-full bg-muted animate-pulse' />
                 ) : user ? (
+                <>
+                <NotificationsMenu />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -276,6 +379,7 @@ export default function Header() {
                     </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+                </>
                 ) : (
                 <Link href="/login">
                     <Button variant="ghost" size="icon">
@@ -302,3 +406,5 @@ export default function Header() {
     </header>
   );
 }
+
+    

@@ -39,3 +39,19 @@ export type DeveloperApplication = {
     nanoseconds: number;
   };
 }
+
+export type Notification = {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  type: 'game-status' | 'promotion' | 'system';
+  link?: string;
+};
+
+    

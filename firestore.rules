@@ -70,6 +70,14 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
+
+    /**
+     * @description Enforces user-ownership for notifications.
+     * @path /users/{userId}/notifications/{notificationId}
+     */
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
   }
 
   // Helper functions
@@ -89,3 +97,5 @@ service cloud.firestore {
     return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
   }
 }
+
+    
