@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import {
@@ -171,11 +172,13 @@ export default function Header() {
     } else {
       router.push(`/browse?q=${encodeURIComponent(searchQuery)}`);
     }
+    setIsMobileMenuOpen(false);
   };
 
   const handleLogout = async () => {
     const auth = getAuth();
     await signOut(auth);
+    setIsMobileMenuOpen(false);
     router.push('/');
   }
 
@@ -198,7 +201,7 @@ export default function Header() {
                 <span className="sr-only">Toggle Menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="pr-0">
+            <SheetContent side="left" className="pr-0 flex flex-col">
                 <Link
                 href="/"
                 className="mb-4 flex items-center"
@@ -208,37 +211,37 @@ export default function Header() {
                 <span className="font-bold font-headline">Forge Gate Hub</span>
                 </Link>
                 <div className="flex flex-col space-y-3">
-                {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
+                  {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                            "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            pathname === link.href
+                            ? `bg-muted ${link.activeColorClass}`
+                            : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {link.label}
+                      </Link>
+                  ))}
+                  <Link
+                      href="/wishlist"
                       className={cn(
-                          "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                          pathname === link.href
-                          ? `bg-muted ${link.activeColorClass}`
-                          : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                        "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        pathname === "/wishlist"
+                        ? "bg-muted text-foreground"
+                        : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
-                ))}
-                <Link
-                    href="/wishlist"
-                    className={cn(
-                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      pathname === "/wishlist"
-                      ? "bg-muted text-foreground"
-                      : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
-                    )}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                    Wishlist
+                      >
+                      Wishlist
                     </Link>
                     {user && hasDevLicense && (
                         <Link
                             href="/dev/dashboard"
-                            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
+                            className="rounded-md px-3 py-2 text-sm font-medium text-yellow-500 transition-colors hover:bg-muted/50 hover:text-yellow-400"
                             onClick={() => setIsMobileMenuOpen(false)}
                             >
                             Dev Dashboard
@@ -253,6 +256,51 @@ export default function Header() {
                             Become a Publisher
                         </Link>
                     )}
+                    {user && user.email === 'ronneeh@gmail.com' && (
+                       <Link
+                          href="/admin"
+                          className="rounded-md px-3 py-2 text-sm font-medium text-orange-500 transition-colors hover:bg-muted/50 hover:text-orange-400"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Admin Panel
+                        </Link>
+                    )}
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="mt-auto">
+                  {isUserLoading ? (
+                     <div className='h-10 w-full rounded-md bg-muted animate-pulse' />
+                  ) : user ? (
+                    <div className="flex flex-col gap-2">
+                       <div className="flex items-center gap-3 px-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                            <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                            <p className="text-xs leading-none text-muted-foreground">
+                                {user.email}
+                            </p>
+                          </div>
+                       </div>
+                       <Separator className="my-2" />
+                        <Button variant="ghost" className="justify-start" asChild>
+                            <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)}>
+                                <MessageSquare className="mr-2 h-4 w-4"/> Contact Us
+                            </Link>
+                        </Button>
+                       <Button variant="ghost" className="justify-start text-red-500 hover:text-red-400" onClick={handleLogout}>
+                          <LogOut className="mr-2 h-4 w-4" /> Logout
+                       </Button>
+                    </div>
+                  ) : (
+                    <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Link href="/login">Login / Sign Up</Link>
+                    </Button>
+                  )}
                 </div>
             </SheetContent>
             </Sheet>
