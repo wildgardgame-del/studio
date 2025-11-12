@@ -4,9 +4,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GoogleAuthProvider, setPersistence, browserLocalPersistence, signInWithPopup } from "firebase/auth";
-import { Loader2, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { format, isBefore, subYears } from 'date-fns';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,10 +21,7 @@ import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from '@/lib/placeholder-images.json';
 import Link from "next/link";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 export default function SignupPage() {
     const { user, isUserLoading } = useUser();
@@ -33,8 +29,6 @@ export default function SignupPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isSigningUp, setIsSigningUp] = useState(false);
-    const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
-    const [isAdult, setIsAdult] = useState<boolean | null>(null);
 
     useEffect(() => {
         if (!isUserLoading && user) {
@@ -42,22 +36,9 @@ export default function SignupPage() {
         }
     }, [user, isUserLoading, router]);
 
-    const handleDateSelect = (date: Date | undefined) => {
-        setDateOfBirth(date);
-        if (date) {
-            const eightteenYearsAgo = subYears(new Date(), 18);
-            setIsAdult(isBefore(date, eightteenYearsAgo));
-        } else {
-            setIsAdult(null);
-        }
-    }
-
     const handleGoogleSignUp = async () => {
-        if (!auth || !dateOfBirth) return;
+        if (!auth) return;
         setIsSigningUp(true);
-
-        // Store DOB in session storage to be picked up after redirect
-        sessionStorage.setItem('pending_dob', dateOfBirth.toISOString());
 
         const provider = new GoogleAuthProvider();
 
@@ -67,9 +48,9 @@ export default function SignupPage() {
 
             toast({
                 title: "Account Created!",
-                description: "Welcome to GameSphere!",
+                description: "Just one more step to complete your profile.",
             });
-            // The onAuthStateChanged listener in the provider will handle profile creation
+            // The onAuthStateChanged listener in provider will now trigger isNewUser flow
             router.push('/');
 
         } catch (error: any) {
@@ -83,7 +64,6 @@ export default function SignupPage() {
                 title: "Sign-up Failed",
                 description: description,
             });
-            sessionStorage.removeItem('pending_dob'); // Clean up on failure
         } finally {
             setIsSigningUp(false);
         }
@@ -116,53 +96,15 @@ export default function SignupPage() {
                         </div>
                         <CardTitle className="text-2xl font-headline text-center">Create an Account</CardTitle>
                         <CardDescription className="text-center">
-                            Please enter your date of birth to continue.
+                            Continue with Google to get started.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !dateOfBirth && "text-muted-foreground"
-                                    )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={dateOfBirth}
-                                        onSelect={handleDateSelect}
-                                        captionLayout="dropdown-buttons"
-                                        fromYear={1920}
-                                        toYear={new Date().getFullYear()}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            
-                            {dateOfBirth && (
-                                <>
-                                 <Alert>
-                                    <AlertTriangle className="h-4 w-4" />
-                                    <AlertTitle>Confirm Your Age</AlertTitle>
-                                    <AlertDescription className="text-xs">
-                                        By creating an account, you confirm your date of birth is correct. Providing false information may result in a permanent ban.
-                                    </AlertDescription>
-                                </Alert>
-                                <Button onClick={handleGoogleSignUp} className="w-full" disabled={isSigningUp}>
-                                    {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Sign Up with Google
-                                </Button>
-                                </>
-                            )}
-
+                            <Button onClick={handleGoogleSignUp} className="w-full" disabled={isSigningUp}>
+                                {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Continue with Google
+                            </Button>
                         </div>
                          <div className="mt-4 text-center text-sm">
                             Already have an account?{" "}

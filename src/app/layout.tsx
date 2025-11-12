@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { GameStoreProvider } from '@/context/game-store-context';
 import { FirebaseClientProvider } from '@/firebase';
+import { AuthGate } from '@/components/AuthGate';
 
 export const metadata: Metadata = {
   title: 'GameSphere',
@@ -33,7 +34,9 @@ export default function RootLayout({
       >
         <FirebaseClientProvider>
           <GameStoreProvider>
-            {children}
+            <AuthGate>
+              {children}
+            </AuthGate>
             <Toaster />
           </GameStoreProvider>
         </FirebaseClientProvider>
