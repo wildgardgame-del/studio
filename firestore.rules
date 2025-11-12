@@ -18,12 +18,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can manage user roles.
+     * @description Users can read their own profile. Admins can list all users and manage user roles.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isAdmin();
+      allow list: if isSignedIn() && isAdmin(); // Allows admins to query the users collection
 
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
@@ -71,12 +71,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces user-ownership for notifications.
+     * @description Enforces user-ownership for notifications. Admins can create.
      * @path /users/{userId}/notifications/{notificationId}
      */
     match /users/{userId}/notifications/{notificationId} {
-      allow get, write: if isSignedIn() && isOwner(userId);
+      allow get, update: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if false;
     }
   }
 
