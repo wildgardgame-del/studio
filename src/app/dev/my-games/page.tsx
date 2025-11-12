@@ -104,14 +104,20 @@ function MyGamesPageContent() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Tooltip>
-                                        <TooltipTrigger>
-                                            <div className="inline-block"> 
-                                                <Button asChild variant="ghost" size="sm" disabled={game.status === 'pending'}>
-                                                    <Link href={`/dev/edit/${game.id}`}>
+                                        <TooltipTrigger asChild>
+                                            <div className="inline-block"> {/* Wrapper div for Tooltip with disabled button */}
+                                                <Link href={game.status !== 'pending' ? `/dev/edit/${game.id}` : '#'} passHref legacyBehavior>
+                                                    <Button
+                                                        as="a" // Render the button as an 'a' tag
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled={game.status === 'pending'}
+                                                        style={{ pointerEvents: game.status === 'pending' ? 'none' : 'auto' }} // Explicitly disable pointer events
+                                                    >
                                                         <Pencil className="mr-2 h-4 w-4" />
                                                         Edit
-                                                    </Link>
-                                                </Button>
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </TooltipTrigger>
                                         {game.status === 'pending' && (
