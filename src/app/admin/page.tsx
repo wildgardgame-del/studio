@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirebase } from '@/firebase';
@@ -7,7 +6,7 @@ import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, Gamepad2, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -75,7 +74,7 @@ function AdminDashboardPageContent() {
                 <Link href="/admin/games">
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>Manage Games</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Gamepad2 className="text-accent"/>Manage Games</CardTitle>
                             {pendingCount !== undefined && pendingCount > 0 && (
                                <Badge className="bg-accent text-accent-foreground">{pendingCount}</Badge>
                             )}
@@ -84,6 +83,17 @@ function AdminDashboardPageContent() {
                     </CardHeader>
                     <CardContent>
                         <Button variant="link" className="p-0 text-accent">Review Submissions</Button>
+                    </CardContent>
+                </Link>
+             </Card>
+             <Card className="hover:border-primary transition-colors">
+                <Link href="/admin/notifications">
+                    <CardHeader>
+                       <CardTitle className="flex items-center gap-2"><Bell className="text-accent"/>Send Notification</CardTitle>
+                       <CardDescription>Send notifications to all or selected users.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="link" className="p-0 text-accent">Create Notification</Button>
                     </CardContent>
                 </Link>
              </Card>
