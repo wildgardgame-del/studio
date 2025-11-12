@@ -35,7 +35,7 @@ import heroImage from '@/lib/placeholder-images.json';
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { setDoc, doc, serverTimestamp, getDocs, collection, query, where } from "firebase/firestore";
+import { setDoc, doc, serverTimestamp, getDocs, collection, query, where, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
@@ -82,16 +82,33 @@ export function WelcomeForm() {
     },
   });
 
+  const checkUsernameExists = async (username: string) => {
+    if (!firestore) return false;
+    const usersRef = collection(firestore, "users");
+    const q = query(usersRef, where("username", "==", username));
+
+    try {
+        const querySnapshot = await getDocs(q);
+        return !querySnapshot.empty;
+    } catch (error) {
+        // This is where a permissions error on LIST would be caught
+        const permissionError = new FirestorePermissionError({
+            path: 'users',
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        // We throw it again to stop the execution flow in onSubmit
+        throw permissionError;
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) return;
     setIsSubmitting(true);
 
-    const usersRef = collection(firestore, "users");
-    const q = query(usersRef, where("username", "==", values.username));
-    
     try {
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
+        const usernameExists = await checkUsernameExists(values.username);
+        if (usernameExists) {
             form.setError("username", { type: "manual", message: "This nickname is already taken. Please choose another." });
             setIsSubmitting(false);
             return;
@@ -111,32 +128,33 @@ export function WelcomeForm() {
             isAgeVerified,
         };
 
-        setDoc(userRef, userData).catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'create',
-                requestResourceData: userData,
+        // Non-blocking write with contextual error handling
+        setDoc(userRef, userData)
+            .then(() => {
+                toast({
+                    title: "Profile Complete!",
+                    description: "Welcome to GameSphere!",
+                });
+                // This reload is what triggers the AuthGate to re-evaluate
+                window.location.reload();
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'create',
+                    requestResourceData: userData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                setIsSubmitting(false); // Stop loading on error
             });
-            errorEmitter.emit('permission-error', permissionError);
-            setIsSubmitting(false);
-        }).then(() => {
-          if (!form.formState.isSubmitSuccessful) {
-            toast({
-                title: "Profile Complete!",
-                description: "Welcome to GameSphere!",
-            });
-            // This reload is what triggers the AuthGate to re-evaluate
-            window.location.reload();
-          }
-        });
 
     } catch (error) {
-        // This outer catch is for errors from getDocs (e.g. network issues), not setDoc
-        console.error("Error checking username or setting up profile:", error);
+        // This outer catch handles the thrown error from checkUsernameExists
+        console.error("Error during username check:", error);
         toast({
             variant: "destructive",
             title: "An error occurred",
-            description: "Could not set up your profile. Please check your connection and try again.",
+            description: "Could not verify your nickname. Please check permissions and try again.",
         });
         setIsSubmitting(false);
     }
