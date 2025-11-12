@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from "next/image";
@@ -61,7 +62,6 @@ function CheckoutPageContent() {
         }
 
         setIsProcessing(true);
-        console.log("Processing fake payment for:", values);
         
         // Simulate payment processing
         setTimeout(async () => {
