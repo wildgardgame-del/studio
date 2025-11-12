@@ -287,7 +287,7 @@ export default function Header() {
                           </div>
                        </div>
                        <Separator className="my-2" />
-                        <Button variant="ghost" className="justify-start" asChild>
+                       <Button variant="ghost" className="justify-start" asChild>
                             <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)}>
                                 <MessageSquare className="mr-2 h-4 w-4"/> Contact Us
                             </Link>
@@ -297,7 +297,7 @@ export default function Header() {
                        </Button>
                     </div>
                   ) : (
-                     <div className="mt-auto">
+                    <div className="px-4">
                         <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
                             <Link href="/login">Login / Sign Up</Link>
                         </Button>
