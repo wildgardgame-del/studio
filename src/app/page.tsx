@@ -47,6 +47,7 @@ export default function Home() {
             data-ai-hint={heroImage.placeholderImages[0].imageHint}
             fill
             className="object-cover"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">

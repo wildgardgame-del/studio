@@ -268,12 +268,12 @@ export default function Header() {
                     )}
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-auto flex flex-col">
+                  <Separator className="my-4" />
                   {isUserLoading ? (
-                     <div className='h-10 w-full rounded-md bg-muted animate-pulse mt-auto' />
+                     <div className='h-10 w-full rounded-md bg-muted animate-pulse' />
                   ) : user ? (
                     <div className="flex flex-col gap-2">
-                       <Separator className="my-2" />
                        <div className="flex items-center gap-3 px-3">
                           <Avatar className="h-9 w-9">
                             <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
@@ -298,14 +298,12 @@ export default function Header() {
                     </div>
                   ) : (
                      <div className="mt-auto">
-                        <Separator className="my-4" />
                         <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
                             <Link href="/login">Login / Sign Up</Link>
                         </Button>
                     </div>
                   )}
                 </div>
-                <div className="mt-auto"></div>
             </SheetContent>
             </Sheet>
         </div>
