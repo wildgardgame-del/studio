@@ -133,7 +133,7 @@ function NotificationsMenu() {
                                     <p className="font-semibold text-sm">{notification.title}</p>
                                     <p className="text-xs text-muted-foreground whitespace-normal">{notification.message}</p>
                                      <p className="text-xs text-muted-foreground/70 self-end">
-                                        {formatDistanceToNow(notification.createdAt.seconds * 1000, { addSuffix: true })}
+                                        {notification.createdAt ? formatDistanceToNow(notification.createdAt.seconds * 1000, { addSuffix: true }) : ''}
                                     </p>
                                 </Link>
                             </DropdownMenuItem>
@@ -406,5 +406,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
