@@ -106,21 +106,21 @@ function MyGamesPageContent() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <div className="inline-block"> {/* Wrapper div for Tooltip with disabled button */}
-                                                <Link href={game.status !== 'pending' ? `/dev/edit/${game.id}` : '#'} passHref legacyBehavior>
-                                                    <Button
-                                                        as="a" // Render the button as an 'a' tag
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        disabled={game.status === 'pending'}
-                                                        style={{ pointerEvents: game.status === 'pending' ? 'none' : 'auto' }} // Explicitly disable pointer events
-                                                    >
+                                                <Button
+                                                    asChild
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    disabled={game.status === 'pending' && !game.rejectionReason}
+                                                    style={{ pointerEvents: game.status === 'pending' && !game.rejectionReason ? 'none' : 'auto' }} // Explicitly disable pointer events
+                                                >
+                                                     <Link href={`/dev/edit/${game.id}`}>
                                                         <Pencil className="mr-2 h-4 w-4" />
                                                         Edit
-                                                    </Button>
-                                                </Link>
+                                                    </Link>
+                                                </Button>
                                             </div>
                                         </TooltipTrigger>
-                                        {game.status === 'pending' && (
+                                        {(game.status === 'pending' && !game.rejectionReason) && (
                                             <TooltipContent>
                                                 <p>Cannot edit a game while it's under review.</p>
                                             </TooltipContent>
