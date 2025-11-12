@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejected' };
 
@@ -84,10 +85,10 @@ function ManageGamesPageContent() {
     const approvedGames = useMemo(() => allGames?.filter(g => g.status === 'approved') || [], [allGames]);
     const rejectedGames = useMemo(() => allGames?.filter(g => g.status === 'rejected') || [], [allGames]);
 
-    const createNotification = async (game: GameAction, title: string, message: string) => {
+    const createNotification = (game: GameAction, title: string, message: string) => {
         if (!firestore || !game.developerId) return;
         const notificationsRef = collection(firestore, `users/${game.developerId}/notifications`);
-        await addDoc(notificationsRef, {
+        const notificationData = {
             userId: game.developerId,
             title: title,
             message: message,
@@ -95,7 +96,8 @@ function ManageGamesPageContent() {
             createdAt: serverTimestamp(),
             type: 'game-status',
             link: '/dev/my-games'
-        });
+        };
+        addDocumentNonBlocking(notificationsRef, notificationData);
     };
     
     const statusMutation = useMutation({
@@ -399,5 +401,3 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
-
-    
