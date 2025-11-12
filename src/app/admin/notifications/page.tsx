@@ -84,13 +84,9 @@ function SendNotificationsContent() {
         if (selectAll && users) {
             form.setValue('selectedUsers', users.map(u => u.id));
         } else if (!selectAll) {
-            // This is tricky; we don't want to clear if the user is unchecking "select all" to manually deselect a few.
-            // A better user experience might be to just let them uncheck individuals.
-            // So we'll only clear if they uncheck and the list was fully selected.
-            const allUserIds = users?.map(u => u.id) || [];
-            if (form.getValues('selectedUsers').length === allUserIds.length) {
-                 form.setValue('selectedUsers', []);
-            }
+            // When unchecking, don't clear the list. This allows the admin to
+            // uncheck "Select All" and then manually deselect a few users,
+            // which is more intuitive behavior.
         }
     }, [selectAll, users, form]);
     
