@@ -24,6 +24,7 @@ function BrowsePageContent() {
     const [sortOrder, setSortOrder] = useState('newest');
     const [isAgeVerified, setIsAgeVerified] = useState(false);
     const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
+    const [showAdultContent, setShowAdultContent] = useState(true);
 
     useEffect(() => {
         const checkUserAgeVerification = async () => {
@@ -32,11 +33,14 @@ function BrowsePageContent() {
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && userDoc.data().isAgeVerified) {
                     setIsAgeVerified(true);
+                    setShowAdultContent(true); // Default to showing adult content for verified users
                 } else {
                     setIsAgeVerified(false);
+                    setShowAdultContent(false); // Never show adult content for non-verified users
                 }
             } else {
                 setIsAgeVerified(false);
+                setShowAdultContent(false); // Default to false for guests
             }
             setIsUserCheckLoading(false);
         };
@@ -46,12 +50,20 @@ function BrowsePageContent() {
 
     const gamesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(
+        
+        let q = query(
             collection(firestore, "games"), 
             where("status", "==", "approved"),
             where(documentId(), "!=", "dev-account-upgrade")
         );
-    }, [firestore]);
+
+        // If the user is not age verified, the rules will handle security, but we can also filter client-side for a better UX.
+        if (!isAgeVerified) {
+            q = query(q, where("isAdultContent", "==", false));
+        }
+
+        return q;
+    }, [firestore, isAgeVerified]);
 
     const { data: approvedGames, isLoading: areGamesLoading } = useCollection<Game>(gamesQuery);
 
@@ -60,8 +72,8 @@ function BrowsePageContent() {
 
         let games = approvedGames;
         
-        // Filter by age verification status
-        if (!isAgeVerified) {
+        // Filter by age verification preference
+        if (isAgeVerified && !showAdultContent) {
              games = games.filter(game => !game.isAdultContent);
         }
 
@@ -98,7 +110,7 @@ function BrowsePageContent() {
         });
         
         return games;
-    }, [approvedGames, q, selectedGenres, sortOrder, isAgeVerified]);
+    }, [approvedGames, q, selectedGenres, sortOrder, isAgeVerified, showAdultContent]);
     
     const isLoading = areGamesLoading || isUserCheckLoading;
 
@@ -115,6 +127,9 @@ function BrowsePageContent() {
                                 onGenreChange={setSelectedGenres}
                                 sortOrder={sortOrder}
                                 onSortOrderChange={setSortOrder}
+                                isAgeVerified={isAgeVerified}
+                                showAdultContent={showAdultContent}
+                                onShowAdultContentChange={setShowAdultContent}
                            />
                         </aside>
                         <div className="lg:col-span-3">
@@ -170,5 +185,3 @@ export default function BrowsePage() {
         </Suspense>
     )
 }
-
-    
