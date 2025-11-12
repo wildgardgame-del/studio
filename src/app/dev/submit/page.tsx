@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +34,7 @@ import { availableGenres } from "@/lib/genres";
 import { Switch } from "@/components/ui/switch";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MATURE_TAG = "Mature 18+";
 
 const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
@@ -129,6 +131,14 @@ function SubmitGamePageContent() {
       
       const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
+      // Handle automatic genre tagging
+      let finalGenres = [...values.genres];
+      if (values.isAdultContent) {
+        if (!finalGenres.includes(MATURE_TAG)) {
+            finalGenres.push(MATURE_TAG);
+        }
+      }
+
       // 3. Prepare game data for Firestore
       const newGameData = {
         title: values.title,
@@ -136,7 +146,7 @@ function SubmitGamePageContent() {
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
-        genres: values.genres,
+        genres: finalGenres,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
@@ -415,5 +425,3 @@ export default function SubmitGamePage() {
         </Suspense>
     )
 }
-
-    

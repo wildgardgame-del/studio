@@ -35,6 +35,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MATURE_TAG = "Mature 18+";
 
 const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
@@ -98,7 +99,7 @@ function EditGamePageContent() {
         price: gameData.price,
         description: gameData.description,
         longDescription: gameData.longDescription || "",
-        genres: gameData.genres || [],
+        genres: gameData.genres?.filter(g => g !== MATURE_TAG) || [], // Exclude mature tag from form state
         websiteUrl: gameData.websiteUrl || "",
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
         isAdultContent: gameData.isAdultContent || false,
@@ -153,13 +154,23 @@ function EditGamePageContent() {
 
       const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
+      // Handle automatic genre tagging
+      let finalGenres = [...values.genres];
+      if (values.isAdultContent) {
+          if (!finalGenres.includes(MATURE_TAG)) {
+              finalGenres.push(MATURE_TAG);
+          }
+      } else {
+          finalGenres = finalGenres.filter(g => g !== MATURE_TAG);
+      }
+
       const updatedGameData = {
         title: values.title,
         publisher: values.publisher,
         price: values.price,
         description: values.description,
         longDescription: values.longDescription,
-        genres: values.genres,
+        genres: finalGenres,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
@@ -408,5 +419,3 @@ export default function EditGamePage() {
         </Suspense>
     )
 }
-
-    
