@@ -8,6 +8,7 @@ import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { FirestorePermissionError, errorEmitter } from '@/firebase';
+import { isBefore, subYears } from 'date-fns';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -64,11 +65,26 @@ const createUserProfileDocument = async (firestore: Firestore, user: User) => {
     try {
         const docSnap = await getDoc(userRef);
         if (!docSnap.exists()) {
+
+            // Retrieve DOB from session storage after Google sign-up redirect
+            const dobISO = sessionStorage.getItem('pending_dob');
+            sessionStorage.removeItem('pending_dob'); // Clean up immediately
+
+            if (!dobISO) {
+              console.warn("User profile created without date of birth. Sign-up flow may have been bypassed.");
+            }
+            
+            const dateOfBirth = dobISO ? new Date(dobISO) : new Date();
+            const eightteenYearsAgo = subYears(new Date(), 18);
+            const isAgeVerified = dobISO ? isBefore(dateOfBirth, eightteenYearsAgo) : false;
+
             const userData = {
                 id: user.uid,
                 username: user.displayName || 'Anonymous User',
                 email: user.email,
                 registrationDate: serverTimestamp(),
+                dateOfBirth: dobISO ? dateOfBirth.toISOString().split('T')[0] : null,
+                isAgeVerified: isAgeVerified,
             };
             await setDoc(userRef, userData, { merge: true });
         }

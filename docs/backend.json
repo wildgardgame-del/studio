@@ -86,6 +86,10 @@
         "rejectionReason": {
           "type": "string",
           "description": "The reason why a game submission was rejected by an admin."
+        },
+        "isAdultContent": {
+          "type": "boolean",
+          "description": "Whether the game is intended for mature audiences."
         }
       },
       "required": [
@@ -120,15 +124,26 @@
         },
         "registrationDate": {
           "type": "string",
-  "description": "The date when the user registered.",
+          "description": "The date when the user registered.",
           "format": "date-time"
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "The user's date of birth.",
+          "format": "date"
+        },
+        "isAgeVerified": {
+          "type": "boolean",
+          "description": "Indicates if the user's age has been verified as 18+."
         }
       },
       "required": [
         "id",
         "username",
         "email",
-        "registrationDate"
+        "registrationDate",
+        "dateOfBirth",
+        "isAgeVerified"
       ]
     },
     "Review": {
