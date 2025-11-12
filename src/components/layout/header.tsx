@@ -273,7 +273,7 @@ export default function Header() {
                     )}
                 </div>
 
-                <div className="mt-4 flex flex-col">
+                <div className="mt-auto">
                   <Separator className="my-4" />
                   {isUserLoading ? (
                      <div className='h-10 w-full rounded-md bg-muted animate-pulse' />

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from "next/navigation";
@@ -92,23 +91,17 @@ export default function LoginPage() {
                     <div className="flex justify-center mb-4">
                         <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={56} height={56} />
                     </div>
-                    <CardTitle className="text-2xl font-headline text-center">Welcome to GameSphere</CardTitle>
+                    <CardTitle className="text-2xl font-headline text-center">Acessar GameSphere</CardTitle>
                     <CardDescription className="text-center">
-                        Use your Google account to sign in.
+                        Use a sua conta Google para entrar ou criar uma conta.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
                         <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleSigningIn}>
                             {isGoogleSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Sign In with Google
+                            Continuar com o Google
                         </Button>
-                    </div>
-                    <div className="mt-4 text-center text-sm">
-                        Don't have an account?{" "}
-                        <Link href="/signup" className="underline">
-                            Sign up
-                        </Link>
                     </div>
                 </CardContent>
             </Card>
