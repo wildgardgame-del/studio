@@ -353,14 +353,11 @@ export default function Header() {
                     </DropdownMenuItem>
                     
                     {hasDevLicense ? (
-                        <>
                         <DropdownMenuItem asChild>
-                            <Link href="/dev/dashboard"><PlusCircle className="mr-2 h-4 w-4" />Dev Dashboard</Link>
+                            <Link href="/dev/dashboard" className="text-yellow-500 hover:!text-yellow-400 focus:!bg-yellow-500/10 focus:!text-yellow-400">
+                                <PlusCircle className="mr-2 h-4 w-4" />Dev Dashboard
+                            </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/dev/my-games"><Gamepad2 className="mr-2 h-4 w-4" />My Games</Link>
-                        </DropdownMenuItem>
-                        </>
                     ) : (
                         <DropdownMenuItem asChild>
                             <Link href="/apply-for-dev"><Award className="mr-2 h-4 w-4" />Become a Publisher</Link>
@@ -369,7 +366,9 @@ export default function Header() {
 
                     {user.email === 'ronneeh@gmail.com' && (
                         <DropdownMenuItem asChild>
-                        <Link href="/admin"><Shield className="mr-2 h-4 w-4" />Admin Panel</Link>
+                            <Link href="/admin" className="text-orange-500 hover:!text-orange-400 focus:!bg-orange-500/10 focus:!text-orange-400">
+                                <Shield className="mr-2 h-4 w-4" />Admin Panel
+                            </Link>
                         </DropdownMenuItem>
                     )}
                     
