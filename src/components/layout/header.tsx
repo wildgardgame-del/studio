@@ -52,8 +52,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Separator } from '../ui/separator';
 
 const navLinks = [
-  { href: '/browse', label: 'Store', activeColorClass: 'text-primary' },
-  { href: '/library', label: 'Library', activeColorClass: 'text-accent' },
+  { href: '/browse', label: 'Store', activeColorClass: 'text-primary', icon: ShoppingCart },
+  { href: '/library', label: 'Library', activeColorClass: 'text-accent', icon: Library },
 ];
 
 function NotificationsMenu() {
@@ -217,58 +217,63 @@ export default function Header() {
                         key={link.href}
                         href={link.href}
                         className={cn(
-                            "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             pathname === link.href
                             ? `bg-muted ${link.activeColorClass}`
                             : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
                         )}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
+                        <link.icon className="h-4 w-4" />
                         {link.label}
                       </Link>
                   ))}
                   <Link
                       href="/wishlist"
                       className={cn(
-                        "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         pathname === "/wishlist"
                         ? "bg-muted text-foreground"
                         : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                       >
+                      <Heart className="h-4 w-4" />
                       Wishlist
                     </Link>
                     {user && hasDevLicense && (
                         <Link
                             href="/dev/dashboard"
-                            className="rounded-md px-3 py-2 text-sm font-medium text-yellow-500 transition-colors hover:bg-muted/50 hover:text-yellow-400"
+                            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-yellow-500 transition-colors hover:bg-muted/50 hover:text-yellow-400"
                             onClick={() => setIsMobileMenuOpen(false)}
                             >
+                            <PlusCircle className="h-4 w-4" />
                             Dev Dashboard
                         </Link>
                     )}
                     {user && !hasDevLicense && (
                         <Link
                             href="/apply-for-dev"
-                            className="rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
+                            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
                             onClick={() => setIsMobileMenuOpen(false)}
                             >
+                            <Award className="h-4 w-4" />
                             Become a Publisher
                         </Link>
                     )}
                     {user && user.email === 'ronneeh@gmail.com' && (
                        <Link
                           href="/admin"
-                          className="rounded-md px-3 py-2 text-sm font-medium text-orange-500 transition-colors hover:bg-muted/50 hover:text-orange-400"
+                          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-orange-500 transition-colors hover:bg-muted/50 hover:text-orange-400"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
+                          <Shield className="h-4 w-4" />
                           Admin Panel
                         </Link>
                     )}
                 </div>
 
-                <div className="mt-auto flex flex-col">
+                <div className="mt-4 flex flex-col">
                   <Separator className="my-4" />
                   {isUserLoading ? (
                      <div className='h-10 w-full rounded-md bg-muted animate-pulse' />
@@ -299,7 +304,7 @@ export default function Header() {
                   ) : (
                     <div className="px-4">
                         <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                            <Link href="/login">Login / Sign Up</Link>
+                            <Link href="/login">Login</Link>
                         </Button>
                     </div>
                   )}
