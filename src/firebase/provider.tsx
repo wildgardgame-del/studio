@@ -2,11 +2,12 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
+import { Firestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -58,6 +59,32 @@ export interface UserHookResult { // Renamed from UserAuthHookResult for consist
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+const createUserProfileDocument = async (firestore: Firestore, user: User) => {
+    const userRef = doc(firestore, "users", user.uid);
+    try {
+        const docSnap = await getDoc(userRef);
+        if (!docSnap.exists()) {
+            const userData = {
+                id: user.uid,
+                username: user.displayName || 'Anonymous User',
+                email: user.email,
+                registrationDate: serverTimestamp(),
+            };
+            await setDoc(userRef, userData, { merge: true });
+        }
+    } catch (error: any) {
+        console.error("Error ensuring user profile exists:", error);
+        if (error.code && error.code.includes('permission-denied')) {
+            const permissionError = new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'create',
+                requestResourceData: { uid: user.uid, email: user.email }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
+    }
+};
+
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
  */
@@ -88,6 +115,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       auth,
       (firebaseUser) => { // Auth state determined
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
+        if (firebaseUser && firestore) {
+          // Ensure user profile document exists whenever a user is authenticated
+          createUserProfileDocument(firestore, firebaseUser);
+        }
       },
       (error) => { // Auth listener error
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
@@ -95,7 +126,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       }
     );
     return () => unsubscribe(); // Cleanup
-  }, [auth]); // Depends on the auth instance
+  }, [auth, firestore]); // Depends on the auth and firestore instances
 
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
