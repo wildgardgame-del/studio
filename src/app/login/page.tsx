@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence, User } from "firebase/auth";
+import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
@@ -16,14 +17,15 @@ import {
 } from "@/components/ui/card"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from '@/lib/placeholder-images.json';
 
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth(); // Use the hook to get the auth instance
+  const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -34,6 +36,35 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const createUserProfile = async (firebaseUser: User) => {
+    if (!firestore) return;
+    const userRef = doc(firestore, "users", firebaseUser.uid);
+
+    try {
+        const docSnap = await getDoc(userRef);
+        if (!docSnap.exists()) {
+            const userData = {
+                id: firebaseUser.uid,
+                username: firebaseUser.displayName || 'Anonymous User',
+                email: firebaseUser.email,
+                registrationDate: serverTimestamp(),
+            };
+            // Use setDoc with merge:true to create or update without overwriting
+            await setDoc(userRef, userData, { merge: true });
+        }
+    } catch (error: any) {
+        console.error("Error creating user profile:", error);
+        // We can optionally emit a permission error if that's the expected failure mode
+        if (error.code && error.code.includes('permission-denied')) {
+            const permissionError = new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'create'
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     if (!auth) return;
 
@@ -41,11 +72,11 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     
     try {
-      // Set persistence to store the user session across browser sessions. This is key for Vercel.
       await setPersistence(auth, browserLocalPersistence);
+      const result = await signInWithPopup(auth, provider);
       
-      // Now, attempt the sign-in
-      await signInWithPopup(auth, provider);
+      // After successful sign-in, create the user profile document
+      await createUserProfile(result.user);
       
       toast({
         title: "Login Successful",
@@ -54,7 +85,6 @@ export default function LoginPage() {
       router.push('/');
 
     } catch (error: any) {
-      // Handle common popup errors gracefully
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         console.log("Google Sign-In cancelled by user.");
       } else {

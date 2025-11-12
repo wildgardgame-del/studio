@@ -18,20 +18,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can list all users and manage user roles.
+     * @description Users can manage their own profile. Admins can list all users.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isAdmin(); // Allows admins to query the users collection
-
-      allow create: if isSignedIn() && isOwner(userId) 
-                      && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email;
-
-      allow update: if isSignedIn() && isAdmin();
-
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isAdmin();
+      // Allow user to create/update their own document.
+      allow write: if isSignedIn() && isOwner(userId);
     }
 
     /**
@@ -75,8 +69,7 @@ service cloud.firestore {
      * @path /users/{userId}/notifications/{notificationId}
      */
     match /users/{userId}/notifications/{notificationId} {
-      allow get, update: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      allow get, update, list: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false;
     }
