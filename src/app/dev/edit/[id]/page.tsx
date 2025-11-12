@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2 } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -31,6 +31,7 @@ import { uploadImage } from "@/ai/flows/upload-image-flow";
 import type { Game } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { availableGenres } from "@/lib/genres";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -126,7 +127,7 @@ function EditGamePageContent() {
 
     try {
       let coverImageUrl = existingCoverImage;
-      let screenshotUrls = [...existingScreenshots]; // Start with a copy of existing screenshots
+      let screenshotUrls = [...existingScreenshots]; 
 
       // Handle new cover image upload
       if (values.coverImage && values.coverImage.name) {
@@ -164,6 +165,7 @@ function EditGamePageContent() {
         status: 'pending' as const, // Always return to pending status for re-approval
         submittedAt: gameData?.submittedAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
+        rejectionReason: null, // Clear previous rejection reason
       };
       
       await updateDoc(gameRef, updatedGameData);
@@ -229,6 +231,21 @@ function EditGamePageContent() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {gameData.status === 'rejected' && gameData.rejectionReason && (
+              <Alert variant="destructive" className="mb-6">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Submission Rejected</AlertTitle>
+                <AlertDescription>{gameData.rejectionReason}</AlertDescription>
+              </Alert>
+            )}
+             {gameData.status === 'pending' && gameData.rejectionReason && (
+              <Alert className="mb-6 border-yellow-500 text-yellow-500">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Revision Requested</AlertTitle>
+                <AlertDescription>{gameData.rejectionReason}</AlertDescription>
+              </Alert>
+            )}
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 
