@@ -22,6 +22,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -36,6 +37,7 @@ import { useState } from "react";
 import { useFirebase } from "@/firebase";
 import { setDoc, doc, serverTimestamp, getDocs, collection, query, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
@@ -56,16 +58,18 @@ const formSchema = z.object({
   month: z.string().min(1, "Month is required."),
   year: z.string().min(1, "Year is required."),
 }).refine(data => {
+  if (!data.year || !data.month || !data.day) return true; // Let individual field validation handle this
   const date = new Date(`${data.year}-${data.month}-${data.day}`);
   return date.getDate() === parseInt(data.day);
 }, {
-  message: "Invalid date.",
+  message: "Invalid date. Please select a valid day for the chosen month.",
   path: ["day"],
 });
 
 export function WelcomeForm() {
   const { user, firestore } = useFirebase();
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -83,7 +87,6 @@ export function WelcomeForm() {
     setIsSubmitting(true);
 
     try {
-        // Check for unique username
         const usersRef = collection(firestore, "users");
         const q = query(usersRef, where("username", "==", values.username));
         const querySnapshot = await getDocs(q);
@@ -107,14 +110,13 @@ export function WelcomeForm() {
             isAgeVerified,
         };
 
-        await setDoc(userRef, userData, { merge: true });
+        await setDoc(userRef, userData);
 
         toast({
             title: "Profile Complete!",
             description: "Welcome to GameSphere!",
         });
         
-        // Reload the page to exit the AuthGate
         window.location.reload();
 
     } catch (error) {
@@ -207,9 +209,9 @@ export function WelcomeForm() {
                       )}
                     />
                   </div>
-                   <FormMessage>{form.formState.errors.root?.message}</FormMessage>
+                   <FormMessage>{form.formState.errors.day?.message}</FormMessage>
                 </FormItem>
-
+                
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Confirm Your Age</AlertTitle>
