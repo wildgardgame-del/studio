@@ -76,7 +76,8 @@ service cloud.firestore {
      * @path /users/{userId}/notifications/{notificationId}
      */
     match /users/{userId}/notifications/{notificationId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow get, write: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
     }
   }
 
@@ -97,5 +98,3 @@ service cloud.firestore {
     return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
   }
 }
-
-    
