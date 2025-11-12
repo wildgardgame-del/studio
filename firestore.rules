@@ -8,9 +8,12 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Anyone can get an individual document. The UI will handle visibility based on status.
-      allow get: if true;
-      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
+      // Allow get if the game is not adult content, OR if the user is age verified.
+      allow get: if resource.data.isAdultContent == false || (
+                    isSignedIn() && getUserData(request.auth.uid).isAgeVerified == true
+                  );
+
+      // Anyone can list games. The client-side queries are responsible for filtering.
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
@@ -22,7 +25,7 @@ service cloud.firestore {
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow create: if isSignedIn() && isOwner(userId);
       allow list, update: if isSignedIn() && isAdmin();
       allow delete: if isSignedIn() && isAdmin();
@@ -111,6 +114,10 @@ service cloud.firestore {
 
   function isAdmin() {
     return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
+  }
+  
+  function getUserData(userId) {
+    return get(/databases/$(database)/documents/users/$(userId)).data;
   }
 }
 

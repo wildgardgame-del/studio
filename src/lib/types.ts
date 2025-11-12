@@ -20,6 +20,7 @@ export type Game = {
   publisher?: string;
   websiteUrl?: string;
   trailerUrls?: string[];
+  isAdultContent?: boolean;
   submittedAt?: {
     seconds: number;
     nanoseconds: number;
@@ -67,4 +68,5 @@ export type AdminMessage = {
   };
   isRead: boolean;
 };
+    
     

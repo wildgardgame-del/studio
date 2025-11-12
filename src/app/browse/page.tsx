@@ -6,11 +6,11 @@ import Footer from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, documentId } from "firebase/firestore";
+import { useFirebase, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { collection, query, where, documentId, getDoc, doc } from "firebase/firestore";
 import type { Game } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, useState, useEffect } from "react";
 import { GameFilters } from "@/components/game-filters";
 import { availableGenres } from "@/lib/genres";
 
@@ -19,13 +19,33 @@ function BrowsePageContent() {
     const q = searchParams.get('q') || '';
     
     const { firestore } = useFirebase();
+    const { user } = useUser();
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
     const [sortOrder, setSortOrder] = useState('newest');
+    const [isAgeVerified, setIsAgeVerified] = useState(false);
+    const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
 
+    useEffect(() => {
+        const checkUserAgeVerification = async () => {
+            if (user && firestore) {
+                const userDocRef = doc(firestore, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists() && userDoc.data().isAgeVerified) {
+                    setIsAgeVerified(true);
+                } else {
+                    setIsAgeVerified(false);
+                }
+            } else {
+                setIsAgeVerified(false);
+            }
+            setIsUserCheckLoading(false);
+        };
+
+        checkUserAgeVerification();
+    }, [user, firestore]);
 
     const gamesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Query for all approved games, but specifically exclude the dev license product.
         return query(
             collection(firestore, "games"), 
             where("status", "==", "approved"),
@@ -33,12 +53,17 @@ function BrowsePageContent() {
         );
     }, [firestore]);
 
-    const { data: approvedGames, isLoading } = useCollection<Game>(gamesQuery);
+    const { data: approvedGames, isLoading: areGamesLoading } = useCollection<Game>(gamesQuery);
 
     const filteredAndSortedGames = useMemo(() => {
         if (!approvedGames) return [];
 
         let games = approvedGames;
+        
+        // Filter by age verification status
+        if (!isAgeVerified) {
+             games = games.filter(game => !game.isAdultContent);
+        }
 
         // Text search filter
         if (q) {
@@ -66,7 +91,6 @@ function BrowsePageContent() {
                     return b.price - a.price;
                 case 'newest':
                 default:
-                    // Assuming a 'submittedAt' field exists. If not, this needs adjustment.
                     const dateA = a.submittedAt?.seconds || 0;
                     const dateB = b.submittedAt?.seconds || 0;
                     return dateB - dateA;
@@ -74,8 +98,10 @@ function BrowsePageContent() {
         });
         
         return games;
-    }, [approvedGames, q, selectedGenres, sortOrder]);
+    }, [approvedGames, q, selectedGenres, sortOrder, isAgeVerified]);
     
+    const isLoading = areGamesLoading || isUserCheckLoading;
+
     return (
         <div className="flex min-h-screen flex-col">
             <Header />
@@ -144,3 +170,5 @@ export default function BrowsePage() {
         </Suspense>
     )
 }
+
+    

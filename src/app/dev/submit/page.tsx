@@ -30,6 +30,7 @@ import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { uploadImage } from "@/ai/flows/upload-image-flow";
 import { Checkbox } from "@/components/ui/checkbox";
 import { availableGenres } from "@/lib/genres";
+import { Switch } from "@/components/ui/switch";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -44,6 +45,7 @@ const formSchema = z.object({
   }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
+  isAdultContent: z.boolean().default(false),
   coverImage: z.any()
     .refine((file) => !!file, "Cover image is required.")
     .refine((file) => file?.size <= 5_000_000, `Max file size is 5MB.`)
@@ -90,6 +92,7 @@ function SubmitGamePageContent() {
       genres: [],
       websiteUrl: "",
       trailerUrls: "",
+      isAdultContent: false,
     },
   });
 
@@ -138,6 +141,7 @@ function SubmitGamePageContent() {
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
+        isAdultContent: values.isAdultContent,
         developerId: user.uid,
         status: 'pending' as const,
         submittedAt: serverTimestamp(),
@@ -293,6 +297,27 @@ function SubmitGamePageContent() {
                     )}/>
                 </div>
 
+                <FormField
+                    control={form.control}
+                    name="isAdultContent"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Adult Content</FormLabel>
+                            <FormDescription>
+                            Does this game contain explicit nudity or scenes of a sexual nature?
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
+
 
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
@@ -390,3 +415,5 @@ export default function SubmitGamePage() {
         </Suspense>
     )
 }
+
+    

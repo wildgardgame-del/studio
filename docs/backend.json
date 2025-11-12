@@ -100,7 +100,8 @@
         "developerId",
         "imageUrl",
         "status",
-        "publisher"
+        "publisher",
+        "isAdultContent"
       ]
     },
     "User": {
@@ -476,5 +477,4 @@
     "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
   }
 }
-
     

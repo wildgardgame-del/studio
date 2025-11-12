@@ -32,6 +32,7 @@ import type { Game } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { availableGenres } from "@/lib/genres";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
@@ -46,6 +47,7 @@ const formSchema = z.object({
   }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
+  isAdultContent: z.boolean().default(false),
   coverImage: z.any().optional(),
   screenshots: z.any().optional(),
 });
@@ -84,7 +86,7 @@ function EditGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "", publisher: "", price: 0, description: "", longDescription: "",
-      genres: [], websiteUrl: "", trailerUrls: ""
+      genres: [], websiteUrl: "", trailerUrls: "", isAdultContent: false,
     },
   });
 
@@ -99,6 +101,7 @@ function EditGamePageContent() {
         genres: gameData.genres || [],
         websiteUrl: gameData.websiteUrl || "",
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
+        isAdultContent: gameData.isAdultContent || false,
       });
       setExistingCoverImage(gameData.coverImage);
       setExistingScreenshots(gameData.screenshots || []);
@@ -161,6 +164,7 @@ function EditGamePageContent() {
         trailerUrls: trailerUrls,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
+        isAdultContent: values.isAdultContent,
         developerId: user.uid,
         status: 'pending' as const, // Always return to pending status for re-approval
         submittedAt: gameData?.submittedAt || serverTimestamp(),
@@ -313,6 +317,27 @@ function EditGamePageContent() {
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 </div>
 
+                 <FormField
+                    control={form.control}
+                    name="isAdultContent"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Adult Content</FormLabel>
+                            <FormDescription>
+                            Does this game contain explicit nudity or scenes of a sexual nature?
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 <FormField control={form.control} name="coverImage" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cover Image</FormLabel>
@@ -383,3 +408,5 @@ export default function EditGamePage() {
         </Suspense>
     )
 }
+
+    
