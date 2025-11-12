@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
