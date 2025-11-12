@@ -81,12 +81,12 @@ function MyGamesPageContent() {
                                 <TableCell className="font-medium">{game.title}</TableCell>
                                 <TableCell>${game.price ? game.price.toFixed(2) : '0.00'}</TableCell>
                                 <TableCell className="text-center">
-                                    {game.status === 'rejected' && game.rejectionReason ? (
+                                    {(game.status === 'rejected' || (game.status === 'pending' && game.rejectionReason)) && game.rejectionReason ? (
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Badge variant={getStatusVariant(game.status)} className="cursor-help">
                                                     <Info className="mr-1 h-3 w-3" />
-                                                    Rejected
+                                                     {game.status === 'rejected' ? 'Rejected' : 'Revision Requested'}
                                                 </Badge>
                                             </TooltipTrigger>
                                             <TooltipContent>
