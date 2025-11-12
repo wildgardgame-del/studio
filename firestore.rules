@@ -18,14 +18,20 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can manage their own profile. Admins can list all users.
+     * @description Users can read their own profile. Admins can manage user roles and delete users.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isAdmin();
-      // Allow user to create/update their own document.
-      allow write: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId) 
+                      && request.resource.data.id == userId
+                      && request.resource.data.email == request.auth.token.email;
+
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      
+      allow delete: if isSignedIn() && isAdmin();
     }
 
     /**
