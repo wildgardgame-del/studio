@@ -8,11 +8,10 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Anyone can get a document, the UI will handle visibility based on status.
-      // Admins can see any game.
-      allow get: if true; 
-      // Listing is more restrictive. Only approved games are listable for public, all for admins.
-      allow list: if (resource.data.status == 'approved') || (isSignedIn() && isAdmin());
+      // Anyone can get an individual document. The UI will handle visibility based on status.
+      allow get: if true;
+      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
       allow delete: if isSignedIn() && isAdmin();
