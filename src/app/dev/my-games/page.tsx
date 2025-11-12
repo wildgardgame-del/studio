@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -102,12 +103,23 @@ function MyGamesPageContent() {
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button asChild variant="ghost" size="sm">
-                                        <Link href={`/dev/edit/${game.id}`}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Edit
-                                        </Link>
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="inline-block"> 
+                                                <Button asChild variant="ghost" size="sm" disabled={game.status === 'pending'}>
+                                                    <Link href={`/dev/edit/${game.id}`}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </Link>
+                                                </Button>
+                                            </div>
+                                        </TooltipTrigger>
+                                        {game.status === 'pending' && (
+                                            <TooltipContent>
+                                                <p>Cannot edit a game while it's under review.</p>
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
                                 </TableCell>
                             </TableRow>
                         ))}
