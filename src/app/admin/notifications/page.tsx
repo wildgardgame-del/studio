@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { useFirebase } from "@/firebase";
+import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { collection, getDocs, writeBatch, serverTimestamp, doc } from "firebase/firestore";
 import Header from "@/components/layout/header";
@@ -47,9 +47,24 @@ function SendNotificationsContent() {
         queryKey: ['all-users-for-notifications'],
         queryFn: async () => {
             if (!firestore) return [];
-            const usersRef = collection(firestore, 'users');
-            const snapshot = await getDocs(usersRef);
-            return snapshot.docs.map(doc => doc.data() as UserProfile);
+            try {
+                const usersRef = collection(firestore, 'users');
+                const snapshot = await getDocs(usersRef);
+                return snapshot.docs.map(doc => doc.data() as UserProfile);
+            } catch (error) {
+                 console.error("Error fetching users for notifications:", error);
+                 const permissionError = new FirestorePermissionError({
+                    path: 'users',
+                    operation: 'list'
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error fetching users',
+                    description: 'Could not fetch user list. Check admin permissions.',
+                });
+                return [];
+            }
         },
         enabled: !!firestore,
     });
@@ -192,33 +207,39 @@ function SendNotificationsContent() {
                                                         <label htmlFor="select-all" className="text-sm font-medium">Select All Users ({users?.length || 0})</label>
                                                     </div>
                                                     <ScrollArea className="h-72 w-full rounded-md border p-4">
-                                                         {users?.map(user => (
-                                                            <FormField
-                                                                key={user.id}
-                                                                control={form.control}
-                                                                name="selectedUsers"
-                                                                render={({ field }) => {
-                                                                return (
-                                                                    <FormItem key={user.id} className="flex flex-row items-center space-x-3 space-y-0 mb-2">
-                                                                        <FormControl>
-                                                                        <Checkbox
-                                                                            checked={field.value?.includes(user.id)}
-                                                                            onCheckedChange={(checked) => {
-                                                                            return checked
-                                                                                ? field.onChange([...field.value, user.id])
-                                                                                : field.onChange(field.value?.filter(value => value !== user.id))
-                                                                            }}
-                                                                        />
-                                                                        </FormControl>
-                                                                        <FormLabel className="font-normal flex flex-col">
-                                                                            <span>{user.username}</span>
-                                                                            <span className="text-xs text-muted-foreground">{user.email}</span>
-                                                                        </FormLabel>
-                                                                    </FormItem>
-                                                                )
-                                                                }}
-                                                            />
-                                                         ))}
+                                                         {users && users.length > 0 ? (
+                                                            users.map(user => (
+                                                                <FormField
+                                                                    key={user.id}
+                                                                    control={form.control}
+                                                                    name="selectedUsers"
+                                                                    render={({ field }) => {
+                                                                    return (
+                                                                        <FormItem key={user.id} className="flex flex-row items-center space-x-3 space-y-0 mb-2">
+                                                                            <FormControl>
+                                                                            <Checkbox
+                                                                                checked={field.value?.includes(user.id)}
+                                                                                onCheckedChange={(checked) => {
+                                                                                return checked
+                                                                                    ? field.onChange([...field.value, user.id])
+                                                                                    : field.onChange(field.value?.filter(value => value !== user.id))
+                                                                                }}
+                                                                            />
+                                                                            </FormControl>
+                                                                            <FormLabel className="font-normal flex flex-col">
+                                                                                <span>{user.username}</span>
+                                                                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                                                                            </FormLabel>
+                                                                        </FormItem>
+                                                                    )
+                                                                    }}
+                                                                />
+                                                            ))
+                                                         ) : (
+                                                            <div className="flex items-center justify-center h-full">
+                                                                <p className="text-sm text-muted-foreground">No users found.</p>
+                                                            </div>
+                                                         )}
                                                     </ScrollArea>
                                                     </>
                                                  )}
@@ -248,3 +269,5 @@ export default function SendNotificationsPage() {
         </Suspense>
     )
 }
+
+    
