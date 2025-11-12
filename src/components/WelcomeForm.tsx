@@ -35,7 +35,7 @@ import heroImage from '@/lib/placeholder-images.json';
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { setDoc, doc, serverTimestamp, getDocs, collection, query, where, writeBatch } from "firebase/firestore";
+import { setDoc, doc, serverTimestamp, getDoc, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
@@ -82,22 +82,19 @@ export function WelcomeForm() {
     },
   });
 
-  const checkUsernameExists = async (username: string) => {
+  const checkUsernameExists = async (username: string): Promise<boolean> => {
     if (!firestore) return false;
-    const usersRef = collection(firestore, "users");
-    const q = query(usersRef, where("username", "==", username));
-
+    const usernameRef = doc(firestore, "usernames", username.toLowerCase());
+    
     try {
-        const querySnapshot = await getDocs(q);
-        return !querySnapshot.empty;
+        const docSnap = await getDoc(usernameRef);
+        return docSnap.exists();
     } catch (error) {
-        // This is where a permissions error on LIST would be caught
         const permissionError = new FirestorePermissionError({
-            path: 'users',
-            operation: 'list',
+            path: usernameRef.path,
+            operation: 'get',
         });
         errorEmitter.emit('permission-error', permissionError);
-        // We throw it again to stop the execution flow in onSubmit
         throw permissionError;
     }
   };
@@ -117,7 +114,10 @@ export function WelcomeForm() {
         const dateOfBirth = new Date(`${values.year}-${values.month}-${values.day}`);
         const eighteenYearsAgo = subYears(new Date(), 18);
         const isAgeVerified = isBefore(dateOfBirth, eighteenYearsAgo);
-
+        
+        const batch = writeBatch(firestore);
+        
+        // 1. Create user profile document
         const userRef = doc(firestore, "users", user.uid);
         const userData = {
             id: user.uid,
@@ -127,35 +127,39 @@ export function WelcomeForm() {
             dateOfBirth: dateOfBirth.toISOString().split('T')[0],
             isAgeVerified,
         };
+        batch.set(userRef, userData);
+        
+        // 2. Create username uniqueness document
+        const usernameRef = doc(firestore, "usernames", values.username.toLowerCase());
+        const usernameData = {
+            userId: user.uid,
+            username: values.username
+        };
+        batch.set(usernameRef, usernameData);
 
         // Non-blocking write with contextual error handling
-        setDoc(userRef, userData)
+        batch.commit()
             .then(() => {
                 toast({
                     title: "Profile Complete!",
                     description: "Welcome to GameSphere!",
                 });
-                // This reload is what triggers the AuthGate to re-evaluate
                 window.location.reload();
             })
             .catch((serverError) => {
+                // This will catch errors from either write operation in the batch
                 const permissionError = new FirestorePermissionError({
-                    path: userRef.path,
+                    path: `users/${user.uid} or usernames/${values.username.toLowerCase()}`,
                     operation: 'create',
-                    requestResourceData: userData,
+                    requestResourceData: { user: userData, username: usernameData },
                 });
                 errorEmitter.emit('permission-error', permissionError);
-                setIsSubmitting(false); // Stop loading on error
+                setIsSubmitting(false);
             });
 
     } catch (error) {
-        // This outer catch handles the thrown error from checkUsernameExists
         console.error("Error during username check:", error);
-        toast({
-            variant: "destructive",
-            title: "An error occurred",
-            description: "Could not verify your nickname. Please check permissions and try again.",
-        });
+        // Toast is not shown here because the error is thrown and displayed by the listener
         setIsSubmitting(false);
     }
   }
@@ -261,3 +265,5 @@ export function WelcomeForm() {
     </div>
   );
 }
+
+    

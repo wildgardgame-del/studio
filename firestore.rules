@@ -18,20 +18,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can manage user roles and delete users.
+     * @description Users can read and create their own profile. Admins can delete users. No one can list all users.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isAdmin();
-
-      allow create: if isSignedIn() && isOwner(userId) 
-                      && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email;
-
-      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
-      
+      allow create: if isSignedIn() && isOwner(userId);
+      allow list, update: if isSignedIn() && isAdmin();
       allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description For checking username uniqueness. Anyone can check if a username exists. Only the owner can create their username record.
+     * @path /usernames/{username}
+     */
+    match /usernames/{username} {
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() 
+                      && request.resource.data.userId == request.auth.uid
+                      && username == request.resource.data.username.lower();
+      allow update, delete, list: if false;
     }
 
     /**
@@ -107,3 +113,5 @@ service cloud.firestore {
     return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
   }
 }
+
+    

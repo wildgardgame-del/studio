@@ -146,6 +146,19 @@
         "isAgeVerified"
       ]
     },
+    "Username": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Username",
+      "type": "object",
+      "description": "A public record to ensure username uniqueness.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this username."
+        }
+      },
+      "required": ["userId"]
+    },
     "Review": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Review",
@@ -342,11 +355,25 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information, including their role. Accessible only to the user, but roles can only be changed by admins.",
+          "description": "Stores user profile information. Accessible only to the user.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/usernames/{username}",
+        "definition": {
+          "entityName": "Username",
+          "schema": { "$ref": "#/backend/entities/Username" },
+          "description": "Stores a public list of usernames for uniqueness checks. The document ID is the lowercase username.",
+          "params": [
+            {
+              "name": "username",
+              "description": "The username, stored in lowercase."
             }
           ]
         }
@@ -449,3 +476,5 @@
     "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
   }
 }
+
+    
