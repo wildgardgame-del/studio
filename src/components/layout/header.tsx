@@ -351,10 +351,6 @@ export default function Header() {
                     <DropdownMenuItem asChild>
                         <Link href="/library"><Library className="mr-2 h-4 w-4" />Library</Link>
                     </DropdownMenuItem>
-
-                     <DropdownMenuItem asChild>
-                        <Link href="/contact"><MessageSquare className="mr-2 h-4 w-4" />Contact Admin</Link>
-                    </DropdownMenuItem>
                     
                     {hasDevLicense ? (
                         <>
@@ -378,6 +374,9 @@ export default function Header() {
                     )}
                     
                     <DropdownMenuSeparator />
+                     <DropdownMenuItem asChild>
+                        <Link href="/contact"><MessageSquare className="mr-2 h-4 w-4" />Contact Us</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
