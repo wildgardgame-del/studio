@@ -20,7 +20,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
-import { collection, query, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, updateDoc, where, getDocs } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 
 
@@ -44,7 +44,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase, useQuery } from '@/firebase';
 import Image from 'next/image';
 import type { Notification } from '@/lib/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -156,10 +156,20 @@ export default function Header() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, firestore } = useUser();
   
   const hasDevLicense = isPurchased('dev-account-upgrade');
-  const isAdmin = user?.email === 'forgegatehub@gmail.com';
+  
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      if (user.email === 'forgegatehub@gmail.com') return true;
+      const adminDoc = await getDocs(query(collection(firestore, 'admins'), where('__name__', '==', user.uid)));
+      return !adminDoc.empty;
+    },
+    enabled: !!user && !!firestore,
+  });
 
 
   useEffect(() => {
@@ -379,7 +389,7 @@ export default function Header() {
                 </Button>
                 </Cart>
 
-                {isUserLoading ? (
+                {(isUserLoading || isAdminLoading) ? (
                 <div className='h-8 w-8 rounded-full bg-muted animate-pulse' />
                 ) : user ? (
                 <>

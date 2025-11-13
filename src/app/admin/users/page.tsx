@@ -1,19 +1,20 @@
 
 'use client';
 
-import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Suspense, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 type UserProfile = {
     id: string;
@@ -23,7 +24,6 @@ type UserProfile = {
         seconds: number;
         nanoseconds: number;
     } | null;
-    isAdmin?: boolean;
 }
 
 function ManageUsersPageContent() {
@@ -35,18 +35,15 @@ function ManageUsersPageContent() {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
-            // Using the simpler query inspired by the notifications page that works.
             const usersRef = collection(firestore, 'users');
             const usersSnapshot = await getDocs(usersRef);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
-            // Sort client-side to avoid complex query issues with security rules
             users.sort((a, b) => {
                 const dateA = a.registrationDate?.seconds || 0;
                 const dateB = b.registrationDate?.seconds || 0;
                 return dateB - dateA;
             });
             return users;
-
         } catch (error) {
             console.error("Error fetching users:", error);
             const permissionError = new FirestorePermissionError({
@@ -63,17 +60,39 @@ function ManageUsersPageContent() {
         }
     };
     
-    const { data: allUsers, isLoading } = useQuery({
+    const { data: allUsers, isLoading: isLoadingUsers } = useQuery({
         queryKey: ['all-users'],
         queryFn: fetchAllUsers,
+        enabled: !!firestore,
+    });
+
+    const fetchAdminIds = async () => {
+      if (!firestore) throw new Error("Firestore not available");
+      try {
+        const adminsSnapshot = await getDocs(collection(firestore, 'admins'));
+        return adminsSnapshot.docs.map(doc => doc.id);
+      } catch (error) {
+        console.error("Error fetching admin IDs:", error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'admins', operation: 'list' }));
+        return [];
+      }
+    };
+
+    const { data: adminIds, isLoading: isLoadingAdmins } = useQuery({
+        queryKey: ['admin-ids'],
+        queryFn: fetchAdminIds,
         enabled: !!firestore,
     });
     
     const adminMutation = useMutation({
         mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
             if (!firestore) throw new Error("Firestore not available");
-            const userDocRef = doc(firestore, 'users', user.id);
-            await updateDoc(userDocRef, { isAdmin: makeAdmin });
+            const adminDocRef = doc(firestore, 'admins', user.id);
+            if (makeAdmin) {
+                await setDoc(adminDocRef, { email: user.email, addedAt: serverTimestamp() });
+            } else {
+                await deleteDoc(adminDocRef);
+            }
             return { user, makeAdmin };
         },
         onSuccess: ({ user, makeAdmin }) => {
@@ -81,26 +100,22 @@ function ManageUsersPageContent() {
                 title: "User Role Updated",
                 description: `${user.username} is now ${makeAdmin ? 'an Admin' : 'a regular user'}.`,
             });
-            queryClient.invalidateQueries({queryKey: ['all-users']});
+            queryClient.invalidateQueries({queryKey: ['admin-ids']});
         },
         onError: (error, { user, makeAdmin }) => {
             const permissionError = new FirestorePermissionError({
-                path: `users/${user.id}`,
-                operation: 'update',
-                requestResourceData: { isAdmin: makeAdmin },
+                path: `admins/${user.id}`,
+                operation: makeAdmin ? 'create' : 'delete',
             });
             errorEmitter.emit('permission-error', permissionError);
         }
     });
 
-    const isUserAdmin = (user: UserProfile) => {
-        // Super admin email always has admin privileges
-        if (user.email === 'forgegatehub@gmail.com') {
-            return true;
-        }
-        // Otherwise, check the isAdmin field
-        return user.isAdmin === true;
+    const isUserAdmin = (userId: string) => {
+        return adminIds?.includes(userId) ?? false;
     }
+    
+    const isLoading = isLoadingUsers || isLoadingAdmins;
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -114,6 +129,14 @@ function ManageUsersPageContent() {
                         </div>
                         {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                     </div>
+
+                    <Alert className="mt-6">
+                        <ShieldCheck className="h-4 w-4" />
+                        <AlertTitle>Debug: Admin Status</AlertTitle>
+                        <AlertDescription>
+                           Current Admin IDs: {isLoadingAdmins ? 'Loading...' : adminIds?.join(', ') || 'None'}
+                        </AlertDescription>
+                    </Alert>
                     
                     <Card className="mt-8">
                     <CardHeader>
@@ -144,7 +167,7 @@ function ManageUsersPageContent() {
                                             <TableCell className="font-medium">{user.username}</TableCell>
                                             <TableCell>{user.email}</TableCell>
                                              <TableCell>
-                                                {isUserAdmin(user) ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
+                                                {isUserAdmin(user.id) || user.email === 'forgegatehub@gmail.com' ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
                                              </TableCell>
                                             <TableCell>
                                                 {user.registrationDate 
@@ -153,7 +176,7 @@ function ManageUsersPageContent() {
                                             </TableCell>
                                             <TableCell className="text-right space-x-1">
                                                 {user.email !== 'forgegatehub@gmail.com' && (
-                                                    isUserAdmin(user) ? (
+                                                    isUserAdmin(user.id) ? (
                                                         <Button 
                                                             variant="ghost" 
                                                             size="sm"

@@ -11,7 +11,7 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -19,8 +19,18 @@ function AdminDashboardPageContent() {
   const { user, isUserLoading, firestore } = useUser();
   const router = useRouter();
 
-  const isAdmin = user?.email === 'forgegatehub@gmail.com';
-  const isLoading = isUserLoading;
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      if (user.email === 'forgegatehub@gmail.com') return true;
+      const adminDoc = await getDocs(query(collection(firestore, 'admins'), where('__name__', '==', user.uid)));
+      return !adminDoc.empty;
+    },
+    enabled: !!user && !!firestore,
+  });
+
+  const isLoading = isUserLoading || isAdminLoading;
   
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],

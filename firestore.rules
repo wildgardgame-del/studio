@@ -16,27 +16,32 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can manage their own profile, but cannot make themselves an admin. Admins can manage all users.
+     * @description Users can manage their own profile. Admins can manage all users.
      * @path /users/{userId}
      */
     match /users/{userId} {
-      // Admins have full access to user profiles.
-      allow read, write: if isSignedIn() && isAdmin();
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
       
-      // Regular users can get their own profile.
-      allow get: if isSignedIn() && isOwner(userId);
-
-      // A user can create their own profile, but cannot set themselves as admin.
+      // A user can create their own profile.
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email
-                      && !('isAdmin' in request.resource.data);
+                      && request.resource.data.email == request.auth.token.email;
 
-      // A regular user can update their own profile, but CANNOT change the isAdmin field.
-      allow update: if isSignedIn() && isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin;
+      // An admin can update any user's profile.
+      // A regular user can update their own profile.
+      allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
 
-      // A regular user can delete their own profile.
-      allow delete: if isSignedIn() && isOwner(userId);
+      // An admin or the user themselves can delete the profile.
+      allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
+    }
+
+    /**
+     * @description Admins can manage admin documents.
+     * @path /admins/{userId}
+     */
+    match /admins/{userId} {
+      allow read, write: if isSignedIn() && isAdminByEmail();
     }
 
     /**
@@ -91,8 +96,7 @@ service cloud.firestore {
      */
     match /admin_messages/{messageId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isSignedIn() && isAdmin();
-      allow list: if isSignedIn() && isAdmin();
+      allow read, update, delete, list: if isSignedIn() && isAdmin();
     }
     
     /**
@@ -121,11 +125,18 @@ service cloud.firestore {
     return isSignedIn() && isOwner(userId) && resource != null;
   }
 
+  // Super admin check, can be used anywhere.
+  function isAdminByEmail() {
+    return request.auth.token.email == 'forgegatehub@gmail.com';
+  }
+
+  // This is the main check. An admin is either the super admin OR
+  // has a document in the /admins collection. This function uses exists()
+  // which is allowed in list queries.
   function isAdmin() {
-    // A user is an admin if their own user document has `isAdmin: true` OR if they are the super admin by email.
     return isSignedIn() && (
-      request.auth.token.email == 'forgegatehub@gmail.com' ||
-      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      isAdminByEmail() || 
+      exists(/databases/$(database)/documents/admins/$(request.auth.uid))
     );
   }
 }
