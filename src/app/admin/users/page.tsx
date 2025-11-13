@@ -92,12 +92,11 @@ function ManageUsersPageContent() {
             if (!firestore) throw new Error("Firestore not available");
             const adminDocRef = doc(firestore, 'admins', user.id);
             if (makeAdmin) {
-                const adminData: Admin = { 
+                const adminData: Omit<Admin, 'addedAt'> = { 
                     email: user.email, 
                     role: 'Admin', // Ensure this matches the security rule
-                    addedAt: serverTimestamp() as any
                 };
-                await setDoc(adminDocRef, adminData);
+                await setDoc(adminDocRef, { ...adminData, addedAt: serverTimestamp() });
             } else {
                 await deleteDoc(adminDocRef);
             }

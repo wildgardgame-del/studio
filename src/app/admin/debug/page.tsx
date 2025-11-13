@@ -50,12 +50,11 @@ function AdminDebugPageContent() {
       mutationFn: async () => {
         if (!user || !firestore) throw new Error("User or firestore not available");
         const adminDocRef = doc(firestore, 'admins', user.uid);
-        const adminData: Admin = {
+        const adminData: Omit<Admin, 'addedAt'> = {
             email: user.email!,
-            role: 'Admin',
-            addedAt: serverTimestamp() as any,
+            role: 'Admin', // This must be 'Admin' with a capital 'A'
         };
-        await setDoc(adminDocRef, adminData);
+        await setDoc(adminDocRef, { ...adminData, addedAt: serverTimestamp() });
       },
       onSuccess: () => {
         toast({
@@ -129,7 +128,7 @@ function AdminDebugPageContent() {
              <div className="text-left text-sm pt-4">
                 <h2 className="text-cyan-400 font-bold">O que isto significa:</h2>
                 <p className="text-gray-300 mt-2">Esta página espelha a regra de segurança `isAdmin()` que você criou. Ambas as condições (1 e 2) devem ser verdadeiras para que o resultado final seja `true`.</p>
-                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-red-400 font-bold">'false'</span>, verifique qual das condições acima está a falhar. Para corrigir, vá à página "Manage Users" e promova o seu utilizador. A promoção irá criar o documento em `/admins` com o campo `role: "Admin"`. </p>
+                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-red-400 font-bold">'false'</span>, verifique qual das condições acima está a falhar. Para corrigir, pode usar o botão "Tornar-me o Primeiro Administrador" se ele aparecer, ou ir à página "Manage Users" e promover o seu utilizador se já for administrador.</p>
              </div>
           </div>
         )}
