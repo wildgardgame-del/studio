@@ -40,7 +40,6 @@ function AdminDebugPageContent() {
       mutationFn: async () => {
         if (!user || !firestore) throw new Error("User or firestore not available");
         const adminDocRef = doc(firestore, 'admins', user.uid);
-        // Corrected to 'Admin' to match security rules
         const adminData: Omit<Admin, 'addedAt'> = {
             email: user.email!,
             role: 'Admin',
