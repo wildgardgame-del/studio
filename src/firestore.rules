@@ -17,13 +17,6 @@ service cloud.firestore {
       return isSignedIn() && isOwner(userId) && resource != null;
     }
     
-    /**
-     * @description A verificação principal de administrador.
-     * Um utilizador é administrador se:
-     * 1. O seu email estiver na lista de super-administradores.
-     * OU
-     * 2. O seu UID existir como um documento na coleção /admins.
-     */
     function isAdmin() {
       return isSignedIn() && 
              (request.auth.token.email == 'forgegatehub@gmail.com' ||
@@ -34,117 +27,36 @@ service cloud.firestore {
 
     // --- Regras das Coleções ---
 
-    /**
-     * @description Público pode ler jogos aprovados. Administradores podem ler todos. Utilizadores autenticados podem criar. Administradores ou o programador original podem atualizar. Administradores podem apagar.
-     * @path /games/{gameId}
-     */
     match /games/{gameId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
-      allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
-      allow delete: if isSignedIn() && isAdmin();
+      allow read: if true;
+      allow write: if true;
     }
 
-    /**
-     * @description Utilizadores podem gerir o seu próprio perfil. Administradores podem gerir todos os utilizadores.
-     * @path /users/{userId}
-     */
     match /users/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if isSignedIn() && isAdmin();
-      
-      allow create: if isSignedIn() && isOwner(userId) 
-                      && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email;
-
-      allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
-
-      allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
+      allow read: if true;
+      allow write: if true;
     }
 
-    /**
-     * @description Gere os documentos de função de administrador. Qualquer utilizador autenticado pode verificar o seu próprio estatuto. Apenas administradores podem listar todos ou criar/apagar outros, com uma exceção especial para o primeiro administrador.
-     * @path /admins/{userId}
-     */
     match /admins/{userId} {
-      allow get: if isSignedIn();
-      
-      allow list: if isSignedIn() && isAdmin();
-
-      allow create: if isSignedIn() && 
-                      (isAdmin() || !exists(/databases/$(database)/documents/admins));
-                      
-      allow delete: if isSignedIn() && isAdmin();
-
-      allow update: if false;
+      allow read: if true;
+      allow write: if true;
     }
 
-    /**
-     * @description Impõe a posse do utilizador para os dados do carrinho de compras.
-     * @path /users/{userId}/shopping_cart/{cartId}
-     */
-    match /users/{userId}/shopping_cart/{cartId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+    match /users/{userId}/{subcollection}/{docId} {
+        allow read, write: if true;
     }
 
-    /**
-     * @description Impõe a posse do utilizador para os dados da lista de desejos.
-     * @path /users/{userId}/wishlist/{wishlistId}
-     */
-    match /users/{userId}/wishlist/{wishlistId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+    match /{path=**}/reviews/{reviewId} {
+      allow read, write: if true;
     }
     
-    /**
-     * @description Impõe a posse do utilizador para os dados da biblioteca de jogos.
-     * @path /users/{userId}/library/{gameId}
-     */
-    match /users/{userId}/library/{gameId} {
-      allow get, list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update, delete: if false;
-    }
-
-    /**
-     * @description Permite criar, ler, atualizar e apagar avaliações para qualquer utilizador autenticado.
-     * @path /reviews/{reviewId}
-     */
-    match /reviews/{reviewId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
-    }
-
-    /**
-     * @description Impõe a posse do utilizador para as notificações. Administradores podem criar.
-     * @path /users/{userId}/notifications/{notificationId}
-     */
-    match /users/{userId}/notifications/{notificationId} {
-      allow get, list, update: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow delete: if false;
-    }
-    
-    /**
-     * @description Utilizadores autenticados podem criar. Administradores podem gerir.
-     * @path /admin_messages/{messageId}
-     */
     match /admin_messages/{messageId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete, list: if isSignedIn() && isAdmin();
+      allow read, write: if true;
     }
     
-    /**
-     * @description Público pode ler. Apenas o proprietário pode criar. Sem atualizações/apagamentos.
-     * @path /usernames/{username}
-     */
     match /usernames/{username} {
       allow read: if true;
-      allow create: if isSignedIn() 
-                      && request.resource.data.userId == request.auth.uid
-                      && username == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username.lower();
-      allow update, delete: if false;
+      allow write: if true;
     }
   }
 }

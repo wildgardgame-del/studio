@@ -27,7 +27,7 @@ type UserProfile = {
 }
 
 function ManageUsersPageContent() {
-    const { firestore } = useUser();
+    const { firestore } = useFirebase();
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -39,7 +39,6 @@ function ManageUsersPageContent() {
             const usersSnapshot = await getDocs(usersRef);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
             
-            // Sort users on the client side
             users.sort((a, b) => {
                 const dateA = a.registrationDate?.seconds || 0;
                 const dateB = b.registrationDate?.seconds || 0;
