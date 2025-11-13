@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
+import type { User as AuthUser } from "firebase/auth";
 
 type UserProfile = {
     id: string;
@@ -40,13 +41,14 @@ type UserProfile = {
         seconds: number;
         nanoseconds: number;
     } | null;
-    isAdmin: boolean;
+    isAdmin?: boolean;
 }
 
 function ManageUsersPageContent() {
     const { firestore, user: adminUser } = useFirebase();
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const [userToModify, setUserToModify] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
     const fetchAllUsers = async () => {
@@ -56,12 +58,7 @@ function ManageUsersPageContent() {
             const usersRef = collection(firestore, 'users');
             const q = query(usersRef, orderBy('registrationDate', 'desc'));
             const usersSnapshot = await getDocs(q);
-            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<UserProfile, 'isAdmin'>));
-
-            return users.map(user => ({ 
-                ...user, 
-                isAdmin: user.email === 'forgegatehub@gmail.com' 
-            }));
+            return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
 
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -80,9 +77,35 @@ function ManageUsersPageContent() {
     };
     
     const { data: allUsers, isLoading } = useQuery({
-        queryKey: ['all-users-with-admin-status'],
+        queryKey: ['all-users'],
         queryFn: fetchAllUsers,
         enabled: !!firestore,
+    });
+    
+    const adminMutation = useMutation({
+        mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
+            if (!firestore) throw new Error("Firestore not available");
+            const userRef = doc(firestore, 'users', user.id);
+            await updateDoc(userRef, { isAdmin: makeAdmin });
+        },
+        onSuccess: (_, { user, makeAdmin }) => {
+            toast({
+                title: "Role Updated",
+                description: `${user.username} has been ${makeAdmin ? 'promoted to Admin' : 'demoted to User'}.`,
+            });
+            queryClient.invalidateQueries({ queryKey: ['all-users'] });
+        },
+        onError: (error, { user, makeAdmin }) => {
+            const permissionError = new FirestorePermissionError({
+                path: `users/${user.id}`,
+                operation: 'update',
+                requestResourceData: { isAdmin: makeAdmin }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        },
+        onSettled: () => {
+            setUserToModify(null);
+        }
     });
 
     const deleteUserMutation = useMutation({
@@ -102,7 +125,7 @@ function ManageUsersPageContent() {
                 title: "User Deleted",
                 description: `The user account has been successfully deleted.`,
             });
-            queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
+            queryClient.invalidateQueries({queryKey: ['all-users']});
         },
         onError: (error, userId) => {
             const permissionError = new FirestorePermissionError({
@@ -118,6 +141,27 @@ function ManageUsersPageContent() {
 
     return (
         <>
+             <AlertDialog open={!!userToModify} onOpenChange={(open) => !open && setUserToModify(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to {userToModify?.makeAdmin ? 'promote' : 'demote'} <span className="font-bold">{userToModify?.user.username}</span> {userToModify?.makeAdmin ? 'to' : 'from'} an Admin role?
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => userToModify && adminMutation.mutate(userToModify)}
+                        disabled={adminMutation.isPending}
+                    >
+                        {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirm
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -192,6 +236,24 @@ function ManageUsersPageContent() {
                                                     <TableCell className="text-right space-x-1">
                                                         {adminUser?.uid !== user.id && (
                                                             <>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                         <Button 
+                                                                            variant="ghost" 
+                                                                            size="icon"
+                                                                            onClick={() => setUserToModify({ user, makeAdmin: !user.isAdmin })}
+                                                                            disabled={adminMutation.isPending && userToModify?.user.id === user.id}
+                                                                        >
+                                                                            {user.isAdmin 
+                                                                                ? <ShieldOff className="h-4 w-4 text-yellow-500" />
+                                                                                : <ShieldCheck className="h-4 w-4 text-green-500" />}
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>{user.isAdmin ? 'Demote to User' : 'Promote to Admin'}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
                                                                         <Button 

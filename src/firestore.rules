@@ -16,18 +16,24 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can list all users and manage them.
+     * @description Users can manage their own profile, but cannot make themselves an admin. Admins can manage all users.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isAdmin();
-
+      
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email;
+                      && request.resource.data.email == request.auth.token.email
+                      && request.resource.data.isAdmin == false; // Prevent self-promotion on creation
 
-      allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
+      allow update: if isSignedIn() && (
+                      // Case 1: An admin can update anything.
+                      isAdmin() ||
+                      // Case 2: A user can update their own profile, BUT cannot change the isAdmin field.
+                      (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin)
+                    );
 
       allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
     }
@@ -114,6 +120,7 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
+    // An admin is a user whose own user document has isAdmin: true
+    return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
   }
 }

@@ -137,6 +137,10 @@
         "isAgeVerified": {
           "type": "boolean",
           "description": "Indicates if the user's age has been verified as 18+."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the user has administrator privileges."
         }
       },
       "required": [
@@ -357,7 +361,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information. Accessible only to the user.",
+          "description": "Stores user profile information. Accessible only to the user, unless the requester is an admin.",
           "params": [
             {
               "name": "userId",
