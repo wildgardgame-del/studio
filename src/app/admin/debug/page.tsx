@@ -112,9 +112,9 @@ function AdminDebugPageContent() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                        <Button 
+                    <Button 
                         onClick={() => becomeFirstAdminMutation.mutate()} 
-                        disabled={becomeFirstAdminMutation.isPending}
+                        disabled={isUserLoading || becomeFirstAdminMutation.isPending}
                         className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
                     >
                         {becomeFirstAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -122,7 +122,6 @@ function AdminDebugPageContent() {
                     </Button>
                 </CardContent>
             </Card>
-
           </div>
         )}
       </main>
