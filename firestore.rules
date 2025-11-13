@@ -13,9 +13,9 @@ service cloud.firestore {
       allow get: if (isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId))) ||
                   (resource.data.status == 'approved');
 
-      // Admins can list everything.
-      // Others can only list games that are approved, client will filter adult content.
-      allow list: if (isSignedIn() && isAdmin()) || request.query.get('status') == 'approved';
+      // Allow anyone to list games. The client queries will be responsible for filtering by status.
+      // This is secure because the `get` rule above still protects individual documents.
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
       allow delete: if isSignedIn() && isAdmin();

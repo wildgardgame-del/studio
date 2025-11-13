@@ -69,10 +69,11 @@ export default function Home() {
 
   const filteredFeaturedGames = useMemo(() => {
     if (!allFeaturedGames) return [];
+    let games = allFeaturedGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
     if (showAdultContent && isAgeVerified) {
-      return allFeaturedGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
+      return games;
     }
-    return allFeaturedGames.filter(game => !game.isAdultContent && game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
+    return games.filter(game => !game.isAdultContent);
   }, [allFeaturedGames, showAdultContent, isAgeVerified]);
   
   const plugin = React.useRef(
