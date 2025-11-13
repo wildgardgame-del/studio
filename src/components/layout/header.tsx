@@ -45,10 +45,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase, useQuery } from '@/firebase';
 import Image from 'next/image';
 import type { Notification } from '@/lib/types';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Separator } from '../ui/separator';
 
 const navLinks = [
@@ -162,17 +162,12 @@ export default function Header() {
   const hasDevLicense = isPurchased('dev-account-upgrade');
   
   const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['isAdmin', user?.uid],
-    queryFn: async () => {
-      if (!user || !firestore) return false;
-      // This is the main check. An admin is a user who has a document
-      // with their UID in the /admins collection. This is secure and efficient.
-      // A regular user CAN check their OWN document here because of the security rules.
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists();
+    queryKey: ['isAdminCheckSimpleEmail', user?.email],
+    queryFn: () => {
+      if (!user) return false;
+      return user.email === 'forgegatehub@gmail.com' || user.email === 'raf-el@live.com';
     },
-    enabled: !!user && !!firestore,
+    enabled: !!user,
   });
 
 
@@ -499,3 +494,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
