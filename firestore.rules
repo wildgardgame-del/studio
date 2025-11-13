@@ -21,12 +21,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // An admin is a signed-in user whose UID exists in the /admins collection.
-      // Also includes super-admins by email for failsafe.
-      return isSignedIn() && 
-             (request.auth.token.email == 'forgegatehub@gmail.com' ||
-              request.auth.token.email == 'raf-el@live.com' ||
-              exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      // An admin is a signed-in user whose UID exists as a document in the /admins collection.
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     // ----------------------
