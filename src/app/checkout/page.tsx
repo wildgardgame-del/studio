@@ -33,7 +33,7 @@ const formSchema = z.object({
 })
 
 function CheckoutPageContent() {
-    const { cartItems, clearCart } = useGameStore();
+    const { cartItems, clearCart, removeFromWishlist } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
@@ -76,6 +76,11 @@ function CheckoutPageContent() {
             
             batch.commit()
                 .then(() => {
+                    // Remove purchased items from wishlist
+                    cartItems.forEach(item => {
+                        removeFromWishlist(item.id, true); // silent removal
+                    });
+
                     clearCart();
                     setIsProcessing(false);
                     toast({

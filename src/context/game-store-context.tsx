@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Game } from '@/lib/types';
@@ -14,6 +15,7 @@ type GameStoreContextType = {
   clearCart: () => void;
   wishlistItems: Game[];
   handleToggleWishlist: (game: Game) => void;
+  removeFromWishlist: (gameId: string, silent?: boolean) => void;
   isInWishlist: (gameId: string) => boolean;
   purchasedGames: Game[];
   isPurchased: (gameId: string) => boolean;
@@ -58,6 +60,26 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
   const removeFromCart = useCallback((gameId: string) => {
     setCartItems((prev) => prev.filter((item) => item.id !== gameId));
   }, []);
+  
+  const removeFromWishlist = useCallback((gameId: string, silent: boolean = false) => {
+    setWishlistItems((prev) => {
+        const itemExists = prev.some(item => item.id === gameId);
+        if (itemExists) {
+            if (!silent) {
+                 const game = prev.find(item => item.id === gameId);
+                 if (game) {
+                    setTimeout(() => {
+                        toast({
+                            description: `${game.title} removed from your wishlist.`,
+                        });
+                    }, 0);
+                 }
+            }
+            return prev.filter((item) => item.id !== gameId);
+        }
+        return prev;
+    });
+}, [toast]);
 
   const clearCart = useCallback(() => {
     setCartItems([]);
@@ -76,25 +98,18 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
   }, [purchasedGames]);
 
   const handleToggleWishlist = useCallback((game: Game) => {
-    setWishlistItems((prev) => {
-      const isWishlisted = prev.some((item) => item.id === game.id);
-      if (isWishlisted) {
+    const isWishlisted = isInWishlist(game.id);
+    if (isWishlisted) {
+        removeFromWishlist(game.id);
+    } else {
+        setWishlistItems(prev => [...prev, game]);
         setTimeout(() => {
             toast({
-              description: `${game.title} removed from your wishlist.`,
+                description: `${game.title} added to your wishlist.`,
             });
         }, 0);
-        return prev.filter((item) => item.id !== game.id);
-      } else {
-        setTimeout(() => {
-            toast({
-              description: `${game.title} added to your wishlist.`,
-            });
-        }, 0);
-        return [...prev, game];
-      }
-    });
-  }, [toast]);
+    }
+  }, [isInWishlist, removeFromWishlist, toast]);
 
   return (
     <GameStoreContext.Provider
@@ -105,6 +120,7 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
         clearCart,
         wishlistItems,
         handleToggleWishlist,
+        removeFromWishlist,
         isInWishlist,
         purchasedGames: purchasedGames || [],
         isPurchased,
