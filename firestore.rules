@@ -78,23 +78,14 @@ service cloud.firestore {
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false;
     }
-
-    /**
-     * @description Only admins can read or write admin documents.
-     * @path /admins/{userId}
-     */
-    match /admins/{userId} {
-      allow read, list, write: if isSignedIn() && isAdmin();
-    }
     
     /**
-     * @description Signed-in can create. Admin can manage. Public can read.
+     * @description Signed-in can create. Admin can manage.
      * @path /admin_messages/{messageId}
      */
     match /admin_messages/{messageId} {
-      allow read: if true;
+      allow read, update, delete: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isAdmin();
     }
     
     /**
@@ -124,7 +115,7 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    // Admins are users whose UID is in the /admins collection.
+    // Admins are users whose email matches this specific value.
     return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
   }
 }
