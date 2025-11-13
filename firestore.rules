@@ -9,16 +9,12 @@ service cloud.firestore {
      */
     match /games/{gameId} {
       // Admins or the owner can always get the document.
-      // Others can get if it's approved and either not adult content,
-      // or they are signed in and age-verified.
+      // Others can get if it's approved. Client-side logic will handle adult content filtering.
       allow get: if (isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId))) ||
-                  (resource.data.status == 'approved' && (
-                    resource.data.isAdultContent == false ||
-                    (isSignedIn() && getUserData(request.auth.uid).isAgeVerified == true)
-                  ));
+                  (resource.data.status == 'approved');
 
       // Admins can list everything.
-      // Others can only list games that are approved.
+      // Others can only list games that are approved, client will filter adult content.
       allow list: if (isSignedIn() && isAdmin()) || request.query.get('status') == 'approved';
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
@@ -114,7 +110,7 @@ service cloud.firestore {
   }
 
   function isExistingOwner(userId) {
-    return isSignedIn() && isOwner(userId) && resource != null && resource.data.developerId == userId;
+    return isSignedIn() && isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId));
   }
 
   function isAdmin() {

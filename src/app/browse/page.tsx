@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -24,23 +25,29 @@ function BrowsePageContent() {
     const [sortOrder, setSortOrder] = useState('newest');
     const [isAgeVerified, setIsAgeVerified] = useState(false);
     const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
-    const [showAdultContent, setShowAdultContent] = useState(true);
+    const [showAdultContent, setShowAdultContent] = useState(false);
 
     useEffect(() => {
         const checkUserAgeVerification = async () => {
+            setIsUserCheckLoading(true);
             if (user && firestore) {
                 const userDocRef = doc(firestore, 'users', user.uid);
-                const userDoc = await getDoc(userDocRef);
-                if (userDoc.exists() && userDoc.data().isAgeVerified) {
-                    setIsAgeVerified(true);
-                    setShowAdultContent(true); // Default to showing adult content for verified users
-                } else {
+                try {
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists() && userDoc.data().isAgeVerified) {
+                        setIsAgeVerified(true);
+                    } else {
+                        setIsAgeVerified(false);
+                        setShowAdultContent(false); 
+                    }
+                } catch (e) {
+                    console.error("Error checking user age verification:", e);
                     setIsAgeVerified(false);
-                    setShowAdultContent(false); // Never show adult content for non-verified users
+                    setShowAdultContent(false);
                 }
             } else {
                 setIsAgeVerified(false);
-                setShowAdultContent(false); // Default to false for guests
+                setShowAdultContent(false);
             }
             setIsUserCheckLoading(false);
         };
@@ -53,31 +60,25 @@ function BrowsePageContent() {
         
         let q = query(
             collection(firestore, "games"), 
-            where("status", "==", "approved"),
-            where(documentId(), "!=", "dev-account-upgrade")
+            where("status", "==", "approved")
         );
-
-        // If the user is not age verified, the rules will handle security, but we can also filter client-side for a better UX.
-        if (!isAgeVerified) {
-            q = query(q, where("isAdultContent", "==", false));
-        }
-
+        
         return q;
-    }, [firestore, isAgeVerified]);
+    }, [firestore]);
 
-    const { data: approvedGames, isLoading: areGamesLoading } = useCollection<Game>(gamesQuery);
+    const { data: allGames, isLoading: areGamesLoading } = useCollection<Game>(gamesQuery);
 
     const filteredAndSortedGames = useMemo(() => {
-        if (!approvedGames) return [];
+        if (!allGames) return [];
 
-        let games = approvedGames;
+        let games = allGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
         
-        // Filter by age verification preference
         if (isAgeVerified && !showAdultContent) {
              games = games.filter(game => !game.isAdultContent);
+        } else if (!isAgeVerified) {
+            games = games.filter(game => !game.isAdultContent);
         }
 
-        // Text search filter
         if (q) {
             const lowerCaseQuery = q.toLowerCase();
             games = games.filter(game => 
@@ -87,14 +88,12 @@ function BrowsePageContent() {
             );
         }
 
-        // Genre filter
         if (selectedGenres.length > 0) {
             games = games.filter(game => 
                 game.genres && selectedGenres.every(selectedGenre => game.genres.includes(selectedGenre))
             );
         }
 
-        // Sorting
         games.sort((a, b) => {
             switch (sortOrder) {
                 case 'price-asc':
@@ -110,7 +109,7 @@ function BrowsePageContent() {
         });
         
         return games;
-    }, [approvedGames, q, selectedGenres, sortOrder, isAgeVerified, showAdultContent]);
+    }, [allGames, q, selectedGenres, sortOrder, isAgeVerified, showAdultContent]);
     
     const isLoading = areGamesLoading || isUserCheckLoading;
 
