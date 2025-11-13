@@ -17,14 +17,8 @@ function AdminDebugPageContent() {
     queryFn: async () => {
       if (!user || !firestore) return false;
       
-      // This is the definitive check.
-      // 1. First, a special check for the hardcoded super-admin email for bootstrapping.
-      if (user.email === 'forgegatehub@gmail.com') {
-        return true;
-      }
-      
-      // 2. Then, check for the user's document in the /admins collection.
-      // This query is now allowed by the updated security rules.
+      // This is the definitive check. It only checks for the existence
+      // of the user's document in the /admins collection.
       const adminDocRef = doc(firestore, 'admins', user.uid);
       try {
         const adminDoc = await getDoc(adminDocRef);
