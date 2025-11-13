@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can list all users.
+     * @description Users can read their own profile. Admins can list all users and manage them.
      * @path /users/{userId}
      */
     match /users/{userId} {
@@ -27,9 +27,9 @@ service cloud.firestore {
                       && request.resource.data.id == userId
                       && request.resource.data.email == request.auth.token.email;
 
-      allow update: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
 
-      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
     }
 
     /**
@@ -73,10 +73,18 @@ service cloud.firestore {
      * @path /users/{userId}/notifications/{notificationId}
      */
     match /users/{userId}/notifications/{notificationId} {
-      allow get, update: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      allow get, list, update: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false;
+    }
+
+    /**
+     * @description Only admins can manage the list of admins.
+     * @path /admins/{userId}
+     */
+    match /admins/{userId} {
+      allow read, list: if isSignedIn() && isAdmin();
+      allow write: if isSignedIn() && isAdmin();
     }
     
     /**
@@ -84,8 +92,8 @@ service cloud.firestore {
      * @path /admin_messages/{messageId}
      */
     match /admin_messages/{messageId} {
-      allow read, update, delete: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isAdmin();
     }
     
     /**
@@ -115,8 +123,8 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    // Admins are users whose email matches this specific value.
-    return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
+    // Admins are users whose UID is in the /admins collection.
+    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
 }
 

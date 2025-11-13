@@ -50,11 +50,22 @@ function ManageUsersPageContent() {
     const queryClient = useQueryClient();
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
     const [userToToggleAdmin, setUserToToggleAdmin] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
-    
-    // Hardcoded admin email for display and role checking on the client
-    const SUPER_ADMIN_EMAIL = 'forgegatehub@gmail.com';
 
-    const fetchAllUsers = async () => {
+    const fetchAdminIds = async () => {
+        if (!firestore) return [];
+        try {
+            const adminSnapshot = await getDocs(collection(firestore, 'admins'));
+            return adminSnapshot.docs.map(doc => doc.id);
+        } catch (error) {
+            console.error("Error fetching admin IDs:", error);
+            const permissionError = new FirestorePermissionError({ path: 'admins', operation: 'list' });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error fetching admin roles' });
+            return [];
+        }
+    };
+    
+    const fetchAllUsers = async (adminIds: string[]) => {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
@@ -63,8 +74,7 @@ function ManageUsersPageContent() {
             const usersSnapshot = await getDocs(q);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<UserProfile, 'isAdmin'>));
 
-            // Determine admin status on the client based on the email
-            return users.map(user => ({ ...user, isAdmin: user.email === SUPER_ADMIN_EMAIL }));
+            return users.map(user => ({ ...user, isAdmin: adminIds.includes(user.id) }));
 
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -82,29 +92,46 @@ function ManageUsersPageContent() {
         }
     };
     
-    const { data: allUsers, isLoading } = useQuery({
-        queryKey: ['all-users-with-admin-status'],
-        queryFn: fetchAllUsers,
+    const { data: adminIds, isLoading: isAdminIdsLoading } = useQuery({
+        queryKey: ['admin-ids'],
+        queryFn: fetchAdminIds,
         enabled: !!firestore,
     });
+    
+    const { data: allUsers, isLoading: isUsersLoading } = useQuery({
+        queryKey: ['all-users-with-admin-status', adminIds],
+        queryFn: () => fetchAllUsers(adminIds || []),
+        enabled: !!adminIds,
+    });
+
+    const isLoading = isAdminIdsLoading || isUsersLoading;
 
     const adminMutation = useMutation({
         mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
            if (!firestore) throw new Error("Firestore not available");
-           // This operation is now symbolic as we rely on email. 
-           // In a real scenario with dynamic roles, we'd write to a 'roles' collection.
-           // For now, we simulate the action and refresh.
-           toast({
-               title: 'Action Not Implemented',
-               description: `Role management is currently handled by email. Contact support to change roles.`,
-           });
-           return Promise.resolve();
+           const adminDocRef = doc(firestore, 'admins', user.id);
+           if (makeAdmin) {
+               await setDoc(adminDocRef, { 
+                   email: user.email,
+                   addedAt: serverTimestamp() 
+               });
+           } else {
+               await deleteDoc(adminDocRef);
+           }
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
+        onSuccess: (_, { user, makeAdmin }) => {
+            toast({
+                title: 'Role Updated',
+                description: `${user.username} is now ${makeAdmin ? 'an Admin' : 'a User'}.`
+            });
+            queryClient.invalidateQueries({queryKey: ['admin-ids']});
         },
         onError: (error, { user, makeAdmin }) => {
-             toast({ variant: 'destructive', title: 'Error', description: 'Could not perform this action.' });
+            const permissionError = new FirestorePermissionError({
+                path: `admins/${user.id}`,
+                operation: makeAdmin ? 'create' : 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         },
         onSettled: () => {
             setUserToToggleAdmin(null);
@@ -120,6 +147,13 @@ function ManageUsersPageContent() {
             const batch = writeBatch(firestore);
             batch.delete(userDocRef);
             batch.delete(usernameDocRef);
+            
+            // Also delete from admins collection if they are an admin
+            if (userToDelete.isAdmin) {
+                const adminDocRef = doc(firestore, 'admins', userId);
+                batch.delete(adminDocRef);
+            }
+
             await batch.commit();
         },
         onSuccess: () => {
@@ -128,6 +162,7 @@ function ManageUsersPageContent() {
                 description: `The user account has been successfully deleted.`,
             });
             queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
+            queryClient.invalidateQueries({queryKey: ['admin-ids']});
         },
         onError: (error, userId) => {
             const permissionError = new FirestorePermissionError({
@@ -148,7 +183,7 @@ function ManageUsersPageContent() {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span> and remove their username. This action cannot be undone.
+                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span> and all associated data. This action cannot be undone.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -170,11 +205,19 @@ function ManageUsersPageContent() {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Role management is currently handled by a fixed email address. This action is disabled.
+                        Are you sure you want to {userToToggleAdmin?.makeAdmin ? 'promote' : 'demote'} <span className="font-bold">{userToToggleAdmin?.user.username}</span> {userToToggleAdmin?.makeAdmin ? 'to' : 'from'} an Admin role?
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                         onClick={() => userToToggleAdmin && adminMutation.mutate(userToToggleAdmin)}
+                         disabled={adminMutation.isPending}
+                         className={cn(userToToggleAdmin?.makeAdmin ? '' : buttonVariants({ variant: "destructive" }))}
+                    >
+                         {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                         Confirm
+                    </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -229,21 +272,20 @@ function ManageUsersPageContent() {
                                                             : 'N/A'}
                                                     </TableCell>
                                                     <TableCell className="text-right space-x-1">
-                                                        {adminUser?.email !== user.email && (
+                                                        {adminUser?.uid !== user.id && (
                                                             <>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
                                                                         <Button 
                                                                             variant="ghost" 
                                                                             size="icon"
-                                                                            disabled
                                                                             onClick={() => setUserToToggleAdmin({ user, makeAdmin: !user.isAdmin })}
                                                                         >
                                                                             {user.isAdmin ? <ShieldOff className="h-4 w-4 text-yellow-500" /> : <ShieldCheck className="h-4 w-4 text-green-500" />}
                                                                         </Button>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>
-                                                                        <p>Role management is disabled</p>
+                                                                        <p>{user.isAdmin ? 'Demote to User' : 'Promote to Admin'}</p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                                 <Tooltip>

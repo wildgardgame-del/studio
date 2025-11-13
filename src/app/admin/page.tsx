@@ -21,9 +21,16 @@ function AdminDashboardPageContent() {
   const { firestore } = useFirebase();
   const router = useRouter();
 
-  // Simplified admin check - directly use the user's email.
-  const isAdmin = !isUserLoading && user?.email === 'forgegatehub@gmail.com';
-  const isLoading = isUserLoading;
+  // Check admin status by seeing if a doc with the user's UID exists in the 'admins' collection
+  const adminRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'admins', user.uid);
+  }, [firestore, user]);
+
+  const { data: adminDoc, isLoading: isAdminLoading } = useDoc<Admin>(adminRef);
+  
+  const isAdmin = !!adminDoc;
+  const isLoading = isUserLoading || isAdminLoading;
   
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],
@@ -154,3 +161,5 @@ export default function AdminDashboardPage() {
         </Suspense>
     )
 }
+
+    
