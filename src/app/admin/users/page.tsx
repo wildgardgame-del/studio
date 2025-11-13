@@ -52,7 +52,21 @@ function ManageUsersPageContent() {
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
     const [userToToggleAdmin, setUserToToggleAdmin] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
 
-    const fetchAllUsers = async () => {
+    const fetchAdminIds = async () => {
+        if (!firestore) return [];
+        try {
+            const adminSnapshot = await getDocs(collection(firestore, 'admins'));
+            return adminSnapshot.docs.map(doc => doc.id);
+        } catch (error) {
+            console.error("Error fetching admin IDs:", error);
+            const permissionError = new FirestorePermissionError({ path: 'admins', operation: 'list' });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error fetching admin roles' });
+            return [];
+        }
+    };
+
+    const fetchAllUsers = async (adminIds: string[]) => {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
@@ -61,7 +75,7 @@ function ManageUsersPageContent() {
             const usersSnapshot = await getDocs(q);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<UserProfile, 'isAdmin'>));
 
-            return users.map(user => ({ ...user, isAdmin: user.email === 'forgegatehub@gmail.com' }));
+            return users.map(user => ({ ...user, isAdmin: adminIds.includes(user.id) }));
 
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -78,21 +92,46 @@ function ManageUsersPageContent() {
             return [];
         }
     };
-    
-    const { data: allUsers, isLoading } = useQuery({
-        queryKey: ['all-users-with-admin-status'],
-        queryFn: fetchAllUsers,
+
+    const { data: adminIds, isLoading: isAdminIdsLoading } = useQuery({
+        queryKey: ['admin-ids'],
+        queryFn: fetchAdminIds,
         enabled: !!firestore,
     });
+    
+    const { data: allUsers, isLoading: areUsersLoading } = useQuery({
+        queryKey: ['all-users-with-admin-status', adminIds],
+        queryFn: () => fetchAllUsers(adminIds || []),
+        enabled: !!adminIds && !isAdminIdsLoading,
+    });
+    
+    const isLoading = isAdminIdsLoading || areUsersLoading;
+
 
     const adminMutation = useMutation({
         mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
-           toast({
-                variant: 'destructive',
-                title: 'Not Implemented',
-                description: 'This functionality is disabled in the current admin configuration.',
+           if (!firestore) throw new Error("Firestore not available");
+           const adminDocRef = doc(firestore, 'admins', user.id);
+           if (makeAdmin) {
+               await setDoc(adminDocRef, { email: user.email, addedAt: serverTimestamp() });
+           } else {
+               await deleteDoc(adminDocRef);
+           }
+        },
+        onSuccess: (_, { user, makeAdmin }) => {
+            toast({
+                title: 'Success!',
+                description: `${user.username} has been ${makeAdmin ? 'promoted to Admin' : 'demoted to User'}.`,
             });
-            throw new Error('Admin toggling is not supported with the current email-based admin rule.');
+            queryClient.invalidateQueries({queryKey: ['admin-ids']});
+            queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
+        },
+        onError: (error, { user, makeAdmin }) => {
+            const permissionError = new FirestorePermissionError({
+                path: `admins/${user.id}`,
+                operation: makeAdmin ? 'create' : 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         },
         onSettled: () => {
             setUserToToggleAdmin(null);
@@ -165,9 +204,10 @@ function ManageUsersPageContent() {
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={() => userToToggleAdmin && adminMutation.mutate(userToToggleAdmin)}
-                        disabled={true}
+                        disabled={adminMutation.isPending}
                     >
-                       This feature is currently disabled.
+                       {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                       Confirm
                     </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -231,13 +271,12 @@ function ManageUsersPageContent() {
                                                                             variant="ghost" 
                                                                             size="icon"
                                                                             onClick={() => setUserToToggleAdmin({ user, makeAdmin: !user.isAdmin })}
-                                                                            disabled={true}
                                                                         >
                                                                             {user.isAdmin ? <ShieldOff className="h-4 w-4 text-yellow-500" /> : <ShieldCheck className="h-4 w-4 text-green-500" />}
                                                                         </Button>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>
-                                                                        <p>Admin management is disabled.</p>
+                                                                        <p>{user.isAdmin ? 'Demote to User' : 'Promote to Admin'}</p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                                 <Tooltip>

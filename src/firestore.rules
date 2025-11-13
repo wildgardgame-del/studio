@@ -8,9 +8,7 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Anyone can get an individual document. The UI will handle visibility based on status.
       allow get: if true;
-      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
@@ -18,7 +16,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can manage user roles.
+     * @description Users can read their own profile. Admins can list all users and manage them.
      * @path /users/{userId}
      */
     match /users/{userId} {
@@ -29,9 +27,9 @@ service cloud.firestore {
                       && request.resource.data.id == userId
                       && request.resource.data.email == request.auth.token.email;
 
-      allow update: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
 
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
     }
 
     /**
@@ -75,10 +73,39 @@ service cloud.firestore {
      * @path /users/{userId}/notifications/{notificationId}
      */
     match /users/{userId}/notifications/{notificationId} {
-      allow get, update: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      allow get, list, update: if isSignedIn() && isOwner(userId);
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false;
+    }
+
+    /**
+     * @description Only admins can read, list or write admin documents. A user can check their own admin status.
+     * @path /admins/{userId}
+     */
+    match /admins/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list, write: if isSignedIn() && isAdmin();
+    }
+    
+    /**
+     * @description Signed-in can create. Admin can manage.
+     * @path /admin_messages/{messageId}
+     */
+    match /admin_messages/{messageId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && isAdmin();
+    }
+    
+    /**
+     * @description Public can read. Only owner can create. No updates/deletes.
+     * @path /usernames/{username}
+     */
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if isSignedIn() 
+                      && request.resource.data.userId == request.auth.uid
+                      && username == request.resource.data.username.lower();
+      allow update, delete: if false;
     }
   }
 
@@ -96,6 +123,7 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
+    // Admins are users whose UID is in the /admins collection.
+    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
 }
