@@ -329,7 +329,7 @@ export default function Header() {
 
         {/* Desktop Header */}
         <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
                 <Link href="/" className="flex items-center space-x-2">
                     <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={32} height={32} />
                     <span className="hidden font-bold sm:inline-block font-headline">
@@ -337,18 +337,19 @@ export default function Header() {
                     </span>
                 </Link>
                 
-                <nav className="hidden md:flex items-center space-x-1 bg-secondary p-1 rounded-lg">
+                <nav className="hidden md:flex items-center space-x-4">
                     {navLinks.map((link) => (
                       <Link
                           key={link.href}
                           href={link.href}
                            className={cn(
-                              "rounded-md px-3 py-1.5 transition-colors text-sm font-semibold",
+                              "flex items-center gap-2 px-3 py-1.5 transition-colors text-sm font-semibold",
                               pathname === link.href
-                              ? `bg-background shadow-sm ${link.activeColorClass}`
+                              ? `${link.activeColorClass}`
                               : "text-muted-foreground hover:text-foreground"
                           )}
                       >
+                          <link.icon className="h-4 w-4" />
                           {link.label}
                       </Link>
                     ))}
@@ -457,8 +458,7 @@ export default function Header() {
                             <Button variant="ghost" size="icon">
                                 <User className="h-5 w-5" />
                                 <span className="sr-only">User Profile</span>
-                            </Button>
-                        </Link>
+                            </Button>                        </Link>
                     )}
                 </nav>
                 <div className="md:hidden">
@@ -478,5 +478,3 @@ export default function Header() {
     </header>
   );
 }
-
-    
