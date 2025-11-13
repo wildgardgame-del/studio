@@ -2,34 +2,24 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useQuery } from '@tanstack/react-query';
-import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
 
 function AdminDebugPageContent() {
-  const { user, isUserLoading, firestore } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const { data: isAdmin, isLoading: isAdminLoading, error: isAdminError } = useQuery({
-    queryKey: ['isAdminCheckOnly', user?.uid],
+    queryKey: ['isAdminCheckSimple', user?.email],
     queryFn: async () => {
-      if (!user || !firestore) return false;
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      try {
-        const adminDoc = await getDoc(adminDocRef);
-        return adminDoc.exists();
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        // Even if rules allow the 'get', other issues might occur.
-        // Let's not emit a permission error here to keep the test clean,
-        // but log it for our own debugging.
-        return false; // Return false on any error for this test
-      }
+      // Comparação de email simples e direta para depuração.
+      if (!user) return false;
+      return user.email === 'forgegatehub@gmail.com';
     },
-    enabled: !!user && !!firestore,
+    enabled: !!user, // Depende apenas do utilizador, não do Firestore.
   });
 
 
@@ -60,7 +50,7 @@ function AdminDebugPageContent() {
             )}
             <Separator className="bg-cyan-400/20 my-4" />
             <p className="text-2xl">
-              <span className="text-gray-400">Is Admin (Single Document Check): </span>
+              <span className="text-gray-400">Is Admin (Simple Email Check): </span>
               <span className={isAdmin ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
                 {isAdminLoading ? 'Checking...' : isAdmin ? 'true' : 'false'}
               </span>
