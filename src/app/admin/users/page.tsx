@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,7 +109,7 @@ function ManageUsersPageContent() {
 
     const deleteUserMutation = useMutation({
         mutationFn: async (userId: string) => {
-            if (!firestore || !userToDelete) throw new Error("Firestore or user not available");
+            if (!firestore) throw new Error("Firestore not available");
             const userDocRef = doc(firestore, 'users', userId);
             
             // Note: Deleting a user from Firebase Auth is a privileged operation
