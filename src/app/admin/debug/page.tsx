@@ -1,9 +1,9 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useUser } from '@/firebase';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, ShieldPlus } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
@@ -18,6 +18,7 @@ function AdminDebugPageContent() {
   const { user, isUserLoading, firestore } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [isPromoting, setIsPromoting] = useState(false);
 
   const { data: adminStatus, isLoading: isAdminLoading } = useQuery({
     queryKey: ['adminStatus', user?.uid],
@@ -36,32 +37,45 @@ function AdminDebugPageContent() {
     enabled: !!user && !!firestore,
   });
 
-  const becomeFirstAdminMutation = useMutation({
-      mutationFn: async () => {
-        if (!user || !firestore) throw new Error("User or firestore not available");
+  const handleBecomeAdmin = async () => {
+    if (!user || !firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: "User or firestore not available. Please wait and try again."
+        });
+        return;
+    }
+
+    setIsPromoting(true);
+
+    try {
         const adminDocRef = doc(firestore, 'admins', user.uid);
         const adminData: Omit<Admin, 'addedAt'> = {
             email: user.email!,
             role: 'Admin',
         };
         await setDoc(adminDocRef, { ...adminData, addedAt: serverTimestamp() });
-      },
-      onSuccess: () => {
+        
         toast({
             title: "Success!",
             description: "You have been promoted to the first Admin. The page will now reload."
         });
-        queryClient.invalidateQueries({ queryKey: ['adminStatus', user?.uid] });
+        
+        await queryClient.invalidateQueries({ queryKey: ['adminStatus', user?.uid] });
+
         setTimeout(() => window.location.reload(), 1500);
-      },
-      onError: (error: any) => {
+
+    } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: error.message || "Could not become first admin. This is expected if admins already exist."
+            description: error.message || "Could not become first admin. Check Firestore rules and console."
         });
-      }
-  })
+    } finally {
+        setIsPromoting(false);
+    }
+  }
 
   const isLoading = isUserLoading || isAdminLoading;
 
@@ -112,11 +126,11 @@ function AdminDebugPageContent() {
                 </CardHeader>
                 <CardContent>
                     <Button 
-                        onClick={() => becomeFirstAdminMutation.mutate()} 
-                        disabled={isUserLoading || becomeFirstAdminMutation.isPending}
+                        onClick={handleBecomeAdmin} 
+                        disabled={isUserLoading || isPromoting}
                         className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
                     >
-                        {becomeFirstAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {(isUserLoading || isPromoting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Tornar-me o Primeiro Administrador
                     </Button>
                 </CardContent>
