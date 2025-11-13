@@ -23,9 +23,7 @@ function AdminDashboardPageContent() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
-      // Super admin check
-      if (user.email === 'forgegatehub@gmail.com') return true;
-      // Check if user document exists in 'admins' collection
+      // This is the new, robust check against the /admins collection
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
       return adminDoc.exists();
