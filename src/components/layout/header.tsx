@@ -44,7 +44,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useCollection, useFirebase, useMemoFirebase, useDoc } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import Image from 'next/image';
 import type { Notification } from '@/lib/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -157,19 +157,9 @@ export default function Header() {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isUserLoading } = useUser();
-  const { firestore } = useFirebase();
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-  const { data: userProfile } = useDoc<{isAdmin?: boolean}>(userProfileRef);
   
   const hasDevLicense = isPurchased('dev-account-upgrade');
-  
-  // A user is an admin if their profile has isAdmin:true OR they are the super admin
-  const isSuperAdmin = user?.email === 'forgegatehub@gmail.com';
-  const isAdmin = userProfile?.isAdmin === true || isSuperAdmin;
+  const isAdmin = user?.email === 'forgegatehub@gmail.com';
 
 
   useEffect(() => {

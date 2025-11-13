@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -19,16 +19,8 @@ function AdminDashboardPageContent() {
   const { user, isUserLoading, firestore } = useUser();
   const router = useRouter();
 
-  const userProfileRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<{isAdmin?: boolean}>(userProfileRef);
-  
-  // A user is an admin if their profile has isAdmin:true OR they are the super admin
-  const isSuperAdmin = user?.email === 'forgegatehub@gmail.com';
-  const isAdmin = userProfile?.isAdmin === true || isSuperAdmin;
-  const isLoading = isUserLoading || isProfileLoading;
+  const isAdmin = user?.email === 'forgegatehub@gmail.com';
+  const isLoading = isUserLoading;
   
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],

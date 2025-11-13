@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Suspense, useState } from 'react';
-import { Loader2, Trash2, ShieldCheck, ShieldOff } from "lucide-react";
+import { Loader2, Trash2, ShieldCheck } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -47,8 +47,8 @@ function ManageUsersPageContent() {
     const { firestore, user: adminUser } = useUser();
     const { toast } = useToast();
     const queryClient = useQueryClient();
-    const [userToModify, setUserToModify] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+    const isSuperAdmin = adminUser?.email === 'forgegatehub@gmail.com';
 
     const fetchAllUsers = async () => {
         if (!firestore) throw new Error("Firestore not available");
@@ -81,32 +81,6 @@ function ManageUsersPageContent() {
         enabled: !!firestore,
     });
     
-    const adminMutation = useMutation({
-        mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
-            if (!firestore) throw new Error("Firestore not available");
-            const userRef = doc(firestore, 'users', user.id);
-            await updateDoc(userRef, { isAdmin: makeAdmin });
-        },
-        onSuccess: (_, { user, makeAdmin }) => {
-            toast({
-                title: "Role Updated",
-                description: `${user.username} has been ${makeAdmin ? 'promoted to Admin' : 'demoted to User'}.`,
-            });
-            queryClient.invalidateQueries({ queryKey: ['all-users'] });
-        },
-        onError: (error, { user, makeAdmin }) => {
-            const permissionError = new FirestorePermissionError({
-                path: `users/${user.id}`,
-                operation: 'update',
-                requestResourceData: { isAdmin: makeAdmin }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        },
-        onSettled: () => {
-            setUserToModify(null);
-        }
-    });
-
     const deleteUserMutation = useMutation({
         mutationFn: async (userId: string) => {
             if (!firestore) throw new Error("Firestore not available");
@@ -136,29 +110,12 @@ function ManageUsersPageContent() {
         }
     });
 
+    const isUserAdmin = (user: UserProfile) => {
+        return user.isAdmin === true || user.email === 'forgegatehub@gmail.com';
+    }
+
     return (
         <>
-             <AlertDialog open={!!userToModify} onOpenChange={(open) => !open && setUserToModify(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to {userToModify?.makeAdmin ? 'promote' : 'demote'} <span className="font-bold">{userToModify?.user.username}</span> {userToModify?.makeAdmin ? 'to' : 'from'} an Admin role?
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={() => userToModify && adminMutation.mutate(userToModify)}
-                        disabled={adminMutation.isPending}
-                    >
-                        {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Confirm
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -188,7 +145,7 @@ function ManageUsersPageContent() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Users</h1>
-                                <p className="text-muted-foreground mt-2">View and manage all registered users and their roles.</p>
+                                <p className="text-muted-foreground mt-2">View all registered users and their roles.</p>
                             </div>
                             {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                         </div>
@@ -223,7 +180,7 @@ function ManageUsersPageContent() {
                                                     <TableCell className="font-medium">{user.username}</TableCell>
                                                     <TableCell>{user.email}</TableCell>
                                                      <TableCell>
-                                                        {user.isAdmin ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
+                                                        {isUserAdmin(user) ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
                                                      </TableCell>
                                                     <TableCell>
                                                         {user.registrationDate 
@@ -231,26 +188,8 @@ function ManageUsersPageContent() {
                                                             : 'N/A'}
                                                     </TableCell>
                                                     <TableCell className="text-right space-x-1">
-                                                        {adminUser?.email !== user.email && (
+                                                        {isSuperAdmin && adminUser?.email !== user.email && (
                                                             <>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                         <Button 
-                                                                            variant="ghost" 
-                                                                            size="icon"
-                                                                            onClick={() => setUserToModify({ user, makeAdmin: !user.isAdmin })}
-                                                                            disabled={adminMutation.isPending && userToModify?.user.id === user.id}
-                                                                        >
-                                                                            {user.isAdmin 
-                                                                                ? <ShieldOff className="h-4 w-4 text-yellow-500" />
-                                                                                : <ShieldCheck className="h-4 w-4 text-green-500" />}
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>{user.isAdmin ? 'Demote to User' : 'Promote to Admin'}</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
                                                                         <Button 
