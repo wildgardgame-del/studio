@@ -108,6 +108,7 @@ export default function Home() {
                 <Button asChild size="lg" className="font-bold">
                   <Link href="/browse">Browse Games</Link>
                 </Button>
+                <Button variant="outline">Commit Test Button</Button>
               </div>
             </div>
           </div>
