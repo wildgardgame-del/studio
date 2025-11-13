@@ -28,8 +28,7 @@ service cloud.firestore {
      */
     function isAdmin() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "Admin";
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     // ----------------------
@@ -58,8 +57,12 @@ service cloud.firestore {
     }
 
     match /admins/{userId} {
-      // Temporariamente aberto para o bootstrap do administrador
-      allow read, write: if isSignedIn();
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && isAdmin();
+      // Allow create only if the requester is an admin, OR if no admin documents exist yet (for bootstrapping the first admin).
+      allow create: if isSignedIn() && (isAdmin() || !exists(/databases/$(database)/documents/admins));
+      allow delete: if isSignedIn() && isAdmin();
+      allow update: if false; // Roles should not be updated, but deleted and re-created if needed.
     }
 
     match /users/{userId}/shopping_cart/{cartId} {
