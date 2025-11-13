@@ -37,11 +37,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages admin role documents. Any authenticated user can check their own status. Only admins can list all or create/delete others.
+     * @description Manages admin role documents. Any authenticated user can check their OWN status. Only admins can list all or create/delete others.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      // Any signed-in user can check their OWN admin status document.
+      // Any signed-in user can check their OWN admin status document. This is secure.
       allow get: if isSignedIn() && isOwner(userId);
       
       // Only admins can see the list of all other admins.
