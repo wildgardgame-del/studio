@@ -2,8 +2,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useUser } from '@/firebase';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFirebase } from '@/firebase'; // Alterado de useUser para useFirebase
 import { Loader2, ShieldPlus } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
@@ -15,27 +14,9 @@ import type { Admin } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 function AdminDebugPageContent() {
-  const { user, isUserLoading, firestore } = useUser();
-  const queryClient = useQueryClient();
+  const { user, isUserLoading, firestore } = useFirebase(); // Corrigido para useFirebase()
   const { toast } = useToast();
   const [isPromoting, setIsPromoting] = useState(false);
-
-  const { data: adminStatus, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['adminStatus', user?.uid],
-    queryFn: async () => {
-      if (!user || !firestore) return { isAdmin: false, role: null, docExists: false };
-      
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
-      
-      const docExists = adminDoc.exists();
-      const role = docExists ? adminDoc.data().role : null;
-      const isAdmin = docExists && role === 'Admin';
-      
-      return { isAdmin, role, docExists };
-    },
-    enabled: !!user && !!firestore,
-  });
 
   const handleBecomeAdmin = async () => {
     if (!user || !firestore) {
@@ -62,8 +43,6 @@ function AdminDebugPageContent() {
             description: "You have been promoted to the first Admin. The page will now reload."
         });
         
-        await queryClient.invalidateQueries({ queryKey: ['adminStatus', user?.uid] });
-
         setTimeout(() => window.location.reload(), 1500);
 
     } catch (error: any) {
@@ -77,7 +56,7 @@ function AdminDebugPageContent() {
     }
   }
 
-  const isLoading = isUserLoading || isAdminLoading;
+  const isLoading = isUserLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-black text-white">
@@ -93,27 +72,7 @@ function AdminDebugPageContent() {
               <span className="font-bold text-yellow-400">{user?.email}</span>
             </p>
             <Separator className="bg-cyan-400/20 my-4" />
-             <p className="text-xl">
-              <span className="text-gray-400">1. Document Exists in /admins/{user?.uid} ? </span>
-              <span className={adminStatus?.docExists ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
-                {adminStatus?.docExists ? 'true' : 'false'}
-              </span>
-            </p>
-             <p className="text-xl">
-              <span className="text-gray-400">2. Document has field 'role' == "Admin" ? </span>
-               <span className={adminStatus?.role === 'Admin' ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
-                {adminStatus?.role ? `true (role is "${adminStatus.role}")` : 'false'}
-              </span>
-            </p>
-            <Separator className="bg-cyan-400/20 my-4" />
-            <p className="text-2xl">
-              <span className="text-gray-400">Final isAdmin() Result: </span>
-              <span className={adminStatus?.isAdmin ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
-                {adminStatus?.isAdmin ? 'true' : 'false'}
-              </span>
-            </p>
             
-            <Separator className="bg-cyan-400/20 my-4" />
              <Card className="bg-yellow-900/20 border-yellow-500/50 text-yellow-300 text-left">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-mono">
