@@ -84,7 +84,7 @@ service cloud.firestore {
      */
     match /admins/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isAdmin();
+      allow list: if isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
       allow write: if isSignedIn() && isAdmin();
     }
     
