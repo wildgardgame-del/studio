@@ -37,18 +37,17 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages admin role documents.
+     * @description Manages admin role documents. Any authenticated user can check their own status. Only admins can list all or create/delete others.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      // Any user can check their OWN admin status document.
+      // Any signed-in user can check their OWN admin status document.
       allow get: if isSignedIn() && isOwner(userId);
       
       // Only admins can see the list of all other admins.
       allow list: if isSignedIn() && isAdmin();
 
-      // Any signed-in user can CREATE the VERY FIRST admin document if the collection is empty.
-      // This is the bootstrap mechanism to avoid a hardcoded super admin.
+      // The VERY FIRST admin document can be created by any signed-in user.
       // Afterwards, only existing admins can add other admins.
       allow create: if isSignedIn() && 
                       (isAdmin() || !exists(/databases/$(database)/documents/admins));
@@ -142,10 +141,10 @@ service cloud.firestore {
   }
   
   // This is the main check. An admin is a user who has a document
-  // with their UID in the /admins collection. This is secure and efficient.
+  // with their UID in the /admins collection OR is the super-admin by email.
   function isAdmin() {
-    // This check is safe because exists() is allowed in list queries.
     return isSignedIn() && 
-           exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+           (request.auth.token.email == 'forgegatehub@gmail.com' ||
+            exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
   }
 }
