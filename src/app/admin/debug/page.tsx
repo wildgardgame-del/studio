@@ -108,23 +108,8 @@ function AdminDebugPageContent() {
                 {adminStatus?.isAdmin ? 'true' : 'false'}
               </span>
             </p>
-            {isAdminsCollectionEmpty && user && (
-                <>
-                <Separator className="bg-cyan-400/20 my-4" />
-                 <div className="text-left text-sm pt-4">
-                    <h2 className="text-cyan-400 font-bold">Ação Necessária: Bootstrap do Administrador</h2>
-                     <p className="text-gray-300 mt-2">A coleção de administradores está vazia. Como primeiro utilizador, tem uma oportunidade única de se promover a si próprio para iniciar o sistema.</p>
-                     <Button
-                        onClick={() => becomeFirstAdminMutation.mutate()}
-                        disabled={becomeFirstAdminMutation.isPending}
-                        className="mt-4"
-                     >
-                        {becomeFirstAdminMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldPlus className="mr-2 h-4 w-4" />}
-                         Tornar-me o Primeiro Administrador
-                     </Button>
-                 </div>
-                </>
-             )}
+            <Separator className="bg-cyan-400/20 my-4" />
+             <Button>Botão Que Não Faz Nada</Button>
           </div>
         )}
       </main>
