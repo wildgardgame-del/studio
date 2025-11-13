@@ -140,7 +140,12 @@ function ManageUsersPageContent() {
                     <Card className="mt-8">
                     <CardHeader>
                             <CardTitle>Registered Users</CardTitle>
-                            <CardDescription>A list of all users in the system.</CardDescription>
+                            <CardDescription>
+                                {isLoadingUsers 
+                                    ? 'Loading user list...' 
+                                    : `A list of all ${allUsers?.length ?? 0} users in the system.`
+                                }
+                            </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -216,5 +221,3 @@ export default function ManageUsersPage() {
         </Suspense>
     )
 }
-
-    
