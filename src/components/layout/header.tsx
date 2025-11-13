@@ -160,6 +160,7 @@ export default function Header() {
   const { user, isUserLoading } = useUser();
   
   const hasDevLicense = isPurchased('dev-account-upgrade');
+  const isAdmin = user?.email === 'forgegatehub@gmail.com';
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -261,7 +262,7 @@ export default function Header() {
                             Become a Publisher
                         </Link>
                     )}
-                    {user && user.email === 'ronneeh@gmail.com' && (
+                    {isAdmin && (
                        <Link
                           href="/admin"
                           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-orange-500 transition-colors hover:bg-muted/50 hover:text-orange-400"
@@ -419,7 +420,7 @@ export default function Header() {
                         </DropdownMenuItem>
                     )}
 
-                    {user.email === 'ronneeh@gmail.com' && (
+                    {isAdmin && (
                         <DropdownMenuItem asChild>
                             <Link href="/admin" className="text-orange-500 hover:!text-orange-400 focus:!bg-orange-500/10 focus:!text-orange-400">
                                 <Shield className="mr-2 h-4 w-4" />Admin Panel

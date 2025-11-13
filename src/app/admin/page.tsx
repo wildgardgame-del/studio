@@ -19,17 +19,8 @@ function AdminDashboardPageContent() {
   const { firestore } = useFirebase();
   const router = useRouter();
 
-  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['isAdmin', user?.uid],
-    queryFn: async () => {
-      if (!user || !firestore) return false;
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists();
-    },
-    enabled: !!user && !!firestore,
-    staleTime: 1000 * 60 * 5, // Cache admin status for 5 minutes
-  });
+  const isAdmin = user?.email === 'forgegatehub@gmail.com';
+  const isAdminLoading = isUserLoading;
 
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],
