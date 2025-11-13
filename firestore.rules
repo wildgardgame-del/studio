@@ -94,12 +94,12 @@ service cloud.firestore {
     }
     
     /**
-     * @description Defines who can read/write to the admins collection.
+     * @description TEMPORARY RULE: Allows creating the first admin.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
       allow read, list: if isSignedIn() && isAdmin();
-      allow write: if isSignedIn();
+      allow write: if true;
     }
   }
 
@@ -124,4 +124,3 @@ service cloud.firestore {
     return get(/databases/$(database)/documents/users/$(userId)).data;
   }
 }
-    
