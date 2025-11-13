@@ -20,15 +20,13 @@ service cloud.firestore {
     /**
      * @description A verificação principal de administrador.
      * Um utilizador é administrador se:
-     * 1. O seu email estiver na lista de super-administradores.
-     * OU
-     * 2. O seu UID existir como um documento na coleção /admins.
+     * 1. O seu UID existir como um documento na coleção /admins.
+     * 2. O campo 'role' nesse documento for igual a "Admin".
      */
     function isAdmin() {
-      return isSignedIn() && 
-             (request.auth.token.email == 'forgegatehub@gmail.com' ||
-              request.auth.token.email == 'raf-el@live.com' ||
-              exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "Admin";
     }
 
 
