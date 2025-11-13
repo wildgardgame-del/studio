@@ -45,7 +45,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useFirebase, useMemoFirebase, useQuery } from '@/firebase';
+import { useUser, useFirebase, useMemoFirebase, useQuery, useCollection } from '@/firebase';
 import Image from 'next/image';
 import type { Notification } from '@/lib/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -495,4 +495,5 @@ export default function Header() {
       </div>
     </header>
   );
-}
+
+    
