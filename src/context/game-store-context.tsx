@@ -1,12 +1,11 @@
-
 'use client';
 
 import type { Game } from '@/lib/types';
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 type GameStoreContextType = {
   cartItems: Game[];
@@ -26,15 +25,21 @@ const GameStoreContext = createContext<GameStoreContextType | undefined>(undefin
 export function GameStoreProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<Game[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<Game[]>([]);
   const { user, firestore } = useFirebase();
 
+  // --- Purchased Games Logic ---
   const libraryQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'users', user.uid, 'library'));
   }, [user, firestore]);
-
   const { data: purchasedGames } = useCollection<Game>(libraryQuery);
+  
+  // --- Wishlist Logic ---
+  const wishlistQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, `users/${user.uid}/wishlist`);
+  }, [user, firestore]);
+  const { data: wishlistItems } = useCollection<Game>(wishlistQuery);
 
   const handleAddToCart = useCallback((game: Game) => {
     setCartItems((prev) => {
@@ -61,55 +66,74 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
     setCartItems((prev) => prev.filter((item) => item.id !== gameId));
   }, []);
   
-  const removeFromWishlist = useCallback((gameId: string, silent: boolean = false) => {
-    setWishlistItems((prev) => {
-        const itemExists = prev.some(item => item.id === gameId);
-        if (itemExists) {
-            if (!silent) {
-                 const game = prev.find(item => item.id === gameId);
-                 if (game) {
-                    setTimeout(() => {
-                        toast({
-                            description: `${game.title} removed from your wishlist.`,
-                        });
-                    }, 0);
-                 }
-            }
-            return prev.filter((item) => item.id !== gameId);
-        }
-        return prev;
-    });
-}, [toast]);
-
   const clearCart = useCallback(() => {
     setCartItems([]);
   }, []);
 
   const isInWishlist = useCallback((gameId: string) => {
-    return wishlistItems.some((item) => item.id === gameId);
+    return wishlistItems?.some((item) => item.id === gameId) ?? false;
   }, [wishlistItems]);
 
   const isPurchased = useCallback((gameId: string) => {
-    // Also check if the dev license specifically is purchased
-    if (gameId === 'dev-account-upgrade') {
-        return purchasedGames?.some(item => item.id === 'dev-account-upgrade') ?? false;
-    }
     return purchasedGames?.some((item) => item.id === gameId) ?? false;
   }, [purchasedGames]);
 
-  const handleToggleWishlist = useCallback((game: Game) => {
+  const handleToggleWishlist = useCallback(async (game: Game) => {
+    if (!user || !firestore) {
+        toast({ variant: 'destructive', title: 'Please log in', description: 'You need to be logged in to manage your wishlist.' });
+        return;
+    }
+
     const isWishlisted = isInWishlist(game.id);
+    const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, game.id);
+
     if (isWishlisted) {
-        removeFromWishlist(game.id);
+        try {
+            await deleteDoc(wishlistRef);
+            toast({
+                description: `${game.title} removed from your wishlist.`,
+            });
+        } catch (error) {
+            console.error("Error removing from wishlist:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not remove item from wishlist.' });
+        }
     } else {
-        setWishlistItems(prev => [...prev, game]);
-        setTimeout(() => {
+        try {
+            await setDoc(wishlistRef, game);
             toast({
                 description: `${game.title} added to your wishlist.`,
             });
-        }, 0);
+        } catch (error) {
+             console.error("Error adding to wishlist:", error);
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not add item to wishlist.' });
+        }
     }
-  }, [isInWishlist, removeFromWishlist, toast]);
+  }, [user, firestore, isInWishlist, toast]);
+
+  const removeFromWishlist = useCallback(async (gameId: string, silent: boolean = false) => {
+    if (!user || !firestore) return;
+    
+    const isWishlisted = isInWishlist(gameId);
+    if (isWishlisted) {
+        const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, gameId);
+        try {
+            await deleteDoc(wishlistRef);
+            if (!silent && wishlistItems) {
+                const game = wishlistItems.find(item => item.id === gameId);
+                if (game) {
+                    toast({
+                        description: `${game.title} removed from your wishlist.`,
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Error removing from wishlist:", error);
+            if (!silent) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'Could not remove item from wishlist.' });
+            }
+        }
+    }
+  }, [user, firestore, isInWishlist, toast, wishlistItems]);
 
   return (
     <GameStoreContext.Provider
@@ -118,7 +142,7 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
         handleAddToCart,
         removeFromCart,
         clearCart,
-        wishlistItems,
+        wishlistItems: wishlistItems || [],
         handleToggleWishlist,
         removeFromWishlist,
         isInWishlist,

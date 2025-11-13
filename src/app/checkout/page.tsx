@@ -8,7 +8,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch, deleteDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,7 +33,7 @@ const formSchema = z.object({
 })
 
 function CheckoutPageContent() {
-    const { cartItems, clearCart, removeFromWishlist } = useGameStore();
+    const { cartItems, clearCart } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
@@ -67,20 +67,17 @@ function CheckoutPageContent() {
         setTimeout(async () => {
             const batch = writeBatch(firestore);
 
-            // Add all purchased items to the user's library
+            // Add all purchased items to the user's library and remove from wishlist
             cartItems.forEach(item => {
                 const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                // Ensure the full item object from the cart is being set
                 batch.set(libraryRef, { ...item });
+
+                const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
+                batch.delete(wishlistRef); // Also delete from wishlist
             });
             
             batch.commit()
                 .then(() => {
-                    // Remove purchased items from wishlist
-                    cartItems.forEach(item => {
-                        removeFromWishlist(item.id, true); // silent removal
-                    });
-
                     clearCart();
                     setIsProcessing(false);
                     toast({

@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { GameStoreProvider } from '@/context/game-store-context';
+import { GameStoreClientProvider } from '@/context/game-store-client-provider';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthGate } from '@/components/AuthGate';
 
@@ -34,12 +34,12 @@ export default function RootLayout({
         )}
       >
         <FirebaseClientProvider>
-          <GameStoreProvider>
+          <GameStoreClientProvider>
             <AuthGate>
               {children}
             </AuthGate>
             <Toaster />
-          </GameStoreProvider>
+          </GameStoreClientProvider>
         </FirebaseClientProvider>
       </body>
     </html>
