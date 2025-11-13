@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -13,7 +12,6 @@ import {
   Shield,
   PlusCircle,
   Award,
-  Gamepad2,
   Bell,
   CheckCheck,
   MessageSquare,

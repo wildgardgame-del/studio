@@ -16,18 +16,24 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can list all users and manage them.
+     * @description Users can manage their own profile, but cannot make themselves an admin. Admins can manage all users.
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isSignedIn() && isAdmin();
-
+      
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
-                      && request.resource.data.email == request.auth.token.email;
+                      && request.resource.data.email == request.auth.token.email
+                      && request.resource.data.isAdmin == false; // Prevent self-promotion on creation
 
-      allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
+      allow update: if isSignedIn() && (
+                      // Case 1: An admin can update anything.
+                      isAdmin() ||
+                      // Case 2: A user can update their own profile, BUT cannot change the isAdmin field.
+                      (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin)
+                    );
 
       allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
     }
@@ -77,16 +83,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false;
     }
-
-    /**
-     * @description Admins can manage the list of admins. Users can check their own status.
-     * @path /admins/{userId}
-     */
-    match /admins/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
-      allow write: if isSignedIn() && isAdmin();
-    }
     
     /**
      * @description Signed-in can create. Admin can manage.
@@ -124,11 +120,7 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    // Admins are users whose UID is in the /admins collection.
-    // The super-admin's email is also checked for bootstrapping purposes.
-    return isSignedIn() && (
-      request.auth.token.email == 'forgegatehub@gmail.com' ||
-      exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-    );
+    // An admin is a user whose own user document has isAdmin: true
+    return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
   }
 }
