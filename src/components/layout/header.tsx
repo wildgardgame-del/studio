@@ -165,6 +165,9 @@ export default function Header() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
+      // This is the main check. An admin is a user who has a document
+      // with their UID in the /admins collection. This is secure and efficient.
+      // A regular user CAN check their OWN document here because of the security rules.
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
       return adminDoc.exists();
@@ -240,6 +243,16 @@ export default function Header() {
                         {link.label}
                       </Link>
                   ))}
+                  {isAdmin && (
+                    <Link
+                        href="/admin/debug"
+                        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-muted/50 hover:text-cyan-300"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                        <Bug className="h-4 w-4" />
+                        Debug
+                    </Link>
+                   )}
                   <Link
                       href="/wishlist"
                       className={cn(
@@ -282,14 +295,6 @@ export default function Header() {
                         >
                           <Shield className="h-4 w-4" />
                           Admin Panel
-                        </Link>
-                        <Link
-                          href="/admin/debug"
-                          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-muted/50 hover:text-cyan-300"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <Bug className="h-4 w-4" />
-                          Debug Panel
                         </Link>
                        </>
                     )}
@@ -361,6 +366,14 @@ export default function Header() {
                           {link.label}
                       </Link>
                     ))}
+                     {isAdmin && (
+                        <Link
+                            href="/admin/debug"
+                            className="rounded-md px-3 py-2 transition-colors font-semibold text-cyan-400 hover:text-cyan-300"
+                        >
+                            Debug
+                        </Link>
+                    )}
                 </nav>
             </div>
 
@@ -380,11 +393,6 @@ export default function Header() {
                 </form>
             </div>
             <nav className="hidden md:flex items-center gap-1">
-                {isAdmin && (
-                  <Button variant="link" asChild className="text-cyan-400 hover:text-cyan-300">
-                    <Link href="/admin/debug"><Bug className="mr-2 h-4 w-4" /> Debug</Link>
-                  </Button>
-                )}
                 <Link href="/wishlist">
                 <Button variant="ghost" size="icon" className="relative">
                     <Heart className="h-5 w-5" />
