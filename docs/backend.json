@@ -137,10 +137,6 @@
         "isAgeVerified": {
           "type": "boolean",
           "description": "Indicates if the user's age has been verified as 18+."
-        },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "Indicates if the user has administrator privileges."
         }
       },
       "required": [
@@ -164,6 +160,25 @@
         }
       },
       "required": ["userId"]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "A private record to grant a user admin privileges.",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "The email of the admin user for reference.",
+          "format": "email"
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "Timestamp of when admin rights were granted.",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "addedAt"]
     },
     "Review": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -366,6 +381,22 @@
             {
               "name": "userId",
               "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admins/{userId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": {
+            "$ref": "#/backend/entities/Admin"
+          },
+          "description": "Stores documents whose IDs are the UIDs of admin users. Used for role checking.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The UID of the user who is an admin."
             }
           ]
         }

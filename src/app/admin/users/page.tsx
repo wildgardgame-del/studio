@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 type UserProfile = {
     id: string;
@@ -129,14 +128,6 @@ function ManageUsersPageContent() {
                         </div>
                         {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                     </div>
-
-                    <Alert className="mt-6">
-                        <ShieldCheck className="h-4 w-4" />
-                        <AlertTitle>Debug: Admin Status</AlertTitle>
-                        <AlertDescription>
-                           Current Admin IDs: {isLoadingAdmins ? 'Loading...' : adminIds?.join(', ') || 'None'}
-                        </AlertDescription>
-                    </Alert>
                     
                     <Card className="mt-8">
                     <CardHeader>

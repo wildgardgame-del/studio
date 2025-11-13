@@ -11,7 +11,7 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -23,9 +23,12 @@ function AdminDashboardPageContent() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
+      // Super admin check
       if (user.email === 'forgegatehub@gmail.com') return true;
-      const adminDoc = await getDocs(query(collection(firestore, 'admins'), where('__name__', '==', user.uid)));
-      return !adminDoc.empty;
+      // Check if user document exists in 'admins' collection
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists();
     },
     enabled: !!user && !!firestore,
   });

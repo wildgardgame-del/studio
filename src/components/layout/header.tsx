@@ -20,7 +20,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
-import { collection, query, orderBy, limit, doc, updateDoc, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, updateDoc, where, getDocs, getDoc } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 
 
@@ -44,10 +44,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useCollection, useFirebase, useMemoFirebase, useQuery } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import Image from 'next/image';
 import type { Notification } from '@/lib/types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Separator } from '../ui/separator';
 
 const navLinks = [
@@ -164,9 +164,12 @@ export default function Header() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
+      // Super admin check
       if (user.email === 'forgegatehub@gmail.com') return true;
-      const adminDoc = await getDocs(query(collection(firestore, 'admins'), where('__name__', '==', user.uid)));
-      return !adminDoc.empty;
+      // Check if user document exists in 'admins' collection
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists();
     },
     enabled: !!user && !!firestore,
   });
