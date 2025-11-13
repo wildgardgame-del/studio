@@ -17,7 +17,7 @@ function AdminDebugPageContent() {
     queryFn: async () => {
       // Comparação de email simples e direta para depuração.
       if (!user) return false;
-      return user.email === 'forgegatehub@gmail.com';
+      return user.email === 'forgegatehub@gmail.com' || user.email === 'raf-el@live.com';
     },
     enabled: !!user, // Depende apenas do utilizador, não do Firestore.
   });
