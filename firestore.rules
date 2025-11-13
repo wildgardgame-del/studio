@@ -3,15 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Funções de Variáveis ---
-
-    /**
-     * @description Retorna uma lista de emails que têm privilégios de super-administrador.
-     */
-    function getAdminEmails() {
-      return ['forgegatehub@gmail.com', 'raf-el@live.com'];
-    }
-
     // --- Funções Auxiliares ---
 
     function isSignedIn() {
@@ -28,15 +19,10 @@ service cloud.firestore {
     
     /**
      * @description A verificação principal de administrador.
-     * Um utilizador é administrador se:
-     * 1. O seu email estiver na lista de administradores.
-     * OU
-     * 2. O seu UID existir como um documento na coleção /admins.
+     * Um utilizador é administrador se estiver autenticado com o email principal.
      */
     function isAdmin() {
-      return isSignedIn() && 
-             (request.auth.token.email in getAdminEmails() ||
-              exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
     }
 
 
