@@ -125,11 +125,6 @@ function AdminDebugPageContent() {
                  </div>
                 </>
              )}
-             <div className="text-left text-sm pt-4">
-                <h2 className="text-cyan-400 font-bold">O que isto significa:</h2>
-                <p className="text-gray-300 mt-2">Esta página espelha a regra de segurança `isAdmin()` que você criou. Ambas as condições (1 e 2) devem ser verdadeiras para que o resultado final seja `true`.</p>
-                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-red-400 font-bold">'false'</span>, verifique qual das condições acima está a falhar. Para corrigir, pode usar o botão "Tornar-me o Primeiro Administrador" se ele aparecer, ou ir à página "Manage Users" e promover o seu utilizador se já for administrador.</p>
-             </div>
           </div>
         )}
       </main>
