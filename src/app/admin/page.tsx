@@ -17,11 +17,9 @@ import type { Admin } from '@/lib/types';
 
 
 function AdminDashboardPageContent() {
-  const { user, isUserLoading } = useUser();
-  const { firestore } = useFirebase();
+  const { user, isUserLoading, firestore } = useUser();
   const router = useRouter();
 
-  // Check admin status by seeing if a doc with the user's UID exists in the 'admins' collection
   const adminRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'admins', user.uid);
@@ -29,7 +27,7 @@ function AdminDashboardPageContent() {
 
   const { data: adminDoc, isLoading: isAdminLoading } = useDoc<Admin>(adminRef);
   
-  const isAdmin = !!adminDoc;
+  const isAdmin = !!adminDoc || user?.email === 'forgegatehub@gmail.com';
   const isLoading = isUserLoading || isAdminLoading;
   
   const { data: pendingCount } = useQuery({
@@ -161,5 +159,3 @@ export default function AdminDashboardPage() {
         </Suspense>
     )
 }
-
-    

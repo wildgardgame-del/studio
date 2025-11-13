@@ -45,9 +45,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase, useDoc } from '@/firebase';
 import Image from 'next/image';
-import type { Notification } from '@/lib/types';
+import type { Notification, Admin } from '@/lib/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Separator } from '../ui/separator';
 
@@ -157,10 +157,17 @@ export default function Header() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, firestore } = useUser();
   
   const hasDevLicense = isPurchased('dev-account-upgrade');
-  const isAdmin = user?.email === 'forgegatehub@gmail.com';
+
+  const adminRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'admins', user.uid);
+  }, [firestore, user]);
+
+  const { data: adminDoc } = useDoc<Admin>(adminRef);
+  const isAdmin = !!adminDoc || user?.email === 'forgegatehub@gmail.com';
 
   useEffect(() => {
     const q = searchParams.get('q');
