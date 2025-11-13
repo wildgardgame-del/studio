@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, updateDoc, doc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, updateDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -31,7 +31,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
-type GameWithId = Game & { id: string, status: 'pending' | 'approved' | 'rejected' };
+type GameWithId = Game & { id: string; status: 'pending' | 'approved' | 'rejected', developerName?: string };
+type UserProfile = { id: string; username: string; }
 
 type GameAction = {
     id: string;
@@ -49,33 +50,52 @@ function ManageGamesPageContent() {
 
     const [actionReason, setActionReason] = useState("");
 
-    const fetchAllGames = async () => {
+    const fetchAllData = async () => {
         if (!firestore) throw new Error("Firestore not available");
-        const gamesRef = collection(firestore, 'games');
-        const q = query(gamesRef);
         
-        try {
-            const querySnapshot = await getDocs(q);
-            const games = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GameWithId));
-            games.sort((a, b) => a.title.localeCompare(b.title));
-            return games;
-        } catch (error) {
-            console.error("Error fetching games:", error);
-            const permissionError = new FirestorePermissionError({
-                path: 'games',
-                operation: 'list'
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            // Toast já é acionado pelo listener de erro global
-            return [];
-        }
+        // 1. Fetch all users and create a map
+        const usersRef = collection(firestore, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        const userMap = new Map<string, string>();
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data() as UserProfile;
+            userMap.set(doc.id, userData.username);
+        });
+
+        // 2. Fetch all games and enrich them with developerName
+        const gamesRef = collection(firestore, 'games');
+        const gamesSnapshot = await getDocs(gamesRef);
+        const games = gamesSnapshot.docs.map(doc => {
+            const gameData = doc.data() as Game;
+            return { 
+                id: doc.id, 
+                ...gameData, 
+                developerName: userMap.get(gameData.developerId || '') || 'Unknown'
+            } as GameWithId;
+        });
+
+        games.sort((a, b) => a.title.localeCompare(b.title));
+        return games;
     };
     
     const { data: allGames, isLoading, isError } = useQuery({
-        queryKey: ['all-games'],
-        queryFn: fetchAllGames,
+        queryKey: ['all-games-with-devs'],
+        queryFn: async () => {
+            try {
+                return await fetchAllData();
+            } catch (error) {
+                console.error("Error fetching games and developers:", error);
+                const permissionError = new FirestorePermissionError({
+                    path: 'games or users',
+                    operation: 'list'
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                return [];
+            }
+        },
         enabled: !!firestore,
     });
+
 
     const pendingGames = useMemo(() => allGames?.filter(g => g.status === 'pending') || [], [allGames]);
     const approvedGames = useMemo(() => allGames?.filter(g => g.status === 'approved') || [], [allGames]);
@@ -136,7 +156,7 @@ function ManageGamesPageContent() {
                 title: title,
                 description: `The game's status has been updated. A notification was sent to the developer.`,
             });
-            queryClient.invalidateQueries({ queryKey: ['all-games'] });
+            queryClient.invalidateQueries({ queryKey: ['all-games-with-devs'] });
         },
         onError: (error, variables) => {
              const permissionError = new FirestorePermissionError({
@@ -164,7 +184,7 @@ function ManageGamesPageContent() {
                 title: 'Game Deleted',
                 description: 'The game has been permanently removed.',
             });
-            queryClient.invalidateQueries({ queryKey: ['all-games'] });
+            queryClient.invalidateQueries({ queryKey: ['all-games-with-devs'] });
         },
         onError: (error, gameId) => {
             console.error("Delete error", error);
@@ -212,6 +232,7 @@ function ManageGamesPageContent() {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Game</TableHead>
+                        <TableHead>Developer</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -220,6 +241,7 @@ function ManageGamesPageContent() {
                     {games.map(game => (
                         <TableRow key={game.id}>
                             <TableCell className="font-medium">{game.title}</TableCell>
+                            <TableCell className="text-muted-foreground">{game.developerName}</TableCell>
                             <TableCell>${game.price.toFixed(2)}</TableCell>
                             <TableCell className="text-right space-x-1">
                                 <Button size="sm" variant="ghost" asChild>
@@ -399,5 +421,3 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
-
-    
