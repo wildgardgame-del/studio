@@ -35,10 +35,17 @@ function ManageUsersPageContent() {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
+            // Using the simpler query inspired by the notifications page that works.
             const usersRef = collection(firestore, 'users');
-            // Using the simpler query that works on the notifications page
             const usersSnapshot = await getDocs(usersRef);
-            return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+            // Sort client-side to avoid complex query issues with security rules
+            users.sort((a, b) => {
+                const dateA = a.registrationDate?.seconds || 0;
+                const dateB = b.registrationDate?.seconds || 0;
+                return dateB - dateA;
+            });
+            return users;
 
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -87,7 +94,12 @@ function ManageUsersPageContent() {
     });
 
     const isUserAdmin = (user: UserProfile) => {
-        return user.isAdmin === true || user.email === 'forgegatehub@gmail.com';
+        // Super admin email always has admin privileges
+        if (user.email === 'forgegatehub@gmail.com') {
+            return true;
+        }
+        // Otherwise, check the isAdmin field
+        return user.isAdmin === true;
     }
 
     return (
