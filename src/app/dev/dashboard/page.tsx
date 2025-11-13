@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +43,7 @@ function DevDashboardPageContent() {
         <div className="flex min-h-screen flex-col items-center justify-center text-center">
             <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
             <h1 className="text-3xl font-bold">Access Denied</h1>
-            <p className="text-muted-foreground mt-2">You need a developer license to access this page.</p>
+            <p className="text-muted-foreground mt-2">You need a publisher license to access this page.</p>
             <Button asChild className="mt-6">
                 <Link href="/apply-for-dev">Get License</Link>
             </Button>
@@ -56,7 +57,7 @@ function DevDashboardPageContent() {
       <Header />
       <main className="flex-1 bg-secondary/30">
         <div className="container py-12">
-          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Contributor Dashboard</h1>
+          <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Publisher Dashboard</h1>
           <p className="text-muted-foreground mt-2">Submit and manage your games.</p>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -86,7 +87,7 @@ function DevDashboardPageContent() {
                 <Link href="/apply-for-dev">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Award className="text-accent" />Manage Licenses</CardTitle>
-                        <CardDescription>Upgrade or purchase additional licenses, like the Android developer license.</CardDescription>
+                        <CardDescription>Upgrade or purchase additional licenses, like the Android publisher license.</CardDescription>
                     </CardHeader>
                     <CardContent>
                        <Button variant="link" className="p-0 text-accent">View Licenses</Button>

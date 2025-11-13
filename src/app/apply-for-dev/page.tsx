@@ -1,8 +1,9 @@
+
 'use client';
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Info, Loader2, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Info, Loader2, ShoppingCart, CheckCircle2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { doc } from "firebase/firestore";
 
@@ -83,8 +84,8 @@ function ApplyForDevPageContent() {
                 <Header />
                 <main className="flex-1 flex flex-col items-center justify-center text-center p-8">
                      <Info className="h-16 w-16 text-primary mb-4" />
-                    <h1 className="text-3xl font-bold font-headline">Log In to Become a Developer</h1>
-                    <p className="mt-2 text-muted-foreground max-w-md">To purchase a Developer License, you need to have an account and be logged in.</p>
+                    <h1 className="text-3xl font-bold font-headline">Log In to Become a Publisher</h1>
+                    <p className="mt-2 text-muted-foreground max-w-md">To purchase a Publisher License, you need to have an account and be logged in.</p>
                     <Button asChild className="mt-4">
                         <Link href="/login">Login</Link>
                     </Button>
@@ -99,10 +100,16 @@ function ApplyForDevPageContent() {
             <Header />
             <main className="flex-1 bg-secondary/30 py-16">
                 <div className="container text-center">
-                     <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Become a Developer</h1>
+                     <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Become a Publisher</h1>
                      <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
                         Choose the license that fits your needs and start publishing your games on our platform.
                     </p>
+                    <Button asChild variant="link" className="p-0 text-accent mt-2">
+                        <Link href="/">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Store
+                        </Link>
+                    </Button>
                 </div>
                 <div className="container mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                     
