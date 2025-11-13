@@ -3,8 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // --- Funções de Variáveis ---
+
     /**
-     * @description Public can read approved games. Admins can read all. Signed-in users can create. Admins or the original developer can update. Admins can delete.
+     * @description Retorna uma lista de emails que têm privilégios de super-administrador.
+     */
+    function getAdminEmails() {
+      return ['forgegatehub@gmail.com', 'raf-el@live.com'];
+    }
+
+    // --- Funções Auxiliares ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isSignedIn() && isOwner(userId) && resource != null;
+    }
+    
+    /**
+     * @description A verificação principal de administrador.
+     * Um utilizador é administrador se:
+     * 1. O seu email estiver na lista de administradores.
+     * OU
+     * 2. O seu UID existir como um documento na coleção /admins.
+     */
+    function isAdmin() {
+      return isSignedIn() && 
+             (request.auth.token.email in getAdminEmails() ||
+              exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+
+    // --- Regras das Coleções ---
+
+    /**
+     * @description Público pode ler jogos aprovados. Administradores podem ler todos. Utilizadores autenticados podem criar. Administradores ou o programador original podem atualizar. Administradores podem apagar.
      * @path /games/{gameId}
      */
     match /games/{gameId} {
@@ -16,51 +55,41 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can manage their own profile. Admins can manage all users.
+     * @description Utilizadores podem gerir o seu próprio perfil. Administradores podem gerir todos os utilizadores.
      * @path /users/{userId}
      */
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isSignedIn() && isAdmin();
       
-      // A user can create their own profile.
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
                       && request.resource.data.email == request.auth.token.email;
 
-      // An admin can update any user's profile.
-      // A regular user can update their own profile.
       allow update: if isSignedIn() && (isAdmin() || isOwner(userId));
 
-      // An admin or the user themselves can delete the profile.
       allow delete: if isSignedIn() && (isAdmin() || isOwner(userId));
     }
 
     /**
-     * @description Manages admin role documents. Any signed-in user can check their own status. Only admins can list all or create/delete others, with a special exception for the very first admin.
+     * @description Gere os documentos de função de administrador. Qualquer utilizador autenticado pode verificar o seu próprio estatuto. Apenas administradores podem listar todos ou criar/apagar outros, com uma exceção especial para o primeiro administrador.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      // Any signed-in user can check THEIR OWN admin status document. This is secure.
       allow get: if isSignedIn();
       
-      // Only admins can see the list of all other admins.
       allow list: if isSignedIn() && isAdmin();
 
-      // The VERY FIRST admin document can be created by any signed-in user.
-      // Afterwards, only existing admins can add other admins.
       allow create: if isSignedIn() && 
                       (isAdmin() || !exists(/databases/$(database)/documents/admins));
                       
-      // Only admins can remove other admins.
       allow delete: if isSignedIn() && isAdmin();
 
-      // No one can update an admin document, only create or delete.
       allow update: if false;
     }
 
     /**
-     * @description Enforces user-ownership for shopping cart data.
+     * @description Impõe a posse do utilizador para os dados do carrinho de compras.
      * @path /users/{userId}/shopping_cart/{cartId}
      */
     match /users/{userId}/shopping_cart/{cartId} {
@@ -68,7 +97,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces user-ownership for wishlist data.
+     * @description Impõe a posse do utilizador para os dados da lista de desejos.
      * @path /users/{userId}/wishlist/{wishlistId}
      */
     match /users/{userId}/wishlist/{wishlistId} {
@@ -76,7 +105,7 @@ service cloud.firestore {
     }
     
     /**
-     * @description Enforces user-ownership for game library data.
+     * @description Impõe a posse do utilizador para os dados da biblioteca de jogos.
      * @path /users/{userId}/library/{gameId}
      */
     match /users/{userId}/library/{gameId} {
@@ -86,7 +115,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows creating, reading, updating and deleting reviews for any signed-in user.
+     * @description Permite criar, ler, atualizar e apagar avaliações para qualquer utilizador autenticado.
      * @path /reviews/{reviewId}
      */
     match /reviews/{reviewId} {
@@ -96,7 +125,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces user-ownership for notifications. Admins can create.
+     * @description Impõe a posse do utilizador para as notificações. Administradores podem criar.
      * @path /users/{userId}/notifications/{notificationId}
      */
     match /users/{userId}/notifications/{notificationId} {
@@ -106,7 +135,7 @@ service cloud.firestore {
     }
     
     /**
-     * @description Signed-in can create. Admin can manage.
+     * @description Utilizadores autenticados podem criar. Administradores podem gerir.
      * @path /admin_messages/{messageId}
      */
     match /admin_messages/{messageId} {
@@ -115,7 +144,7 @@ service cloud.firestore {
     }
     
     /**
-     * @description Public can read. Only owner can create. No updates/deletes.
+     * @description Público pode ler. Apenas o proprietário pode criar. Sem atualizações/apagamentos.
      * @path /usernames/{username}
      */
     match /usernames/{username} {
@@ -125,24 +154,5 @@ service cloud.firestore {
                       && username == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username.lower();
       allow update, delete: if false;
     }
-  }
-
-  // Helper functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isSignedIn() && isOwner(userId) && resource != null;
-  }
-  
-  // This is the main check. An admin is a user who has a document
-  // with their UID in the /admins collection.
-  function isAdmin() {
-    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
 }
