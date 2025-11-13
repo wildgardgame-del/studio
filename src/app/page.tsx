@@ -24,7 +24,7 @@ const ADULT_CONTENT_STORAGE_KEY = 'gamesphere-show-adult-content';
 export default function Home() {
   const { firestore } = useFirebase();
   const { user } = useUser();
-  const [isAgeVerified, setIsAgeVerified] = useState(false);
+  const [isAgeVerified, setIsAgeVerified] =  useState(false);
   const [showAdultContent, setShowAdultContent] = useState(false);
   const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
 
