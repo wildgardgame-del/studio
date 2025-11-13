@@ -75,6 +75,11 @@
             "description": "URL of the game's official website.",
             "format": "uri"
         },
+        "gameFileUrl": {
+            "type": "string",
+            "description": "URL to the game's downloadable file (e.g., a zip file).",
+            "format": "uri"
+        },
         "status": {
           "type": "string",
           "enum": [

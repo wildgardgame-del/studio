@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -48,6 +48,7 @@ const formSchema = z.object({
   }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
+  gameFileUrl: z.string().url("Please enter a valid URL for the game file.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any()
     .refine((file) => !!file, "Cover image is required.")
@@ -95,6 +96,7 @@ function SubmitGamePageContent() {
       genres: [],
       websiteUrl: "",
       trailerUrls: "",
+      gameFileUrl: "",
       isAdultContent: false,
     },
   });
@@ -150,6 +152,7 @@ function SubmitGamePageContent() {
         genres: finalGenres,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
+        gameFileUrl: values.gameFileUrl,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
@@ -313,6 +316,16 @@ function SubmitGamePageContent() {
                     </FormItem>
                     )}/>
                 </div>
+                
+                <FormField control={form.control} name="gameFileUrl" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><Download /> Game File URL</FormLabel>
+                    <FormControl><Input placeholder="https://example.com/my-game.zip" {...field} /></FormControl>
+                    <FormDescription>The direct download link for your game's file (e.g., a .zip hosted on Google Drive, Dropbox, etc.).</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
 
                 <FormField
                     control={form.control}

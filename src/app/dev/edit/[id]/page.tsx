@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -49,6 +49,7 @@ const formSchema = z.object({
   }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
+  gameFileUrl: z.string().url("Please enter a valid URL for the game file.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any().optional(),
   screenshots: z.any().optional(),
@@ -88,7 +89,7 @@ function EditGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "", publisher: "", price: 0, description: "", longDescription: "",
-      genres: [], websiteUrl: "", trailerUrls: "", isAdultContent: false,
+      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", isAdultContent: false,
     },
   });
 
@@ -103,6 +104,7 @@ function EditGamePageContent() {
         genres: gameData.genres?.filter(g => g !== MATURE_TAG) || [], // Exclude mature tag from form state
         websiteUrl: gameData.websiteUrl || "",
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
+        gameFileUrl: gameData.gameFileUrl || "",
         isAdultContent: gameData.isAdultContent || false,
       });
       setExistingCoverImage(gameData.coverImage);
@@ -174,6 +176,7 @@ function EditGamePageContent() {
         genres: finalGenres,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
+        gameFileUrl: values.gameFileUrl,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
@@ -334,6 +337,16 @@ function EditGamePageContent() {
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><LinkIcon /> Official Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 </div>
+                
+                <FormField control={form.control} name="gameFileUrl" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><Download /> Game File URL</FormLabel>
+                    <FormControl><Input placeholder="https://example.com/my-game.zip" {...field} /></FormControl>
+                    <FormDescription>The direct download link for your game's file (e.g., a .zip hosted on Google Drive, Dropbox, etc.).</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+
 
                  <FormField
                     control={form.control}

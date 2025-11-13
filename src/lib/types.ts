@@ -21,6 +21,7 @@ export type Game = {
   publisher?: string;
   websiteUrl?: string;
   trailerUrls?: string[];
+  gameFileUrl?: string;
   isAdultContent?: boolean;
   submittedAt?: {
     seconds: number;

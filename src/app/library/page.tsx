@@ -5,11 +5,12 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { GameCard } from '@/components/game-card';
 import Footer from '@/components/layout/footer';
 import Header from '@/components/layout/header';
-import { Library as LibraryIcon, Loader2 } from 'lucide-react';
+import { Library as LibraryIcon, Loader2, Download } from 'lucide-react';
 import Link from 'next/link';
 import type { Game } from '@/lib/types';
 import Image from 'next/image';
 import heroImage from '@/lib/placeholder-images.json';
+import { Button } from '@/components/ui/button';
 
 export default function LibraryPage() {
   const { user, firestore } = useFirebase();
@@ -52,7 +53,17 @@ export default function LibraryPage() {
           {purchasedGames && purchasedGames.length > 0 ? (
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {purchasedGames.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <div key={game.id} className="flex flex-col gap-2">
+                    <GameCard game={game} />
+                    {game.gameFileUrl && (
+                        <Button asChild>
+                            <a href={game.gameFileUrl} target="_blank" rel="noopener noreferrer">
+                                <Download className="mr-2 h-4 w-4" />
+                                Download
+                            </a>
+                        </Button>
+                    )}
+                </div>
               ))}
             </div>
           ) : (
