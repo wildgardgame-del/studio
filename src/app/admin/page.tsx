@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,37 +11,16 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import { useFirebase } from '@/firebase';
 
 function AdminDashboardPageContent() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const router = useRouter();
 
-  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['isAdmin', user?.uid],
-    queryFn: async () => {
-      if (!firestore || !user) return false;
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      try {
-        const adminDoc = await getDoc(adminDocRef);
-        return adminDoc.exists();
-      } catch (error) {
-        console.error("Permission error checking admin status:", error);
-        // Emit a contextual error for the dev overlay
-        const permissionError = new FirestorePermissionError({
-            path: adminDocRef.path,
-            operation: 'get'
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Return false to deny access, as we couldn't verify admin status.
-        return false;
-      }
-    },
-    enabled: !!firestore && !!user,
-  });
-
+  const isAdmin = !isUserLoading && user?.email === 'forgegatehub@gmail.com';
 
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],
@@ -68,12 +47,12 @@ function AdminDashboardPageContent() {
   });
 
   useEffect(() => {
-    if (!isUserLoading && !isAdminLoading && !isAdmin) {
+    if (!isUserLoading && !isAdmin) {
       router.push('/');
     }
-  }, [isUserLoading, isAdminLoading, isAdmin, router]);
+  }, [isUserLoading, isAdmin, router]);
 
-  if (isUserLoading || isAdminLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
