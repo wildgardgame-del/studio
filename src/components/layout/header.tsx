@@ -16,6 +16,7 @@ import {
   Bell,
   CheckCheck,
   MessageSquare,
+  Bug,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -166,7 +167,7 @@ export default function Header() {
       if (!user || !firestore) return false;
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists() || user.email === 'forgegatehub@gmail.com';
+      return adminDoc.exists();
     },
     enabled: !!user && !!firestore,
   });
@@ -273,7 +274,8 @@ export default function Header() {
                         </Link>
                     )}
                     {isAdmin && (
-                       <Link
+                       <>
+                        <Link
                           href="/admin"
                           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-orange-500 transition-colors hover:bg-muted/50 hover:text-orange-400"
                           onClick={() => setIsMobileMenuOpen(false)}
@@ -281,6 +283,15 @@ export default function Header() {
                           <Shield className="h-4 w-4" />
                           Admin Panel
                         </Link>
+                        <Link
+                          href="/admin/debug"
+                          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-muted/50 hover:text-cyan-300"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Bug className="h-4 w-4" />
+                          Debug Panel
+                        </Link>
+                       </>
                     )}
                 </div>
 
@@ -369,6 +380,11 @@ export default function Header() {
                 </form>
             </div>
             <nav className="hidden md:flex items-center gap-1">
+                {isAdmin && (
+                  <Button variant="link" asChild className="text-cyan-400 hover:text-cyan-300">
+                    <Link href="/admin/debug"><Bug className="mr-2 h-4 w-4" /> Debug</Link>
+                  </Button>
+                )}
                 <Link href="/wishlist">
                 <Button variant="ghost" size="icon" className="relative">
                     <Heart className="h-5 w-5" />
