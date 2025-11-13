@@ -94,7 +94,7 @@ function ManageUsersPageContent() {
             if (makeAdmin) {
                 const adminData: Admin = { 
                     email: user.email, 
-                    role: 'admin',
+                    role: 'Admin', // Ensure this matches the security rule
                     addedAt: serverTimestamp() as any
                 };
                 await setDoc(adminDocRef, adminData);
