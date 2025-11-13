@@ -12,6 +12,7 @@ import { doc, getDoc, collection, getDocs, setDoc, serverTimestamp } from 'fireb
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Admin } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 function AdminDebugPageContent() {
   const { user, isUserLoading, firestore } = useUser();
@@ -108,8 +109,32 @@ function AdminDebugPageContent() {
                 {adminStatus?.isAdmin ? 'true' : 'false'}
               </span>
             </p>
-            <Separator className="bg-cyan-400/20 my-4" />
-             <Button>Botão Que Não Faz Nada</Button>
+             {isAdminsCollectionEmpty && !adminStatus?.isAdmin && (
+                <>
+                    <Separator className="bg-cyan-400/20 my-4" />
+                    <Card className="bg-yellow-900/20 border-yellow-500/50 text-yellow-300 text-left">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 font-mono">
+                                <ShieldPlus />
+                                Ação Necessária
+                            </CardTitle>
+                             <CardDescription className="text-yellow-400/80 font-mono">
+                                A coleção de administradores está vazia. Promova-se para se tornar o primeiro administrador.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Button 
+                                onClick={() => becomeFirstAdminMutation.mutate()} 
+                                disabled={becomeFirstAdminMutation.isPending}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                            >
+                                {becomeFirstAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Tornar-me o Primeiro Administrador
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </>
+            )}
           </div>
         )}
       </main>
