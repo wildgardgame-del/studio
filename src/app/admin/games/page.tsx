@@ -66,11 +66,7 @@ function ManageGamesPageContent() {
                 operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: 'destructive',
-                title: 'Error fetching games',
-                description: 'Could not fetch games. Check permissions.',
-            });
+            // Toast já é acionado pelo listener de erro global
             return [];
         }
     };
@@ -104,9 +100,11 @@ function ManageGamesPageContent() {
         mutationFn: async ({ game, newStatus, reason }: { game: GameAction, newStatus: 'approved' | 'rejected' | 'pending', reason?: string }) => {
             if (!firestore) throw new Error("Firestore not available");
             const gameRef = doc(firestore, 'games', game.id);
-            const updateData: { status: 'approved' | 'rejected' | 'pending', rejectionReason?: string | null } = { status: newStatus, rejectionReason: null };
-            if (reason) {
+            const updateData: { status: 'approved' | 'rejected' | 'pending', rejectionReason?: string | null } = { status: newStatus };
+            if (newStatus === 'rejected' || newStatus === 'pending') {
                 updateData.rejectionReason = reason;
+            } else {
+                updateData.rejectionReason = null; // Limpa a razão ao aprovar
             }
             await updateDoc(gameRef, updateData);
             return { game, newStatus, reason }; // Pass context to onSuccess
@@ -401,3 +399,5 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
+
+    
