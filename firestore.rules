@@ -100,8 +100,8 @@ service cloud.firestore {
     match /admins/{userId} {
       // Only other admins can see who is an admin.
       allow read, list: if isSignedIn() && isAdmin();
-      // Only admins can make other users admins.
-      allow write: if isSignedIn() && isAdmin();
+      // Allow write if user is an admin OR if they are the first user to become an admin
+      allow write: if isSignedIn() && (isAdmin() || size(get(/databases/$(database)/documents/admins).data) == 0);
     }
   }
 
