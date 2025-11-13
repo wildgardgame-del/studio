@@ -67,9 +67,9 @@ function ManageGamesPageContent() {
         const gamesSnapshot = await getDocs(gamesRef);
         const games = gamesSnapshot.docs.map(doc => {
             const gameData = doc.data() as Game;
-            return { 
+            return {
+                ...gameData,
                 id: doc.id, 
-                ...gameData, 
                 developerName: userMap.get(gameData.developerId || '') || 'Unknown'
             } as GameWithId;
         });
@@ -427,5 +427,7 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
+
+    
 
     
