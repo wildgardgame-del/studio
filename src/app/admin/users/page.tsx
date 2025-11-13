@@ -1,14 +1,14 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useMemo } from 'react';
 import { Loader2, Trash2, ShieldCheck, ShieldOff } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -31,6 +31,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Badge } from '@/components/ui/badge';
+import type { Admin } from '@/lib/types';
+
 
 type UserProfile = {
     id: string;
@@ -40,11 +42,8 @@ type UserProfile = {
         seconds: number;
         nanoseconds: number;
     } | null;
-    isAdmin?: boolean;
+    isAdmin: boolean;
 }
-
-// Hardcoded admin email for client-side role display
-const ADMIN_EMAIL = 'forgegatehub@gmail.com';
 
 function ManageUsersPageContent() {
     const { firestore, user: adminUser } = useFirebase();
@@ -53,16 +52,30 @@ function ManageUsersPageContent() {
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
     const [userToToggleAdmin, setUserToToggleAdmin] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
 
-    const fetchAllUsers = async () => {
+    const fetchAdminIds = async () => {
+        if (!firestore) return [];
+        try {
+            const adminSnapshot = await getDocs(collection(firestore, 'admins'));
+            return adminSnapshot.docs.map(doc => doc.id);
+        } catch (error) {
+            console.error("Error fetching admin IDs:", error);
+            const permissionError = new FirestorePermissionError({ path: 'admins', operation: 'list' });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Error fetching admin roles' });
+            return [];
+        }
+    }
+
+    const fetchAllUsers = async (adminIds: string[]) => {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
             const usersRef = collection(firestore, 'users');
             const q = query(usersRef, orderBy('registrationDate', 'desc'));
             const usersSnapshot = await getDocs(q);
-            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<UserProfile, 'isAdmin'>));
 
-            return users.map(user => ({ ...user, isAdmin: user.email === ADMIN_EMAIL }));
+            return users.map(user => ({ ...user, isAdmin: adminIds.includes(user.id) }));
 
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -80,33 +93,47 @@ function ManageUsersPageContent() {
         }
     };
     
-    const { data: allUsers, isLoading } = useQuery({
-        queryKey: ['all-users-with-admin-status'],
-        queryFn: fetchAllUsers,
+    const { data: adminIds, isLoading: isAdminIdsLoading } = useQuery({
+        queryKey: ['admin-ids'],
+        queryFn: fetchAdminIds,
         enabled: !!firestore,
     });
+    
+    const { data: allUsers, isLoading: isUsersLoading } = useQuery({
+        queryKey: ['all-users-with-admin-status', adminIds],
+        queryFn: () => fetchAllUsers(adminIds || []),
+        enabled: !!firestore && !!adminIds,
+    });
+    
+    const isLoading = isAdminIdsLoading || isUsersLoading;
 
     const adminMutation = useMutation({
         mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
             if (!firestore) throw new Error("Firestore not available");
-            // This mutation only toggles the admin status visually on the frontend
-            // The actual admin logic is based on the hardcoded email in firestore.rules
-            // In a real application, this should trigger a backend function to set a custom claim.
-            return { user, makeAdmin };
+            const adminRef = doc(firestore, 'admins', user.id);
+            if (makeAdmin) {
+                const adminData: Admin = {
+                    email: user.email,
+                    addedAt: serverTimestamp() as any
+                };
+                await setDoc(adminRef, adminData);
+            } else {
+                await deleteDoc(adminRef);
+            }
         },
         onSuccess: (_, { makeAdmin, user }) => {
             toast({
-                title: "Action Required",
-                description: `To ${makeAdmin ? 'promote' : 'demote'} ${user.username}, the admin email in Firestore Rules must be updated.`,
+                title: 'Success!',
+                description: `${user.username} has been ${makeAdmin ? 'promoted to admin' : 'demoted to user'}.`,
             });
-            queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
+            queryClient.invalidateQueries({queryKey: ['admin-ids']});
         },
         onError: (error, { user }) => {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'This action is currently for display only. Admin status is controlled by rules.'
-            })
+            const permissionError = new FirestorePermissionError({
+                path: `admins/${user.id}`,
+                operation: 'write',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         },
         onSettled: () => {
             setUserToToggleAdmin(null);
@@ -115,10 +142,9 @@ function ManageUsersPageContent() {
 
     const deleteUserMutation = useMutation({
         mutationFn: async (userId: string) => {
-            if (!firestore) throw new Error("Firestore not available");
-            // In a real app, this should call a Cloud Function to delete the Auth user too.
+            if (!firestore || !userToDelete) throw new Error("Firestore or user not available");
             const userDocRef = doc(firestore, 'users', userId);
-            const usernameDocRef = doc(firestore, 'usernames', userToDelete!.username.toLowerCase());
+            const usernameDocRef = doc(firestore, 'usernames', userToDelete.username.toLowerCase());
             
             const batch = writeBatch(firestore);
             batch.delete(userDocRef);
@@ -171,17 +197,19 @@ function ManageUsersPageContent() {
             <AlertDialog open={!!userToToggleAdmin} onOpenChange={(open) => !open && setUserToToggleAdmin(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                    <AlertDialogTitle>Admin Role Change</AlertDialogTitle>
+                    <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Admin status is managed by the Firestore security rules based on email. To change the admin, you must update the email in `firestore.rules`. This action is for display purposes only.
+                        Are you sure you want to {userToToggleAdmin?.makeAdmin ? 'promote' : 'demote'} <span className="font-bold">{userToToggleAdmin?.user.username}</span>?
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={() => userToToggleAdmin && adminMutation.mutate(userToToggleAdmin)}
+                        disabled={adminMutation.isPending}
                     >
-                       Acknowledge
+                       {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                       Confirm
                     </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

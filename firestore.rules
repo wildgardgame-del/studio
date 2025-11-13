@@ -80,12 +80,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description No one can manage admins directly through rules anymore.
-     * This must be handled by a backend function or by manually editing the admin email.
+     * @description Only admins can read or write admin documents.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      allow read, write: if false;
+      allow read, list, write: if isSignedIn() && isAdmin();
     }
     
     /**
@@ -125,6 +124,7 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
+    // Admins are users whose UID is in the /admins collection.
+    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
 }

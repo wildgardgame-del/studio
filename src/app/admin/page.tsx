@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
@@ -11,17 +11,25 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-import { useFirebase } from '@/firebase';
+import type { Admin } from '@/lib/types';
+
 
 function AdminDashboardPageContent() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const router = useRouter();
 
-  const isAdmin = !isUserLoading && user?.email === 'forgegatehub@gmail.com';
+  const adminRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'admins', user.uid);
+  }, [firestore, user]);
 
+  const { data: adminDoc, isLoading: isAdminDocLoading } = useDoc<Admin>(adminRef);
+  const isAdmin = !!adminDoc;
+  const isLoading = isUserLoading || isAdminDocLoading;
+  
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],
     queryFn: async () => {
@@ -47,12 +55,12 @@ function AdminDashboardPageContent() {
   });
 
   useEffect(() => {
-    if (!isUserLoading && !isAdmin) {
+    if (!isLoading && !isAdmin) {
       router.push('/');
     }
-  }, [isUserLoading, isAdmin, router]);
+  }, [isLoading, isAdmin, router]);
 
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -113,7 +121,7 @@ function AdminDashboardPageContent() {
                 <Link href="/admin/users">
                   <CardHeader>
                       <CardTitle className="flex items-center gap-2"><Users className="text-accent"/>Manage Users</CardTitle>
-                      <CardDescription>View all registered users.</CardDescription>
+                      <CardDescription>View and manage all registered users.</CardDescription>
                   </CardHeader>
                   <CardContent>
                       <Button variant="link" className="p-0 text-accent">View Users</Button>

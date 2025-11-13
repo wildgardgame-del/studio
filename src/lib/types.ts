@@ -1,3 +1,4 @@
+
 export type Game = {
   id: string;
   title: string;
@@ -68,5 +69,11 @@ export type AdminMessage = {
   };
   isRead: boolean;
 };
-    
-    
+
+export type Admin = {
+  email: string;
+  addedAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+}
