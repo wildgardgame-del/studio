@@ -8,26 +8,19 @@ import { Loader2 } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
-import { doc, getDoc } from 'firebase/firestore';
 
 function AdminDebugPageContent() {
-  const { user, isUserLoading, firestore } = useUser();
+  const { user, isUserLoading } = useUser();
 
-  const { data: isAdmin, isLoading: isAdminLoading, error: isAdminError } = useQuery({
-    queryKey: ['isAdminCheckCombined', user?.uid],
-    queryFn: async () => {
-      if (!user || !firestore) return false;
-      
-      // 1. Verificação por email (super-admin)
-      const isSuperAdminByEmail = user.email === 'forgegatehub@gmail.com' || user.email === 'raf-el@live.com';
-      if (isSuperAdminByEmail) return true;
-
-      // 2. Verificação pelo documento na coleção /admins
-      const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists();
+  // A verificação mais simples e direta possível.
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdminCheckSimpleEmail', user?.email],
+    queryFn: () => {
+      if (!user) return false;
+      // APENAS esta comparação. Mais nada.
+      return user.email === 'forgegatehub@gmail.com';
     },
-    enabled: !!user && !!firestore,
+    enabled: !!user,
   });
 
 
@@ -58,18 +51,15 @@ function AdminDebugPageContent() {
             )}
             <Separator className="bg-cyan-400/20 my-4" />
             <p className="text-2xl">
-              <span className="text-gray-400">Is Admin (Combined Check): </span>
+              <span className="text-gray-400">Is Admin: </span>
               <span className={isAdmin ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
                 {isAdminLoading ? 'Checking...' : isAdmin ? 'true' : 'false'}
               </span>
             </p>
-             {isAdminError && (
-                <p className="text-red-500 text-xs">Query Error: {(isAdminError as Error).message}</p>
-             )}
              <div className="text-left text-sm pt-4">
                 <h2 className="text-cyan-400 font-bold">O que isto significa:</h2>
-                <p className="text-gray-300 mt-2">Esta verificação espelha a regra de segurança no `firestore.rules`. Um utilizador é considerado administrador se o seu email for um dos super-admins OU se existir um documento com o seu UID na coleção `/admins`.</p>
-                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-green-400 font-bold">'true'</span>, o sistema está a funcionar corretamente.</p>
+                <p className="text-gray-300 mt-2">Esta é a verificação mais simples possível. O resultado de 'Is Admin' é baseado <span className="font-bold">apenas</span> se o seu email é 'forgegatehub@gmail.com'.</p>
+                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-green-400 font-bold">'true'</span>, significa que a leitura básica do seu perfil de utilizador está a funcionar corretamente.</p>
              </div>
           </div>
         )}
