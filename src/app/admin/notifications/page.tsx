@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import type { User as AuthUser } from "firebase/auth";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 type UserProfile = {
     id: string;
@@ -94,11 +95,11 @@ function SendNotificationsContent() {
     const sendNotificationMutation = useMutation({
         mutationFn: async (values: z.infer<typeof formSchema>) => {
             if (!firestore) throw new Error("Firestore not available");
-            const batch = writeBatch(firestore);
+            
             const { title, message, type, link, selectedUsers } = values;
 
-            selectedUsers.forEach(userId => {
-                const newNotifRef = doc(collection(firestore, `users/${userId}/notifications`));
+            for (const userId of selectedUsers) {
+                const newNotifRef = collection(firestore, `users/${userId}/notifications`);
                 const notificationData = {
                     userId: userId,
                     title: title,
@@ -108,10 +109,9 @@ function SendNotificationsContent() {
                     type: type,
                     ...(link && { link: link }),
                 };
-                batch.set(newNotifRef, notificationData);
-            });
-
-            await batch.commit();
+                // Using non-blocking update for each notification
+                addDocumentNonBlocking(newNotifRef, notificationData);
+            }
         },
         onSuccess: (_, variables) => {
             toast({
@@ -122,10 +122,13 @@ function SendNotificationsContent() {
             setSelectAll(false);
         },
         onError: (error: any) => {
+            // Because writes are non-blocking, we don't have a single point of failure
+            // to catch here. The error emitter within addDocumentNonBlocking will handle
+            // individual permission errors. We can, however, catch general errors.
             toast({
                 variant: 'destructive',
-                title: "Error Sending Notifications",
-                description: error.message || "An unknown error occurred.",
+                title: "Error Initiating Notifications",
+                description: error.message || "An unknown error occurred while starting the process.",
             });
         }
     });
@@ -233,7 +236,7 @@ function SendNotificationsContent() {
                                                             ))
                                                          ) : (
                                                             <div className="flex items-center justify-center h-full">
-                                                                <p className="text-sm text-muted-foreground">No users found.</p>
+                                                                <p className="text-sm text-muted-foreground">No users found or you don't have permission.</p>
                                                             </div>
                                                          )}
                                                     </ScrollArea>
@@ -265,5 +268,3 @@ export default function SendNotificationsPage() {
         </Suspense>
     )
 }
-
-    
