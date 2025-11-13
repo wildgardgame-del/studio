@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,27 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Suspense, useState } from 'react';
-import { Loader2, Trash2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Button, buttonVariants } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 type UserProfile = {
@@ -44,19 +27,17 @@ type UserProfile = {
 }
 
 function ManageUsersPageContent() {
-    const { firestore, user: adminUser } = useUser();
+    const { firestore } = useUser();
     const { toast } = useToast();
     const queryClient = useQueryClient();
-    const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
-    const isSuperAdmin = adminUser?.email === 'forgegatehub@gmail.com';
 
     const fetchAllUsers = async () => {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
             const usersRef = collection(firestore, 'users');
-            const q = query(usersRef, orderBy('registrationDate', 'desc'));
-            const usersSnapshot = await getDocs(q);
+            // Using the simpler query that works on the notifications page
+            const usersSnapshot = await getDocs(usersRef);
             return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
 
         } catch (error) {
@@ -81,32 +62,27 @@ function ManageUsersPageContent() {
         enabled: !!firestore,
     });
     
-    const deleteUserMutation = useMutation({
-        mutationFn: async (userId: string) => {
+    const adminMutation = useMutation({
+        mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
             if (!firestore) throw new Error("Firestore not available");
-            const userDocRef = doc(firestore, 'users', userId);
-            
-            // Note: Deleting a user from Firebase Auth is a privileged operation
-            // that should be handled by a Cloud Function for security reasons.
-            // This mutation only deletes the Firestore user document.
-            await deleteDoc(userDocRef);
+            const userDocRef = doc(firestore, 'users', user.id);
+            await updateDoc(userDocRef, { isAdmin: makeAdmin });
+            return { user, makeAdmin };
         },
-        onSuccess: (_, userId) => {
+        onSuccess: ({ user, makeAdmin }) => {
             toast({
-                title: "User Deleted",
-                description: `The user's Firestore record has been deleted.`,
+                title: "User Role Updated",
+                description: `${user.username} is now ${makeAdmin ? 'an Admin' : 'a regular user'}.`,
             });
             queryClient.invalidateQueries({queryKey: ['all-users']});
         },
-        onError: (error, userId) => {
+        onError: (error, { user, makeAdmin }) => {
             const permissionError = new FirestorePermissionError({
-                path: `users/${userId}`,
-                operation: 'delete',
+                path: `users/${user.id}`,
+                operation: 'update',
+                requestResourceData: { isAdmin: makeAdmin },
             });
             errorEmitter.emit('permission-error', permissionError);
-        },
-        onSettled: () => {
-            setUserToDelete(null);
         }
     });
 
@@ -115,112 +91,88 @@ function ManageUsersPageContent() {
     }
 
     return (
-        <>
-            <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span> from the database. This action cannot be undone. This does not delete their authentication record.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={() => userToDelete && deleteUserMutation.mutate(userToDelete.id)}
-                        className={cn(buttonVariants({ variant: "destructive" }))}
-                        disabled={deleteUserMutation.isPending}
-                    >
-                        {deleteUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Yes, delete user document
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            
-            <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1 bg-secondary/30">
-                    <div className="container py-12">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Users</h1>
-                                <p className="text-muted-foreground mt-2">View all registered users and their roles.</p>
-                            </div>
-                            {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+        <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1 bg-secondary/30">
+                <div className="container py-12">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Users</h1>
+                            <p className="text-muted-foreground mt-2">View all registered users and manage their roles.</p>
                         </div>
-                        
-                        <Card className="mt-8">
-                        <CardHeader>
-                                <CardTitle>Registered Users</CardTitle>
-                                <CardDescription>A list of all users in the system.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <TooltipProvider>
-                                {isLoading ? (
-                                    <div className="flex justify-center items-center h-40">
-                                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                                    </div>
-                                ) : !allUsers || allUsers.length === 0 ? (
-                                    <p className="text-center text-muted-foreground py-8">No users found.</p>
-                                ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Username</TableHead>
-                                                <TableHead>Email</TableHead>
-                                                <TableHead>Role</TableHead>
-                                                <TableHead>Registration Date</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {allUsers.map(user => (
-                                                <TableRow key={user.id}>
-                                                    <TableCell className="font-medium">{user.username}</TableCell>
-                                                    <TableCell>{user.email}</TableCell>
-                                                     <TableCell>
-                                                        {isUserAdmin(user) ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
-                                                     </TableCell>
-                                                    <TableCell>
-                                                        {user.registrationDate 
-                                                            ? format(new Date(user.registrationDate.seconds * 1000), 'PPP')
-                                                            : 'N/A'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right space-x-1">
-                                                        {isSuperAdmin && adminUser?.email !== user.email && (
-                                                            <>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button 
-                                                                            variant="ghost" 
-                                                                            size="icon"
-                                                                            onClick={() => setUserToDelete(user)}
-                                                                            disabled={deleteUserMutation.isPending && userToDelete?.id === user.id}
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Delete User</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                )}
-                            </TooltipProvider>
-                        </CardContent>
-                        </Card>
+                        {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                     </div>
-                </main>
-                <Footer />
-            </div>
-        </>
+                    
+                    <Card className="mt-8">
+                    <CardHeader>
+                            <CardTitle>Registered Users</CardTitle>
+                            <CardDescription>A list of all users in the system.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? (
+                            <div className="flex justify-center items-center h-40">
+                                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                            </div>
+                        ) : !allUsers || allUsers.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-8">No users found.</p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Username</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Registration Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {allUsers.map(user => (
+                                        <TableRow key={user.id}>
+                                            <TableCell className="font-medium">{user.username}</TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                             <TableCell>
+                                                {isUserAdmin(user) ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
+                                             </TableCell>
+                                            <TableCell>
+                                                {user.registrationDate 
+                                                    ? format(new Date(user.registrationDate.seconds * 1000), 'PPP')
+                                                    : 'N/A'}
+                                            </TableCell>
+                                            <TableCell className="text-right space-x-1">
+                                                {user.email !== 'forgegatehub@gmail.com' && (
+                                                    isUserAdmin(user) ? (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm"
+                                                            onClick={() => adminMutation.mutate({ user, makeAdmin: false })}
+                                                            disabled={adminMutation.isPending}
+                                                        >
+                                                            <ShieldOff className="mr-2 h-4 w-4" /> Demote
+                                                        </Button>
+                                                    ) : (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm"
+                                                            onClick={() => adminMutation.mutate({ user, makeAdmin: true })}
+                                                            disabled={adminMutation.isPending}
+                                                        >
+                                                          <ShieldCheck className="mr-2 h-4 w-4" /> Promote to Admin
+                                                        </Button>
+                                                    )
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                    </Card>
+                </div>
+            </main>
+            <Footer />
+        </div>
     );
 }
 
