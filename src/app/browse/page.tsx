@@ -8,7 +8,7 @@ import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 import { useFirebase, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, documentId, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDoc, doc } from "firebase/firestore";
 import type { Game } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState, useEffect } from "react";
@@ -24,21 +24,25 @@ function BrowsePageContent() {
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
     const [sortOrder, setSortOrder] = useState('newest');
     const [isAgeVerified, setIsAgeVerified] = useState(false);
-    const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
     const [showAdultContent, setShowAdultContent] = useState(false);
+    const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
 
+    // Effect to check user's age verification and load content preference
     useEffect(() => {
-        const checkUserAgeVerification = async () => {
-            setIsUserCheckLoading(true);
+        const checkUser = async () => {
             if (user && firestore) {
                 const userDocRef = doc(firestore, 'users', user.uid);
                 try {
                     const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists() && userDoc.data().isAgeVerified) {
-                        setIsAgeVerified(true);
+                    const userIsVerified = userDoc.exists() && userDoc.data().isAgeVerified;
+                    setIsAgeVerified(userIsVerified);
+
+                    if (userIsVerified) {
+                        const savedPreference = localStorage.getItem('showAdultContent');
+                        setShowAdultContent(savedPreference === 'true');
                     } else {
-                        setIsAgeVerified(false);
-                        setShowAdultContent(false); 
+                        setShowAdultContent(false);
+                        localStorage.removeItem('showAdultContent');
                     }
                 } catch (e) {
                     console.error("Error checking user age verification:", e);
@@ -52,18 +56,24 @@ function BrowsePageContent() {
             setIsUserCheckLoading(false);
         };
 
-        checkUserAgeVerification();
+        checkUser();
     }, [user, firestore]);
 
+    // Handle toggling adult content and saving to localStorage
+    const handleShowAdultContentChange = (show: boolean) => {
+        setShowAdultContent(show);
+        if (isAgeVerified) {
+            localStorage.setItem('showAdultContent', String(show));
+        }
+    };
+    
     const gamesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         
-        let q = query(
+        return query(
             collection(firestore, "games"), 
             where("status", "==", "approved")
         );
-        
-        return q;
     }, [firestore]);
 
     const { data: allGames, isLoading: areGamesLoading } = useCollection<Game>(gamesQuery);
@@ -73,10 +83,8 @@ function BrowsePageContent() {
 
         let games = allGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
         
-        if (isAgeVerified && !showAdultContent) {
+        if (!showAdultContent) {
              games = games.filter(game => !game.isAdultContent);
-        } else if (!isAgeVerified) {
-            games = games.filter(game => !game.isAdultContent);
         }
 
         if (q) {
@@ -109,7 +117,7 @@ function BrowsePageContent() {
         });
         
         return games;
-    }, [allGames, q, selectedGenres, sortOrder, isAgeVerified, showAdultContent]);
+    }, [allGames, q, selectedGenres, sortOrder, showAdultContent]);
     
     const isLoading = areGamesLoading || isUserCheckLoading;
 
@@ -128,7 +136,8 @@ function BrowsePageContent() {
                                 onSortOrderChange={setSortOrder}
                                 isAgeVerified={isAgeVerified}
                                 showAdultContent={showAdultContent}
-                                onShowAdultContentChange={setShowAdultContent}
+                                onShowAdultContentChange={handleShowAdultContentChange}
+                                isFilterLoading={isUserCheckLoading}
                            />
                         </aside>
                         <div className="lg:col-span-3">

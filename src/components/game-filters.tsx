@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Separator } from "./ui/separator";
+import { Skeleton } from "./ui/skeleton";
 
 interface GameFiltersProps {
     genres: string[];
@@ -16,6 +17,7 @@ interface GameFiltersProps {
     isAgeVerified: boolean;
     showAdultContent: boolean;
     onShowAdultContentChange: (show: boolean) => void;
+    isFilterLoading: boolean;
 }
 
 export function GameFilters({
@@ -26,7 +28,8 @@ export function GameFilters({
     onSortOrderChange,
     isAgeVerified,
     showAdultContent,
-    onShowAdultContentChange
+    onShowAdultContentChange,
+    isFilterLoading
 }: GameFiltersProps) {
     const handleGenreChange = (genre: string, checked: boolean) => {
         const newSelectedGenres = checked
@@ -73,7 +76,12 @@ export function GameFilters({
                     </div>
                 </div>
 
-                {isAgeVerified && (
+                {isFilterLoading ? (
+                     <>
+                        <Separator />
+                        <Skeleton className="h-20 w-full" />
+                     </>
+                ) : isAgeVerified && (
                     <>
                         <Separator />
                         <div>
