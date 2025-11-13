@@ -26,7 +26,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(userId) 
                       && request.resource.data.id == userId
                       && request.resource.data.email == request.auth.token.email
-                      && (request.resource.data.isAdmin == false || request.resource.data.isAdmin == null); // Prevent self-promotion on creation
+                      && request.resource.data.isAdmin == false; // Prevent self-promotion on creation
 
       allow update: if isSignedIn() && (
                       // Case 1: An admin can update any user's profile, including the isAdmin field.
@@ -90,7 +90,8 @@ service cloud.firestore {
      */
     match /admin_messages/{messageId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete, list: if isSignedIn() && isAdmin();
+      allow read, update, delete: if isSignedIn() && isAdmin();
+      allow list: if isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true || request.auth.token.email == 'forgegatehub@gmail.com');
     }
     
     /**
@@ -123,6 +124,7 @@ service cloud.firestore {
     // A user is an admin if their own user document has `isAdmin: true` OR if they are the super admin by email.
     // This allows the super admin to promote the first admins.
     let isSuperAdmin = request.auth.token.email == 'forgegatehub@gmail.com';
+    // This get() is safe in non-list contexts (get, update, delete, create)
     let hasAdminField = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     return isSignedIn() && (hasAdminField || isSuperAdmin);
   }
