@@ -1,0 +1,217 @@
+
+'use client';
+
+import { collection, query, getDocs, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
+import { Suspense, useState } from 'react';
+import { Loader2, Trash2, ArrowLeft } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
+
+
+type UserProfile = {
+    id: string;
+    username: string;
+    email: string;
+    registrationDate: {
+        seconds: number;
+        nanoseconds: number;
+    } | null;
+}
+
+function ManageUsersPageContent() {
+    const { firestore, user: adminUser } = useFirebase();
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
+    const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+
+    const fetchAllUsers = async () => {
+        if (!firestore) throw new Error("Firestore not available");
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, orderBy('registrationDate', 'desc'));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            const users = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+            return users;
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            const permissionError = new FirestorePermissionError({
+                path: 'users',
+                operation: 'list'
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Error fetching users',
+                description: 'Could not fetch users. Check admin permissions.',
+            });
+            return [];
+        }
+    };
+    
+    const { data: allUsers, isLoading } = useQuery({
+        queryKey: ['all-users'],
+        queryFn: fetchAllUsers,
+        enabled: !!firestore,
+    });
+
+    const deleteUserMutation = useMutation({
+        mutationFn: async (userId: string) => {
+            if (!firestore) throw new Error("Firestore not available");
+            const userDocRef = doc(firestore, 'users', userId);
+            await deleteDoc(userDocRef);
+        },
+        onSuccess: (_, userId) => {
+            toast({
+                title: "User Deleted",
+                description: `The user account has been successfully deleted.`,
+            });
+            queryClient.invalidateQueries({queryKey: ['all-users']});
+        },
+        onError: (error, userId) => {
+            const permissionError = new FirestorePermissionError({
+                path: `users/${userId}`,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Error Deleting User',
+                description: 'Could not delete the user. Check permissions.',
+            });
+        },
+        onSettled: () => {
+            setUserToDelete(null);
+        }
+    });
+
+    return (
+        <>
+            <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span>. This action cannot be undone.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => userToDelete && deleteUserMutation.mutate(userToDelete.id)}
+                        className={cn(buttonVariants({ variant: "destructive" }))}
+                        disabled={deleteUserMutation.isPending}
+                    >
+                        {deleteUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Yes, delete user
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 bg-secondary/30">
+                    <div className="container py-12">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <Button asChild variant="outline" size="icon">
+                                    <Link href="/admin">
+                                        <ArrowLeft className="h-4 w-4" />
+                                        <span className="sr-only">Back to Admin Dashboard</span>
+                                    </Link>
+                                </Button>
+                                <div>
+                                    <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Users</h1>
+                                    <p className="text-muted-foreground mt-2">View and manage all registered users.</p>
+                                </div>
+                            </div>
+                            {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                        </div>
+                        
+                        <Card>
+                        <CardHeader>
+                                <CardTitle>Registered Users</CardTitle>
+                                <CardDescription>A list of all users in the system.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center h-40">
+                                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                                    </div>
+                                ) : !allUsers || allUsers.length === 0 ? (
+                                    <p className="text-center text-muted-foreground py-8">No users found.</p>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Username</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead>Registration Date</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {allUsers.map(user => (
+                                                <TableRow key={user.id}>
+                                                    <TableCell className="font-medium">{user.username}</TableCell>
+                                                    <TableCell>{user.email}</TableCell>
+                                                    <TableCell>
+                                                        {user.registrationDate 
+                                                            ? format(new Date(user.registrationDate.seconds * 1000), 'PPP')
+                                                            : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {adminUser?.uid !== user.id && (
+                                                            <Button 
+                                                                variant="destructive" 
+                                                                size="sm"
+                                                                onClick={() => setUserToDelete(user)}
+                                                                disabled={deleteUserMutation.isPending && userToDelete?.id === user.id}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Ban
+                                                            </Button>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
+                        </CardContent>
+                        </Card>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        </>
+    );
+}
+
+export default function ManageUsersPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
+            <ManageUsersPageContent />
+        </Suspense>
+    )
+}

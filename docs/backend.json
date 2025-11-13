@@ -1,0 +1,480 @@
+{
+  "entities": {
+    "AdminMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin Message",
+      "type": "object",
+      "description": "Represents a message sent from a user to an administrator.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the message." },
+        "userId": { "type": "string", "description": "The ID of the user who sent the message." },
+        "username": { "type": "string", "description": "The username of the user who sent the message." },
+        "userEmail": { "type": "string", "description": "The email of the user who sent the message.", "format": "email" },
+        "subject": { "type": "string", "description": "The subject of the message." },
+        "message": { "type": "string", "description": "The content of the message." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the message was created." },
+        "isRead": { "type": "boolean", "description": "Whether the admin has read the message." }
+      },
+      "required": ["id", "userId", "username", "userEmail", "subject", "message", "createdAt", "isRead"]
+    },
+    "Game": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Game",
+      "type": "object",
+      "description": "Represents a game available in the GameSphere store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Game entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the game."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the game."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the game."
+        },
+        "releaseDate": {
+          "type": "string",
+          "description": "The date when the game was released.",
+          "format": "date-time"
+        },
+        "genre": {
+          "type": "string",
+          "description": "The genre of the game (e.g., Action, RPG, Strategy)."
+        },
+        "developerId": {
+          "type": "string",
+          "description": "The ID of the developer user who submitted the game."
+        },
+        "publisher": {
+          "type": "string",
+          "description": "The publisher of the game."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the game's main image.",
+          "format": "uri"
+        },
+        "trailerUrls": {
+          "type": "array",
+          "description": "URLs of the game's trailers.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "websiteUrl": {
+            "type": "string",
+            "description": "URL of the game's official website.",
+            "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ],
+          "description": "The review status of the game."
+        },
+        "rejectionReason": {
+          "type": "string",
+          "description": "The reason why a game submission was rejected by an admin."
+        },
+        "isAdultContent": {
+          "type": "boolean",
+          "description": "Whether the game is intended for mature audiences."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "price",
+        "developerId",
+        "imageUrl",
+        "status",
+        "publisher",
+        "isAdultContent"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the GameSphere store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date when the user registered.",
+          "format": "date-time"
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "The user's date of birth.",
+          "format": "date"
+        },
+        "isAgeVerified": {
+          "type": "boolean",
+          "description": "Indicates if the user's age has been verified as 18+."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "registrationDate",
+        "dateOfBirth",
+        "isAgeVerified"
+      ]
+    },
+    "Username": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Username",
+      "type": "object",
+      "description": "A public record to ensure username uniqueness.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this username."
+        }
+      },
+      "required": ["userId"]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a user review for a game.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Review entity."
+        },
+        "gameId": {
+          "type": "string",
+          "description": "Reference to Game. (Relationship: Game 1:N Review)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Review)"
+        },
+        "rating": {
+          "type": "number",
+          "description": "The rating given by the user (e.g., 1 to 5 stars)."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The text comment provided by the user."
+        },
+        "reviewDate": {
+          "type": "string",
+          "description": "The date when the review was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "gameId",
+        "userId",
+        "rating",
+        "comment",
+        "reviewDate"
+      ]
+    },
+    "ShoppingCart": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ShoppingCart",
+      "type": "object",
+      "description": "Represents the shopping cart for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ShoppingCart entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 ShoppingCart)"
+        },
+        "gameIds": {
+          "type": "array",
+          "description": "References to Games. (Relationship: ShoppingCart 1:N Game)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdDate": {
+          "type": "string",
+          "description": "The date when the shopping cart was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameIds",
+        "createdDate"
+      ]
+    },
+    "Wishlist": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wishlist",
+      "type": "object",
+      "description": "Represents a user's wishlist of games.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Wishlist entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Wishlist)"
+        },
+        "gameIds": {
+          "type": "array",
+          "description": "References to Games. (Relationship: Wishlist 1:N Game)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameIds"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Notification entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user this notification is for."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the notification."
+        },
+        "message": {
+          "type": "string",
+          "description": "The main content of the notification."
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether the user has read the notification."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the notification was created."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["game-status", "promotion", "system"],
+          "description": "The category of the notification."
+        },
+        "link": {
+          "type": "string",
+          "format": "uri",
+          "description": "An optional URL to navigate to when the notification is clicked."
+        }
+      },
+      "required": ["id", "userId", "title", "message", "isRead", "createdAt", "type"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous",
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/admin_messages/{messageId}",
+        "definition": {
+          "entityName": "AdminMessage",
+          "schema": {
+            "$ref": "#/backend/entities/AdminMessage"
+          },
+          "description": "Stores messages sent from users to administrators. Any signed-in user can create a message. Only admins can read/update/delete.",
+          "params": [
+            {
+              "name": "messageId",
+              "description": "The unique identifier of the message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/games/{gameId}",
+        "definition": {
+          "entityName": "Game",
+          "schema": {
+            "$ref": "#/backend/entities/Game"
+          },
+          "description": "Stores all games, including pending, approved, and rejected ones. Any signed-in user can create a game (submit for review). Admins can update/delete.",
+          "params": [
+            {
+              "name": "gameId",
+              "description": "The unique identifier of the game."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/usernames/{username}",
+        "definition": {
+          "entityName": "Username",
+          "schema": { "$ref": "#/backend/entities/Username" },
+          "description": "Stores a public list of usernames for uniqueness checks. The document ID is the lowercase username.",
+          "params": [
+            {
+              "name": "username",
+              "description": "The username, stored in lowercase."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/shopping_cart/{cartId}",
+        "definition": {
+          "entityName": "ShoppingCart",
+          "schema": {
+            "$ref": "#/backend/entities/ShoppingCart"
+          },
+          "description": "Stores shopping cart information for a user.  Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "cartId",
+              "description": "The unique identifier of the shopping cart."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wishlist/{wishlistId}",
+        "definition": {
+          "entityName": "Wishlist",
+          "schema": {
+            "$ref": "#/backend/entities/Wishlist"
+          },
+          "description": "Stores wishlist information for a user. Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "wishlistId",
+              "description": "The unique identifier of the wishlist."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stores user reviews for games. Requires 'userId' and 'gameId' to be present for security rules to validate ownership and enable listing reviews for a specific game.",
+          "params": [
+            {
+              "name": "reviewId",
+              "description": "The unique identifier of the review."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/library/{gameId}",
+        "definition": {
+          "entityName": "Game",
+          "schema": {
+            "$ref": "#/backend/entities/Game"
+          },
+          "description": "Stores purchased games for a user. Accessible only to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "gameId",
+              "description": "The unique identifier of the game."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": { "$ref": "#/backend/entities/Notification" },
+          "description": "Stores user-specific notifications. Only the owner can read or write.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique identifier of the notification."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
+  }
+}
+    

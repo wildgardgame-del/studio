@@ -1,0 +1,123 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Public can read approved games. Admins can read all. Signed-in users can create. Admins or the original developer can update. Admins can delete.
+     * @path /games/{gameId}
+     */
+    match /games/{gameId} {
+      // Allow get if user is an admin OR if the game is NOT adult content, OR if the user is age verified.
+      allow get: if (isSignedIn() && isAdmin()) || (!('isAdultContent' in resource.data) || resource.data.isAdultContent == false || (
+                    isSignedIn() && getUserData(request.auth.uid).isAgeVerified == true
+                  ));
+
+      // Anyone can list games. The client-side queries are responsible for filtering.
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
+      allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Users can read and create their own profile. Admins can delete users. No one can list all users.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description For checking username uniqueness. Anyone can check if a username exists. Only the owner can create their username record.
+     * @path /usernames/{username}
+     */
+    match /usernames/{username} {
+      allow get: if true;
+      allow create: if isSignedIn() 
+                      && request.resource.data.userId == request.auth.uid
+                      && username == request.resource.data.username.lower();
+      allow update, delete, list: if false;
+    }
+
+    /**
+     * @description Enforces user-ownership for shopping cart data.
+     * @path /users/{userId}/shopping_cart/{cartId}
+     */
+    match /users/{userId}/shopping_cart/{cartId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for wishlist data.
+     * @path /users/{userId}/wishlist/{wishlistId}
+     */
+    match /users/{userId}/wishlist/{wishlistId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Enforces user-ownership for game library data.
+     * @path /users/{userId}/library/{gameId}
+     */
+    match /users/{userId}/library/{gameId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Allows creating, reading, updating and deleting reviews for any signed-in user.
+     * @path /reviews/{reviewId}
+     */
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for notifications. Admins can create.
+     * @path /users/{userId}/notifications/{notificationId}
+     */
+    match /users/{userId}/notifications/{notificationId} {
+      allow get, update, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if false;
+    }
+    
+    /**
+     * @description Allows any signed-in user to send a message to admin. Only admin can read/manage.
+     * @path /admin_messages/{messageId}
+     */
+    match /admin_messages/{messageId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete, list: if isSignedIn() && isAdmin();
+    }
+  }
+
+  // Helper functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
+  }
+
+  function isAdmin() {
+    return isSignedIn() && request.auth.token.admin == true;
+  }
+  
+  function getUserData(userId) {
+    return get(/databases/$(database)/documents/users/$(userId)).data;
+  }
+}
