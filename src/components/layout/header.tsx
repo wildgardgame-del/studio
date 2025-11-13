@@ -45,7 +45,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Cart } from '@/components/cart';
 import { useGameStore } from '@/context/game-store-context';
-import { useUser, useCollection, useFirebase, useMemoFirebase, useQuery } from '@/firebase';
+import { useUser, useFirebase, useMemoFirebase, useQuery } from '@/firebase';
 import Image from 'next/image';
 import type { Notification } from '@/lib/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -157,7 +157,7 @@ export default function Header() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
-  const { user, isUserLoading, firestore } = useUser();
+  const { user, isUserLoading, firestore } = useFirebase();
   
   const hasDevLicense = isPurchased('dev-account-upgrade');
   
@@ -165,12 +165,6 @@ export default function Header() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
-      // Super admin check (can be expanded)
-      const superAdminEmails = ['forgegatehub@gmail.com', 'raf-el@live.com'];
-      if (superAdminEmails.includes(user.email || '')) {
-          return true;
-      }
-      // Firestore admin document check
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
       return adminDoc.exists();
