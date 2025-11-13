@@ -35,17 +35,6 @@ function AdminDebugPageContent() {
     enabled: !!user && !!firestore,
   });
 
-  const { data: allUsers, isLoading: isAllUsersLoading, error: allUsersError } = useQuery({
-    queryKey: ['allUsersForDebug'],
-    queryFn: async () => {
-      if (!firestore) return [];
-      const usersRef = collection(firestore, 'users');
-      const snapshot = await getDocs(usersRef);
-      return snapshot.docs.map(doc => ({ id: doc.id, email: doc.data().email, username: doc.data().username }));
-    },
-    enabled: !!firestore,
-  });
-
   const { data: allAdmins, isLoading: isAllAdminsLoading, error: allAdminsError } = useQuery({
     queryKey: ['allAdminsForDebug'],
     queryFn: async () => {
@@ -57,7 +46,7 @@ function AdminDebugPageContent() {
     enabled: !!firestore,
   });
 
-  const isLoading = isUserLoading || isAdminLoading || isAllUsersLoading || isAllAdminsLoading;
+  const isLoading = isUserLoading || isAdminLoading || isAllAdminsLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-black text-white">
@@ -92,21 +81,7 @@ function AdminDebugPageContent() {
               </span>
             </p>
             <Separator className="bg-cyan-400/20 my-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                        <CardTitle className="text-xl text-cyan-400">All User IDs in '/users'</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {isAllUsersLoading && <Loader2 className="h-6 w-6 animate-spin" />}
-                        {allUsersError && <p className="text-red-400 text-xs break-all">Error fetching users: {(allUsersError as Error).message}</p>}
-                        {allUsers && (
-                            <ul className="space-y-2 text-sm max-h-60 overflow-y-auto">
-                                {allUsers.map(u => <li key={u.id} className="break-all">{u.id} ({u.username})</li>)}
-                            </ul>
-                        )}
-                    </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4 text-left">
                  <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
                         <CardTitle className="text-xl text-cyan-400">All Admin IDs in '/admins'</CardTitle>
@@ -118,9 +93,9 @@ function AdminDebugPageContent() {
                             <ul className="space-y-2 text-sm max-h-60 overflow-y-auto">
                                 {allAdmins.map(admin => <li key={admin.id} className="break-all">{admin.id} ({admin.email})</li>)}
                             </ul>
-                        ) : allAdmins && (
+                        ) : allAdmins ? (
                             <p className="text-yellow-400">The '/admins' collection is empty.</p>
-                        )}
+                        ) : null}
                     </CardContent>
                 </Card>
             </div>
