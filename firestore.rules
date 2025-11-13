@@ -8,9 +8,7 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Anyone can get an individual document. The UI will handle visibility based on status.
       allow get: if true;
-      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
@@ -82,11 +80,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description A user can read their own admin status. Only existing admins can write.
+     * @description A user can read their own admin status. Admins can list all admins and manage them.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      allow read: if isSignedIn() && isOwner(userId);
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
       allow write: if isSignedIn() && isAdmin();
     }
     
