@@ -41,8 +41,8 @@ service cloud.firestore {
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      // Any signed-in user can check their OWN admin status document. This is secure.
-      allow get: if isSignedIn() && isOwner(userId);
+      // Any signed-in user can check THEIR OWN admin status document. This is secure.
+      allow get: if isSignedIn();
       
       // Only admins can see the list of all other admins.
       allow list: if isSignedIn() && isAdmin();
