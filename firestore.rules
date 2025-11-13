@@ -119,3 +119,5 @@ service cloud.firestore {
     return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
   }
 }
+
+    
