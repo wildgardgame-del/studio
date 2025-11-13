@@ -77,22 +77,23 @@ service cloud.firestore {
     }
 
     match /users/{userId}/shopping_cart/{cartId} {
-      // User can only access their own shopping cart.
-      allow read, write: if isSignedIn() && isOwner(userId);
+      // User can only access their own shopping cart. Admin has full access.
+      allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 
     match /users/{userId}/wishlist/{wishlistId} {
-      // User can only access their own wishlist.
-      allow read, write: if isSignedIn() && isOwner(userId);
+      // User can only access their own wishlist. Admin has full access.
+      allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 
     match /users/{userId}/library/{gameId} {
-      // User can only view their own library.
-      allow get, list: if isSignedIn() && isOwner(userId);
-      // Only the user can have games added to their library.
-      allow create: if isSignedIn() && isOwner(userId);
-      // Games in the library should not be updated or deleted by the user.
-      allow update, delete: if false;
+      // User can view their own library. Admin has full access.
+      allow get, list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // User can have games added to their library (e.g. on purchase). Admin can also add.
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // Games in the library should not be updated by the user, but admin can manage them.
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
     }
     
     match /reviews/{reviewId} {
@@ -100,17 +101,13 @@ service cloud.firestore {
       allow get, list: if true;
       // Only a signed-in user can create a review, and they must be the author.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // Only the original author of the review can update or delete it.
-      allow update, delete: if isSignedIn() && (resource != null && resource.data.userId == request.auth.uid);
+      // The original author OR an admin can update or delete it.
+      allow update, delete: if isSignedIn() && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid));
     }
 
     match /users/{userId}/notifications/{notificationId} {
-      // User can only manage their own notifications.
-      allow get, list, update: if isSignedIn() && isOwner(userId);
-      // A notification can be created for a user by that user OR by an admin.
-      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
-      // Notifications are not deletable by users.
-      allow delete: if false;
+      // User can manage their own notifications. Admin has full access.
+      allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 
     match /admin_messages/{messageId} {
