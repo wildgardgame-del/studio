@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -15,6 +16,13 @@ function AdminDebugPageContent() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
+      
+      // Super-admin check
+      if (user.email === 'forgegatehub@gmail.com') {
+        return true;
+      }
+      
+      // Standard admin role check
       const adminDocRef = doc(firestore, 'admins', user.uid);
       try {
         const adminDoc = await getDoc(adminDocRef);
