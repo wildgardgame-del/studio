@@ -82,11 +82,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Admins can read and write.
+     * @description A user can read their own admin status. Only existing admins can write.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      allow read, write: if isSignedIn() && isAdmin();
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isAdmin();
     }
     
     /**
