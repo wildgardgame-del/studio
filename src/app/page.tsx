@@ -9,7 +9,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { Button } from '@/components/ui/button';
 import { GameCard } from '@/components/game-card';
 import heroImage from '@/lib/placeholder-images.json';
-import { ArrowRight, Star, Loader2 } from 'lucide-react';
+import { ArrowRight, Star, Loader2, Bug } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { useFirebase, useCollection, useMemoFirebase, useUser, useQuery } from '@/firebase';
@@ -108,6 +108,12 @@ export default function Home() {
               <div className="mt-8 flex justify-center gap-4">
                 <Button asChild size="lg" className="font-bold">
                   <Link href="/browse">Browse Games</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="font-bold border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 hover:text-cyan-300">
+                    <Link href="/admin/debug">
+                        <Bug className="mr-2 h-4 w-4" />
+                        Admin Debug
+                    </Link>
                 </Button>
               </div>
             </div>
