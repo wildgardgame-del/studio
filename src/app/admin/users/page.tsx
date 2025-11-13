@@ -1,8 +1,8 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
-import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { collection, query, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { useFirebase, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -31,7 +31,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
-import type { User as AuthUser } from "firebase/auth";
 
 type UserProfile = {
     id: string;
@@ -45,7 +44,7 @@ type UserProfile = {
 }
 
 function ManageUsersPageContent() {
-    const { firestore, user: adminUser } = useFirebase();
+    const { firestore, user: adminUser } = useUser();
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [userToModify, setUserToModify] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
@@ -112,18 +111,16 @@ function ManageUsersPageContent() {
         mutationFn: async (userId: string) => {
             if (!firestore || !userToDelete) throw new Error("Firestore or user not available");
             const userDocRef = doc(firestore, 'users', userId);
-            const usernameDocRef = doc(firestore, 'usernames', userToDelete.username.toLowerCase());
             
-            const batch = writeBatch(firestore);
-            batch.delete(userDocRef);
-            batch.delete(usernameDocRef);
-
-            await batch.commit();
+            // Note: Deleting a user from Firebase Auth is a privileged operation
+            // that should be handled by a Cloud Function for security reasons.
+            // This mutation only deletes the Firestore user document.
+            await deleteDoc(userDocRef);
         },
-        onSuccess: () => {
+        onSuccess: (_, userId) => {
             toast({
                 title: "User Deleted",
-                description: `The user account has been successfully deleted.`,
+                description: `The user's Firestore record has been deleted.`,
             });
             queryClient.invalidateQueries({queryKey: ['all-users']});
         },
@@ -167,7 +164,7 @@ function ManageUsersPageContent() {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span> and all associated data. This action cannot be undone.
+                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span> from the database. This action cannot be undone. This does not delete their authentication record.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -178,7 +175,7 @@ function ManageUsersPageContent() {
                         disabled={deleteUserMutation.isPending}
                     >
                         {deleteUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Yes, delete user
+                        Yes, delete user document
                     </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -234,7 +231,7 @@ function ManageUsersPageContent() {
                                                             : 'N/A'}
                                                     </TableCell>
                                                     <TableCell className="text-right space-x-1">
-                                                        {adminUser?.uid !== user.id && (
+                                                        {adminUser?.email !== user.email && (
                                                             <>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
@@ -260,6 +257,7 @@ function ManageUsersPageContent() {
                                                                             variant="ghost" 
                                                                             size="icon"
                                                                             onClick={() => setUserToDelete(user)}
+                                                                            disabled={deleteUserMutation.isPending && userToDelete?.id === user.id}
                                                                         >
                                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                                         </Button>
