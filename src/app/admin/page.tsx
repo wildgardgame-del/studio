@@ -7,7 +7,7 @@ import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react';
+import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox, ArrowLeft, Home } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -90,6 +90,12 @@ function AdminDashboardPageContent() {
         <div className="container py-12">
           <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Admin Dashboard</h1>
           <p className="text-muted-foreground mt-2">Manage your store, approve games, and more.</p>
+          <Button asChild variant="link" className="p-0 text-accent mt-2">
+              <Link href="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Go to Store
+              </Link>
+          </Button>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card className="hover:border-primary transition-colors">
