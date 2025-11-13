@@ -8,10 +8,10 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Allow get if the game is not adult content, OR if the user is age verified.
-      allow get: if resource.data.isAdultContent == false || (
-                    isSignedIn() && getUserData(request.auth.uid).isAgeVerified == true
-                  );
+      // Allow get if user is admin, owner, or if the game isn't adult content, OR if user is age verified.
+      allow get: if (isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId))) ||
+                  resource.data.isAdultContent == false || 
+                  (isSignedIn() && getUserData(request.auth.uid).isAgeVerified == true);
 
       // Anyone can list games. The client-side queries are responsible for filtering.
       allow list: if true;
@@ -120,5 +120,4 @@ service cloud.firestore {
     return get(/databases/$(database)/documents/users/$(userId)).data;
   }
 }
-
     
