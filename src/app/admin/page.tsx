@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirebase } from '@/firebase';
@@ -10,17 +11,25 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-
 
 function AdminDashboardPageContent() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   const router = useRouter();
-  
-  // Hardcoded admin check based on email
-  const isAdmin = user?.email === 'ronneeh@gmail.com';
+
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists();
+    },
+    enabled: !!user && !!firestore,
+    staleTime: 1000 * 60 * 5, // Cache admin status for 5 minutes
+  });
 
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],
@@ -30,8 +39,8 @@ function AdminDashboardPageContent() {
       const snapshot = await getDocs(q);
       return snapshot.size;
     },
-    enabled: !!firestore && !!isAdmin, // Only run if firestore is available and user is admin
-    refetchInterval: 30000, // Refetch every 30 seconds
+    enabled: !!firestore && isAdmin,
+    refetchInterval: 30000,
   });
   
   const { data: unreadMessageCount } = useQuery({
@@ -42,17 +51,17 @@ function AdminDashboardPageContent() {
         const snapshot = await getDocs(q);
         return snapshot.size;
     },
-    enabled: !!firestore && !!isAdmin,
+    enabled: !!firestore && isAdmin,
     refetchInterval: 30000,
   });
 
   useEffect(() => {
-    if (!isUserLoading && !isAdmin) {
+    if (!isUserLoading && !isAdminLoading && !isAdmin) {
       router.push('/');
     }
-  }, [isUserLoading, isAdmin, router]);
+  }, [isUserLoading, isAdminLoading, isAdmin, router]);
 
-  if (isUserLoading) {
+  if (isUserLoading || isAdminLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

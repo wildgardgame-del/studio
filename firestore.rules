@@ -8,9 +8,7 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Anyone can get an individual document. The UI will handle visibility based on status.
       allow get: if true;
-      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
@@ -94,6 +92,17 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow read, update, delete, list: if isSignedIn() && isAdmin();
     }
+    
+    /**
+     * @description Defines who can read/write to the admins collection.
+     * @path /admins/{userId}
+     */
+    match /admins/{userId} {
+      // Only other admins can see who is an admin.
+      allow read, list: if isSignedIn() && isAdmin();
+      // Only admins can make other users admins.
+      allow write: if isSignedIn() && isAdmin();
+    }
   }
 
   // Helper functions
@@ -110,7 +119,8 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    return isSignedIn() && request.auth.token.email == 'ronneeh@gmail.com';
+    // A user is an admin if their UID exists as a document in the /admins collection.
+    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
   
   function getUserData(userId) {
