@@ -17,22 +17,26 @@ function AdminDebugPageContent() {
     queryFn: async () => {
       if (!user || !firestore) return false;
       
-      // Super-admin check
+      // This is the definitive check.
+      // 1. First, a special check for the hardcoded super-admin email for bootstrapping.
       if (user.email === 'forgegatehub@gmail.com') {
         return true;
       }
       
-      // Standard admin role check
+      // 2. Then, check for the user's document in the /admins collection.
+      // This query is now allowed by the updated security rules.
       const adminDocRef = doc(firestore, 'admins', user.uid);
       try {
         const adminDoc = await getDoc(adminDocRef);
         return adminDoc.exists();
       } catch (error) {
         console.error("Error checking admin status:", error);
+        // An error here likely means a permission issue still exists,
+        // so we fail safely to `false`.
         return false;
       }
     },
-    enabled: !!user && !!firestore,
+    enabled: !!user && !!firestore, // Only run the query if we have a user and Firestore instance.
   });
 
   const isLoading = isUserLoading || isAdminLoading;
