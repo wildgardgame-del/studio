@@ -176,9 +176,14 @@
           "type": "string",
           "description": "Timestamp of when admin rights were granted.",
           "format": "date-time"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "moderator"],
+          "description": "The specific role of the user, for future expansion."
         }
       },
-      "required": ["email", "addedAt"]
+      "required": ["email", "addedAt", "role"]
     },
     "Review": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -510,6 +515,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
+    "reasoning": "The data model is being updated to use a dedicated /admins collection for role management, which is more secure and efficient than storing an 'isAdmin' flag on user profiles. The 'isAdmin' field is removed from the User entity, and a 'role' field is added to the Admin entity for future flexibility."
   }
 }

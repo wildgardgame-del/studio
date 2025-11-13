@@ -72,6 +72,7 @@ export type AdminMessage = {
 
 export type Admin = {
   email: string;
+  role: 'admin';
   addedAt: {
     seconds: number;
     nanoseconds: number;

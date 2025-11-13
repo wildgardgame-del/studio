@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import type { Admin } from '@/lib/types';
 
 type UserProfile = {
     id: string;
@@ -37,11 +38,14 @@ function ManageUsersPageContent() {
             const usersRef = collection(firestore, 'users');
             const usersSnapshot = await getDocs(usersRef);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+            
+            // Sort users on the client side
             users.sort((a, b) => {
                 const dateA = a.registrationDate?.seconds || 0;
                 const dateB = b.registrationDate?.seconds || 0;
                 return dateB - dateA;
             });
+
             return users;
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -88,7 +92,12 @@ function ManageUsersPageContent() {
             if (!firestore) throw new Error("Firestore not available");
             const adminDocRef = doc(firestore, 'admins', user.id);
             if (makeAdmin) {
-                await setDoc(adminDocRef, { email: user.email, addedAt: serverTimestamp() });
+                const adminData: Admin = { 
+                    email: user.email, 
+                    role: 'admin',
+                    addedAt: serverTimestamp() as any
+                };
+                await setDoc(adminDocRef, adminData);
             } else {
                 await deleteDoc(adminDocRef);
             }
@@ -158,7 +167,7 @@ function ManageUsersPageContent() {
                                             <TableCell className="font-medium">{user.username}</TableCell>
                                             <TableCell>{user.email}</TableCell>
                                              <TableCell>
-                                                {isUserAdmin(user.id) || user.email === 'forgegatehub@gmail.com' ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
+                                                {isUserAdmin(user.id) ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
                                              </TableCell>
                                             <TableCell>
                                                 {user.registrationDate 
@@ -166,27 +175,26 @@ function ManageUsersPageContent() {
                                                     : 'N/A'}
                                             </TableCell>
                                             <TableCell className="text-right space-x-1">
-                                                {user.email !== 'forgegatehub@gmail.com' && (
-                                                    isUserAdmin(user.id) ? (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm"
-                                                            onClick={() => adminMutation.mutate({ user, makeAdmin: false })}
-                                                            disabled={adminMutation.isPending}
-                                                        >
-                                                            <ShieldOff className="mr-2 h-4 w-4" /> Demote
-                                                        </Button>
-                                                    ) : (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm"
-                                                            onClick={() => adminMutation.mutate({ user, makeAdmin: true })}
-                                                            disabled={adminMutation.isPending}
-                                                        >
-                                                          <ShieldCheck className="mr-2 h-4 w-4" /> Promote to Admin
-                                                        </Button>
-                                                    )
-                                                )}
+                                                {isUserAdmin(user.id) ? (
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        onClick={() => adminMutation.mutate({ user, makeAdmin: false })}
+                                                        disabled={adminMutation.isPending}
+                                                    >
+                                                        <ShieldOff className="mr-2 h-4 w-4" /> Demote
+                                                    </Button>
+                                                ) : (
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        onClick={() => adminMutation.mutate({ user, makeAdmin: true })}
+                                                        disabled={adminMutation.isPending}
+                                                    >
+                                                        <ShieldCheck className="mr-2 h-4 w-4" /> Promote to Admin
+                                                    </Button>
+                                                )
+                                                }
                                             </TableCell>
                                         </TableRow>
                                     ))}

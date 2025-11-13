@@ -37,11 +37,21 @@ service cloud.firestore {
     }
 
     /**
-     * @description Admins can manage admin documents.
+     * @description Manages admin role documents.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      allow read, write: if isSignedIn() && isAdminByEmail();
+      // Any signed-in user can CREATE the VERY FIRST admin document if the collection is empty.
+      // This is the bootstrap mechanism to avoid a hardcoded super admin.
+      // Afterwards, only existing admins can add or remove other admins.
+      allow create: if isSignedIn() && 
+                      (isAdmin() || !exists(/databases/$(database)/documents/admins));
+                      
+      // Admins can read the list of other admins and remove them.
+      allow read, delete: if isSignedIn() && isAdmin();
+
+      // No one can update an admin document, only create or delete.
+      allow update: if false;
     }
 
     /**
@@ -124,19 +134,11 @@ service cloud.firestore {
   function isExistingOwner(userId) {
     return isSignedIn() && isOwner(userId) && resource != null;
   }
-
-  // Super admin check, can be used anywhere.
-  function isAdminByEmail() {
-    return request.auth.token.email == 'forgegatehub@gmail.com';
-  }
-
-  // This is the main check. An admin is either the super admin OR
-  // has a document in the /admins collection. This function uses exists()
-  // which is allowed in list queries.
+  
+  // This is the main check. An admin is a user who has a document
+  // with their UID in the /admins collection. This is secure and efficient.
   function isAdmin() {
-    return isSignedIn() && (
-      isAdminByEmail() || 
-      exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-    );
+    return isSignedIn() && 
+           exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
 }
