@@ -99,7 +99,7 @@ service cloud.firestore {
      */
     match /admins/{userId} {
       allow read, list: if isSignedIn() && isAdmin();
-      allow write: if isSignedIn() && (isAdmin() || size(get(/databases/$(database)/documents/admins).docs) == 0);
+      allow write: if isSignedIn() && isOwner(userId);
     }
   }
 
