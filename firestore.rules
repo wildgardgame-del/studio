@@ -37,7 +37,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if isSignedIn() && isAdmin();
+      // ABERTO PARA DEBUG: Permite a qualquer utilizador autenticado listar os utilizadores.
+      allow list: if isSignedIn();
 
       allow create: if isSignedIn() 
                     && isOwner(userId)
