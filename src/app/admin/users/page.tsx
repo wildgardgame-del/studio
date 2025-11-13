@@ -94,7 +94,7 @@ function ManageUsersPageContent() {
             if (makeAdmin) {
                 const adminData: Omit<Admin, 'addedAt'> = { 
                     email: user.email, 
-                    role: 'Admin', // Ensure this matches the security rule
+                    role: 'Admin',
                 };
                 await setDoc(adminDocRef, { ...adminData, addedAt: serverTimestamp() });
             } else {
