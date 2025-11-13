@@ -2,19 +2,20 @@
 'use client';
 
 import { collection, query, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirebase, errorEmitter, FirestorePermissionError, useUser } from '@/firebase';
+import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Suspense, useState } from 'react';
-import { Loader2, ShieldCheck, ShieldOff } from "lucide-react";
+import { Suspense } from 'react';
+import { Loader2, ShieldCheck, ShieldOff, ArrowLeft } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Admin } from '@/lib/types';
+import Link from 'next/link';
 
 type UserProfile = {
     id: string;
@@ -132,6 +133,12 @@ function ManageUsersPageContent() {
                         <div>
                             <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Users</h1>
                             <p className="text-muted-foreground mt-2">View all registered users and manage their roles.</p>
+                             <Button asChild variant="link" className="p-0 text-accent mt-2">
+                                <Link href="/admin">
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Back to Dashboard
+                                </Link>
+                            </Button>
                         </div>
                         {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                     </div>
