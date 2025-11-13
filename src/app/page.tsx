@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Autoplay from "embla-carousel-autoplay";
 
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,8 @@ import heroImage from '@/lib/placeholder-images.json';
 import { ArrowRight, Star } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where, orderBy, limit, getDoc, doc } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -21,6 +21,41 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 
 export default function Home() {
   const { firestore } = useFirebase();
+  const { user } = useUser();
+  const [showAdultContent, setShowAdultContent] = useState(false);
+  const [isAgeVerified, setIsAgeVerified] = useState(false);
+  const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
+
+  // Effect to check user's age verification and load content preference
+  useEffect(() => {
+    const checkUser = async () => {
+      if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        try {
+          const userDoc = await getDoc(userDocRef);
+          const userIsVerified = userDoc.exists() && userDoc.data().isAgeVerified;
+          setIsAgeVerified(userIsVerified);
+
+          if (userIsVerified) {
+            const savedPreference = localStorage.getItem('showAdultContent');
+            setShowAdultContent(savedPreference === 'true');
+          } else {
+            setShowAdultContent(false);
+          }
+        } catch (e) {
+          console.error("Error checking user age verification:", e);
+          setIsAgeVerified(false);
+          setShowAdultContent(false);
+        }
+      } else {
+        setIsAgeVerified(false);
+        setShowAdultContent(false);
+      }
+      setIsUserCheckLoading(false);
+    };
+
+    checkUser();
+  }, [user, firestore]);
 
   const gamesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -30,11 +65,21 @@ export default function Home() {
     );
   }, [firestore]);
 
-  const { data: featuredGames, isLoading } = useCollection<Game>(gamesQuery);
+  const { data: allFeaturedGames, isLoading: areGamesLoading } = useCollection<Game>(gamesQuery);
+
+  const filteredFeaturedGames = useMemo(() => {
+    if (!allFeaturedGames) return [];
+    if (showAdultContent && isAgeVerified) {
+      return allFeaturedGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
+    }
+    return allFeaturedGames.filter(game => !game.isAdultContent && game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
+  }, [allFeaturedGames, showAdultContent, isAgeVerified]);
   
   const plugin = React.useRef(
     Autoplay({ delay: 5000, stopOnInteraction: true })
   )
+
+  const isLoading = areGamesLoading || isUserCheckLoading;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -89,7 +134,7 @@ export default function Home() {
               className="w-full"
             >
               <CarouselContent>
-                {(featuredGames || []).map((game) => (
+                {filteredFeaturedGames.map((game) => (
                   <CarouselItem key={game.id} className="sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                     <div className="p-1">
                       <GameCard game={game} />
