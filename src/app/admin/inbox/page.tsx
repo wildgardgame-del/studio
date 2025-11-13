@@ -36,11 +36,7 @@ function AdminInboxPageContent() {
                 operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: 'destructive',
-                title: 'Error fetching messages',
-                description: 'Could not fetch messages. Check admin permissions.',
-            });
+            // Toast is already handled by the global error listener
             return [];
         }
     };
@@ -57,8 +53,9 @@ function AdminInboxPageContent() {
             const messageRef = doc(firestore, 'admin_messages', messageId);
             await updateDoc(messageRef, { isRead: true });
         },
-        onSuccess: () => {
+        onSuccess: (data, messageId) => {
             queryClient.invalidateQueries({ queryKey: ['admin-messages'] });
+            // The unread count on the dashboard also needs to be updated.
             queryClient.invalidateQueries({ queryKey: ['unread-messages-count'] });
         },
         onError: (error, messageId) => {
