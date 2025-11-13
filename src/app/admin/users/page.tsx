@@ -43,11 +43,15 @@ type UserProfile = {
     isAdmin?: boolean;
 }
 
+// Hardcoded admin email for client-side role display
+const ADMIN_EMAIL = 'forgegatehub@gmail.com';
+
 function ManageUsersPageContent() {
     const { firestore, user: adminUser } = useFirebase();
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+    const [userToToggleAdmin, setUserToToggleAdmin] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
 
     const fetchAllUsers = async () => {
         if (!firestore) throw new Error("Firestore not available");
@@ -58,16 +62,12 @@ function ManageUsersPageContent() {
             const usersSnapshot = await getDocs(q);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
 
-            const adminsRef = collection(firestore, 'admins');
-            const adminsSnapshot = await getDocs(adminsRef);
-            const adminIds = new Set(adminsSnapshot.docs.map(doc => doc.id));
-            
-            return users.map(user => ({ ...user, isAdmin: adminIds.has(user.id) }));
+            return users.map(user => ({ ...user, isAdmin: user.email === ADMIN_EMAIL }));
 
         } catch (error) {
             console.error("Error fetching users:", error);
             const permissionError = new FirestorePermissionError({
-                path: 'users or admins',
+                path: 'users',
                 operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
@@ -89,29 +89,27 @@ function ManageUsersPageContent() {
     const adminMutation = useMutation({
         mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
             if (!firestore) throw new Error("Firestore not available");
-            const adminDocRef = doc(firestore, 'admins', user.id);
-            if (makeAdmin) {
-                await writeBatch(firestore).set(adminDocRef, {
-                    email: user.email,
-                    addedAt: new Date()
-                }).commit();
-            } else {
-                await deleteDoc(adminDocRef);
-            }
+            // This mutation only toggles the admin status visually on the frontend
+            // The actual admin logic is based on the hardcoded email in firestore.rules
+            // In a real application, this should trigger a backend function to set a custom claim.
+            return { user, makeAdmin };
         },
         onSuccess: (_, { makeAdmin, user }) => {
             toast({
-                title: makeAdmin ? "Admin Promoted" : "Admin Demoted",
-                description: `${user.username} is ${makeAdmin ? 'now an admin' : 'no longer an admin'}.`,
+                title: "Action Required",
+                description: `To ${makeAdmin ? 'promote' : 'demote'} ${user.username}, the admin email in Firestore Rules must be updated.`,
             });
             queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
         },
         onError: (error, { user }) => {
-            const permissionError = new FirestorePermissionError({
-                path: `admins/${user.id}`,
-                operation: 'write',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'This action is currently for display only. Admin status is controlled by rules.'
+            })
+        },
+        onSettled: () => {
+            setUserToToggleAdmin(null);
         }
     });
 
@@ -120,12 +118,10 @@ function ManageUsersPageContent() {
             if (!firestore) throw new Error("Firestore not available");
             // In a real app, this should call a Cloud Function to delete the Auth user too.
             const userDocRef = doc(firestore, 'users', userId);
-            const adminDocRef = doc(firestore, 'admins', userId);
             const usernameDocRef = doc(firestore, 'usernames', userToDelete!.username.toLowerCase());
             
             const batch = writeBatch(firestore);
             batch.delete(userDocRef);
-            batch.delete(adminDocRef);
             batch.delete(usernameDocRef);
             await batch.commit();
         },
@@ -167,6 +163,25 @@ function ManageUsersPageContent() {
                     >
                         {deleteUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Yes, delete user
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
+            <AlertDialog open={!!userToToggleAdmin} onOpenChange={(open) => !open && setUserToToggleAdmin(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Admin Role Change</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Admin status is managed by the Firestore security rules based on email. To change the admin, you must update the email in `firestore.rules`. This action is for display purposes only.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => userToToggleAdmin && adminMutation.mutate(userToToggleAdmin)}
+                    >
+                       Acknowledge
                     </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -229,7 +244,7 @@ function ManageUsersPageContent() {
                                                                         <Button 
                                                                             variant="ghost" 
                                                                             size="icon"
-                                                                            onClick={() => adminMutation.mutate({ user, makeAdmin: !user.isAdmin })}
+                                                                            onClick={() => setUserToToggleAdmin({ user, makeAdmin: !user.isAdmin })}
                                                                             disabled={adminMutation.isPending && adminMutation.variables?.user.id === user.id}
                                                                         >
                                                                             {user.isAdmin ? <ShieldOff className="h-4 w-4 text-yellow-500" /> : <ShieldCheck className="h-4 w-4 text-green-500" />}

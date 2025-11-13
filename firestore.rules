@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Users can read their own profile. Admins can manage user roles.
+     * @description Users can read their own profile. Admins can list all users.
      * @path /users/{userId}
      */
     match /users/{userId} {
@@ -27,7 +27,7 @@ service cloud.firestore {
                       && request.resource.data.id == userId
                       && request.resource.data.email == request.auth.token.email;
 
-      allow update: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isOwner(userId);
 
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
@@ -80,13 +80,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description A user can read their own admin status. Admins can list all admins and manage them.
+     * @description No one can manage admins directly through rules anymore.
+     * This must be handled by a backend function or by manually editing the admin email.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if isSignedIn() && isAdmin();
-      allow write: if isSignedIn() && isAdmin();
+      allow read, write: if false;
     }
     
     /**
