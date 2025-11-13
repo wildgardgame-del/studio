@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser, useFirebase } from '@/firebase';
+import { useUser, useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +24,20 @@ function AdminDashboardPageContent() {
     queryFn: async () => {
       if (!firestore || !user) return false;
       const adminDocRef = doc(firestore, 'admins', user.uid);
-      const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists();
+      try {
+        const adminDoc = await getDoc(adminDocRef);
+        return adminDoc.exists();
+      } catch (error) {
+        console.error("Permission error checking admin status:", error);
+        // Emit a contextual error for the dev overlay
+        const permissionError = new FirestorePermissionError({
+            path: adminDocRef.path,
+            operation: 'get'
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        // Return false to deny access, as we couldn't verify admin status.
+        return false;
+      }
     },
     enabled: !!firestore && !!user,
   });
