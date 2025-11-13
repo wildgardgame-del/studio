@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Suspense, useState } from 'react';
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, ShieldCheck, ShieldOff } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -24,7 +24,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type UserProfile = {
     id: string;
@@ -34,6 +39,7 @@ type UserProfile = {
         seconds: number;
         nanoseconds: number;
     } | null;
+    isAdmin?: boolean;
 }
 
 function ManageUsersPageContent() {
@@ -44,17 +50,23 @@ function ManageUsersPageContent() {
 
     const fetchAllUsers = async () => {
         if (!firestore) throw new Error("Firestore not available");
-        const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, orderBy('registrationDate', 'desc'));
         
         try {
-            const querySnapshot = await getDocs(q);
-            const users = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
-            return users;
+            const usersRef = collection(firestore, 'users');
+            const q = query(usersRef, orderBy('registrationDate', 'desc'));
+            const usersSnapshot = await getDocs(q);
+            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+
+            const adminsRef = collection(firestore, 'admins');
+            const adminsSnapshot = await getDocs(adminsRef);
+            const adminIds = new Set(adminsSnapshot.docs.map(doc => doc.id));
+            
+            return users.map(user => ({ ...user, isAdmin: adminIds.has(user.id) }));
+
         } catch (error) {
             console.error("Error fetching users:", error);
             const permissionError = new FirestorePermissionError({
-                path: 'users',
+                path: 'users or admins',
                 operation: 'list'
             });
             errorEmitter.emit('permission-error', permissionError);
@@ -68,23 +80,60 @@ function ManageUsersPageContent() {
     };
     
     const { data: allUsers, isLoading } = useQuery({
-        queryKey: ['all-users'],
+        queryKey: ['all-users-with-admin-status'],
         queryFn: fetchAllUsers,
         enabled: !!firestore,
+    });
+
+    const adminMutation = useMutation({
+        mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
+            if (!firestore) throw new Error("Firestore not available");
+            const adminDocRef = doc(firestore, 'admins', user.id);
+            if (makeAdmin) {
+                await writeBatch(firestore).set(adminDocRef, {
+                    email: user.email,
+                    addedAt: new Date()
+                }).commit();
+            } else {
+                await deleteDoc(adminDocRef);
+            }
+        },
+        onSuccess: (_, { makeAdmin, user }) => {
+            toast({
+                title: makeAdmin ? "Admin Promoted" : "Admin Demoted",
+                description: `${user.username} is ${makeAdmin ? 'now an admin' : 'no longer an admin'}.`,
+            });
+            queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
+        },
+        onError: (error, { user }) => {
+            const permissionError = new FirestorePermissionError({
+                path: `admins/${user.id}`,
+                operation: 'write',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
     });
 
     const deleteUserMutation = useMutation({
         mutationFn: async (userId: string) => {
             if (!firestore) throw new Error("Firestore not available");
+            // In a real app, this should call a Cloud Function to delete the Auth user too.
             const userDocRef = doc(firestore, 'users', userId);
-            await deleteDoc(userDocRef);
+            const adminDocRef = doc(firestore, 'admins', userId);
+            const usernameDocRef = doc(firestore, 'usernames', userToDelete!.username.toLowerCase());
+            
+            const batch = writeBatch(firestore);
+            batch.delete(userDocRef);
+            batch.delete(adminDocRef);
+            batch.delete(usernameDocRef);
+            await batch.commit();
         },
-        onSuccess: (_, userId) => {
+        onSuccess: () => {
             toast({
                 title: "User Deleted",
                 description: `The user account has been successfully deleted.`,
             });
-            queryClient.invalidateQueries({queryKey: ['all-users']});
+            queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
         },
         onError: (error, userId) => {
             const permissionError = new FirestorePermissionError({
@@ -92,11 +141,6 @@ function ManageUsersPageContent() {
                 operation: 'delete',
             });
             errorEmitter.emit('permission-error', permissionError);
-            toast({
-                variant: 'destructive',
-                title: 'Error Deleting User',
-                description: 'Could not delete the user. Check permissions.',
-            });
         },
         onSettled: () => {
             setUserToDelete(null);
@@ -110,7 +154,7 @@ function ManageUsersPageContent() {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span>. This action cannot be undone.
+                        This will permanently delete the user account for <span className="font-bold">{userToDelete?.username} ({userToDelete?.email})</span> and remove their username. This action cannot be undone.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -134,7 +178,7 @@ function ManageUsersPageContent() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Users</h1>
-                                <p className="text-muted-foreground mt-2">View and manage all registered users.</p>
+                                <p className="text-muted-foreground mt-2">View and manage all registered users and their roles.</p>
                             </div>
                             {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                         </div>
@@ -145,6 +189,7 @@ function ManageUsersPageContent() {
                                 <CardDescription>A list of all users in the system.</CardDescription>
                         </CardHeader>
                         <CardContent>
+                            <TooltipProvider>
                                 {isLoading ? (
                                     <div className="flex justify-center items-center h-40">
                                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -157,6 +202,7 @@ function ManageUsersPageContent() {
                                             <TableRow>
                                                 <TableHead>Username</TableHead>
                                                 <TableHead>Email</TableHead>
+                                                <TableHead>Role</TableHead>
                                                 <TableHead>Registration Date</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
@@ -166,22 +212,47 @@ function ManageUsersPageContent() {
                                                 <TableRow key={user.id}>
                                                     <TableCell className="font-medium">{user.username}</TableCell>
                                                     <TableCell>{user.email}</TableCell>
+                                                     <TableCell>
+                                                        {user.isAdmin ? <Badge><ShieldCheck className="mr-1 h-3 w-3" /> Admin</Badge> : <Badge variant="secondary">User</Badge>}
+                                                     </TableCell>
                                                     <TableCell>
                                                         {user.registrationDate 
                                                             ? format(new Date(user.registrationDate.seconds * 1000), 'PPP')
                                                             : 'N/A'}
                                                     </TableCell>
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="text-right space-x-1">
                                                         {adminUser?.uid !== user.id && (
-                                                            <Button 
-                                                                variant="destructive" 
-                                                                size="sm"
-                                                                onClick={() => setUserToDelete(user)}
-                                                                disabled={deleteUserMutation.isPending && userToDelete?.id === user.id}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                Ban
-                                                            </Button>
+                                                            <>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button 
+                                                                            variant="ghost" 
+                                                                            size="icon"
+                                                                            onClick={() => adminMutation.mutate({ user, makeAdmin: !user.isAdmin })}
+                                                                            disabled={adminMutation.isPending && adminMutation.variables?.user.id === user.id}
+                                                                        >
+                                                                            {user.isAdmin ? <ShieldOff className="h-4 w-4 text-yellow-500" /> : <ShieldCheck className="h-4 w-4 text-green-500" />}
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>{user.isAdmin ? 'Demote to User' : 'Promote to Admin'}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button 
+                                                                            variant="ghost" 
+                                                                            size="icon"
+                                                                            onClick={() => setUserToDelete(user)}
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>Delete User</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </>
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
@@ -189,6 +260,7 @@ function ManageUsersPageContent() {
                                         </TableBody>
                                     </Table>
                                 )}
+                            </TooltipProvider>
                         </CardContent>
                         </Card>
                     </div>

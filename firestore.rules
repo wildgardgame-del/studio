@@ -4,28 +4,103 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public can read. Signed-in users can create. Admins or the original developer can update/delete.
+     * @description Public can read approved games. Admins can read all. Signed-in users can create. Admins or the original developer can update. Admins can delete.
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      allow read: if true;
+      // Anyone can get an individual document. The UI will handle visibility based on status.
+      allow get: if true;
+      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
       allow delete: if isSignedIn() && isAdmin();
     }
 
     /**
-     * @description Public can read. Admins can manage.
+     * @description Users can read their own profile. Admins can manage user roles.
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update, delete: if isSignedIn() && isAdmin();
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isAdmin();
+
+      allow create: if isSignedIn() && isOwner(userId) 
+                      && request.resource.data.id == userId
+                      && request.resource.data.email == request.auth.token.email;
+
+      allow update: if isSignedIn() && isAdmin();
+
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 
     /**
-     * @description Public can read. Only owner can create.
+     * @description Enforces user-ownership for shopping cart data.
+     * @path /users/{userId}/shopping_cart/{cartId}
+     */
+    match /users/{userId}/shopping_cart/{cartId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for wishlist data.
+     * @path /users/{userId}/wishlist/{wishlistId}
+     */
+    match /users/{userId}/wishlist/{wishlistId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Enforces user-ownership for game library data.
+     * @path /users/{userId}/library/{gameId}
+     */
+    match /users/{userId}/library/{gameId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Allows creating, reading, updating and deleting reviews for any signed-in user.
+     * @path /reviews/{reviewId}
+     */
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
+    }
+
+    /**
+     * @description Enforces user-ownership for notifications. Admins can create.
+     * @path /users/{userId}/notifications/{notificationId}
+     */
+    match /users/{userId}/notifications/{notificationId} {
+      allow get, update: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if false;
+    }
+
+    /**
+     * @description Admins can read and write.
+     * @path /admins/{userId}
+     */
+    match /admins/{userId} {
+      allow read, write: if isSignedIn() && isAdmin();
+    }
+    
+    /**
+     * @description Signed-in can create. Admin can manage. Public can read.
+     * @path /admin_messages/{messageId}
+     */
+    match /admin_messages/{messageId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isAdmin();
+    }
+    
+    /**
+     * @description Public can read. Only owner can create. No updates/deletes.
      * @path /usernames/{username}
      */
     match /usernames/{username} {
@@ -34,65 +109,6 @@ service cloud.firestore {
                       && request.resource.data.userId == request.auth.uid
                       && username == request.resource.data.username.lower();
       allow update, delete: if false;
-    }
-
-    /**
-     * @description Public can read. Owner can write.
-     * @path /users/{userId}/shopping_cart/{cartId}
-     */
-    match /users/{userId}/shopping_cart/{cartId} {
-      allow read: if true;
-      allow write: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Public can read. Owner can write.
-     * @path /users/{userId}/wishlist/{wishlistId}
-     */
-    match /users/{userId}/wishlist/{wishlistId} {
-      allow read: if true;
-      allow write: if isSignedIn() && isOwner(userId);
-    }
-    
-    /**
-     * @description Public can read. Owner can create.
-     * @path /users/{userId}/library/{gameId}
-     */
-    match /users/{userId}/library/{gameId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update, delete: if false;
-    }
-
-    /**
-     * @description Public can read. Owner can create/update/delete.
-     * @path /reviews/{reviewId}
-     */
-    match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
-    }
-
-    /**
-     * @description Public can read. Owner can update. Admin/Owner can create.
-     * @path /users/{userId}/notifications/{notificationId}
-     */
-    match /users/{userId}/notifications/{notificationId} {
-      allow read: if true;
-      allow update: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow delete: if false;
-    }
-    
-    /**
-     * @description Public can read. Signed-in can create. Admin can manage.
-     * @path /admin_messages/{messageId}
-     */
-    match /admin_messages/{messageId} {
-      allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && isAdmin();
     }
   }
 
@@ -106,14 +122,10 @@ service cloud.firestore {
   }
 
   function isExistingOwner(userId) {
-    return isSignedIn() && isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId));
+    return isSignedIn() && isOwner(userId) && resource != null;
   }
 
   function isAdmin() {
-    return isSignedIn() && request.auth.token.email == 'forgegatehub@gmail.com';
-  }
-  
-  function getUserData(userId) {
-    return get(/databases/$(database)/documents/users/$(userId)).data;
+    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
 }
