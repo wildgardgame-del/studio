@@ -7,7 +7,7 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, PlusCircle, Pencil, Info } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Info, ArrowLeft } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
@@ -142,6 +142,12 @@ function MyGamesPageContent() {
                 <div className="container py-12">
                     <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">My Submitted Games</h1>
                     <p className="text-muted-foreground mt-2">Track the review status and edit your games.</p>
+                     <Button asChild variant="link" className="p-0 text-accent mt-2">
+                        <Link href="/dev/dashboard">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Dashboard
+                        </Link>
+                    </Button>
                     
                     <Card className="mt-8">
                         <CardHeader>

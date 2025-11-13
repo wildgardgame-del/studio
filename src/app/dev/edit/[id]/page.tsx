@@ -5,10 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -244,6 +245,12 @@ function EditGamePageContent() {
             <CardDescription className="text-center">
               Update the details for your game: {gameData?.title}.
             </CardDescription>
+             <Button asChild variant="link" className="mx-auto text-accent">
+                <Link href="/dev/my-games">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to My Games
+                </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             {gameData.status === 'rejected' && gameData.rejectionReason && (

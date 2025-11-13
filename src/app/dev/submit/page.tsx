@@ -5,10 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -191,6 +192,12 @@ function SubmitGamePageContent() {
             <CardDescription className="text-center">
               Fill in the details below to add your game to GameSphere.
             </CardDescription>
+             <Button asChild variant="link" className="mx-auto text-accent">
+                <Link href="/dev/dashboard">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             <Form {...form}>
