@@ -152,7 +152,7 @@ function MyGamesPageContent() {
                     <Card className="mt-8">
                         <CardHeader>
                             <CardTitle>Submission History</CardTitle>
-                            <CardDescription>Here are all the games you've submitted to GameSphere.</CardDescription>
+                            <CardDescription>Here are all the games you've submitted to Forge Gate Hub.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {renderContent()}

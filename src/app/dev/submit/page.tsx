@@ -190,7 +190,7 @@ function SubmitGamePageContent() {
           <CardHeader>
             <CardTitle className="text-3xl font-headline text-center">Submit a New Game</CardTitle>
             <CardDescription className="text-center">
-              Fill in the details below to add your game to GameSphere.
+              Fill in the details below to add your game to Forge Gate Hub.
             </CardDescription>
              <Button asChild variant="link" className="mx-auto text-accent">
                 <Link href="/dev/dashboard">

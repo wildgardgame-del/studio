@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -7,7 +8,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { AuthGate } from '@/components/AuthGate';
 
 export const metadata: Metadata = {
-  title: 'GameSphere',
+  title: 'Forge Gate Hub',
   description: 'Your universe of games.',
 };
 

@@ -1,3 +1,4 @@
+
 import type { SVGProps } from "react";
 
 export const Icons = {
@@ -14,7 +15,7 @@ export const Icons = {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <title>GameSphere Logo</title>
+      <title>Forge Gate Hub Logo</title>
       <circle cx="12" cy="12" r="10" />
       <path d="M12 8v8" />
       <path d="M8 12h8" />

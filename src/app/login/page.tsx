@@ -92,7 +92,7 @@ export default function LoginPage() {
                     <div className="flex justify-center mb-4">
                         <Image src="/images/ForgegateLogo128.png" alt="Forge Gate Hub Logo" width={56} height={56} />
                     </div>
-                    <CardTitle className="text-2xl font-headline text-center">Access GameSphere</CardTitle>
+                    <CardTitle className="text-2xl font-headline text-center">Access Forge Gate Hub</CardTitle>
                     <CardDescription className="text-center">
                         Use your Google account to sign in or create an account.
                     </CardDescription>
