@@ -8,13 +8,9 @@ service cloud.firestore {
      * @path /games/{gameId}
      */
     match /games/{gameId} {
-      // Admins or the owner can always get the document.
-      // Others can get if it's approved. Client-side logic will handle adult content filtering.
-      allow get: if (isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId))) ||
-                  (resource.data.status == 'approved');
-
-      // Allow anyone to list games. The client queries will be responsible for filtering by status.
-      // This is secure because the `get` rule above still protects individual documents.
+      // Anyone can get an individual document. The UI will handle visibility based on status.
+      allow get: if true;
+      // Anyone can list games. The client-side queries are responsible for filtering (e.g., by status: 'approved').
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
       allow update: if isSignedIn() && (isAdmin() || isExistingOwner(resource.data.developerId));
