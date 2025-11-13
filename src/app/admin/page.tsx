@@ -25,7 +25,9 @@ function AdminDashboardPageContent() {
   }, [user, firestore]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<{isAdmin?: boolean}>(userProfileRef);
   
-  const isAdmin = userProfile?.isAdmin === true;
+  // A user is an admin if their profile has isAdmin:true OR they are the super admin
+  const isSuperAdmin = user?.email === 'forgegatehub@gmail.com';
+  const isAdmin = userProfile?.isAdmin === true || isSuperAdmin;
   const isLoading = isUserLoading || isProfileLoading;
   
   const { data: pendingCount } = useQuery({

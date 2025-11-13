@@ -29,9 +29,9 @@ service cloud.firestore {
                       && request.resource.data.isAdmin == false; // Prevent self-promotion on creation
 
       allow update: if isSignedIn() && (
-                      // Case 1: An admin can update anything.
+                      // Case 1: An admin can update any user's profile, including the isAdmin field.
                       isAdmin() ||
-                      // Case 2: A user can update their own profile, BUT cannot change the isAdmin field.
+                      // Case 2: A regular user can update their own profile, BUT cannot change the isAdmin field.
                       (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin)
                     );
 
@@ -120,7 +120,10 @@ service cloud.firestore {
   }
 
   function isAdmin() {
-    // An admin is a user whose own user document has isAdmin: true
-    return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    // A user is an admin if their own user document has `isAdmin: true` OR if they are the super admin by email.
+    // This allows the super admin to promote the first admins.
+    let isSuperAdmin = request.auth.token.email == 'forgegatehub@gmail.com';
+    let hasAdminField = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    return isSignedIn() && (hasAdminField || isSuperAdmin);
   }
 }
