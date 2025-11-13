@@ -9,24 +9,24 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
 import { doc, getDoc } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
 
 function AdminDebugPageContent() {
   const { user, isUserLoading, firestore } = useUser();
 
-  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['isAdmin', user?.uid],
+  const { data: adminStatus, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['adminStatus', user?.uid],
     queryFn: async () => {
-      if (!user || !firestore) return false;
-      
-      // Combined check that mirrors the security rules
-      const superAdminEmails = ['forgegatehub@gmail.com', 'raf-el@live.com'];
-      if (superAdminEmails.includes(user.email || '')) {
-          return true;
-      }
+      if (!user || !firestore) return { isAdmin: false, role: null, docExists: false };
       
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists();
+      
+      const docExists = adminDoc.exists();
+      const role = docExists ? adminDoc.data().role : null;
+      const isAdmin = docExists && role === 'Admin';
+      
+      return { isAdmin, role, docExists };
     },
     enabled: !!user && !!firestore,
   });
@@ -42,33 +42,34 @@ function AdminDebugPageContent() {
           <Loader2 className="h-16 w-16 animate-spin text-cyan-400" />
         ) : (
           <div className="font-mono text-lg space-y-4 bg-gray-900 p-6 rounded-lg border border-cyan-400/30 max-w-4xl w-full">
-            <p className="text-xl">
-              <span className="text-gray-400">Current User Logged In: </span>
-              <span className="font-bold">{user ? 'Yes' : 'No'}</span>
+            <p>
+              <span className="text-gray-400">Current User: </span>
+              <span className="font-bold text-yellow-400">{user?.email}</span>
             </p>
-            {user && (
-              <>
-                <p>
-                  <span className="text-gray-400">User Email: </span>
-                  <span className="font-bold text-yellow-400">{user.email}</span>
-                </p>
-                <p>
-                  <span className="text-gray-400">User UID: </span>
-                  <span className="font-bold text-yellow-400 break-all">{user.uid}</span>
-                </p>
-              </>
-            )}
+            <Separator className="bg-cyan-400/20 my-4" />
+             <p className="text-xl">
+              <span className="text-gray-400">1. Document Exists in /admins/{user?.uid} ? </span>
+              <span className={adminStatus?.docExists ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+                {adminStatus?.docExists ? 'true' : 'false'}
+              </span>
+            </p>
+             <p className="text-xl">
+              <span className="text-gray-400">2. Document has field 'role' == "Admin" ? </span>
+               <span className={adminStatus?.role === 'Admin' ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+                {adminStatus?.role ? `true (role is "${adminStatus.role}")` : 'false'}
+              </span>
+            </p>
             <Separator className="bg-cyan-400/20 my-4" />
             <p className="text-2xl">
-              <span className="text-gray-400">Is Admin (Combined Check): </span>
-              <span className={isAdmin ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
-                {isAdminLoading ? 'Checking...' : isAdmin ? 'true' : 'false'}
+              <span className="text-gray-400">Final isAdmin() Result: </span>
+              <span className={adminStatus?.isAdmin ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
+                {adminStatus?.isAdmin ? 'true' : 'false'}
               </span>
             </p>
              <div className="text-left text-sm pt-4">
                 <h2 className="text-cyan-400 font-bold">O que isto significa:</h2>
-                <p className="text-gray-300 mt-2">Esta verificação espelha a regra de segurança no `firestore.rules`. Um utilizador é considerado administrador se o seu email for um dos super-admins OU se existir um documento com o seu UID na coleção `/admins`.</p>
-                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-green-400 font-bold">'true'</span>, o sistema está a funcionar corretamente.</p>
+                <p className="text-gray-300 mt-2">Esta página espelha a regra de segurança `isAdmin()` que você criou. Ambas as condições (1 e 2) devem ser verdadeiras para que o resultado final seja `true`.</p>
+                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-red-400 font-bold">'false'</span>, verifique qual das condições acima está a falhar. Para corrigir, vá à página "Manage Users" e promova o seu utilizador. A promoção irá criar o documento em `/admins` com o campo `role: "Admin"`. </p>
              </div>
           </div>
         )}
