@@ -79,11 +79,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Only admins can manage the list of admins.
+     * @description Admins can manage the list of admins. Users can check their own status.
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      allow read, list: if isSignedIn() && isAdmin();
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isAdmin();
       allow write: if isSignedIn() && isAdmin();
     }
     
@@ -124,8 +125,10 @@ service cloud.firestore {
 
   function isAdmin() {
     // Admins are users whose UID is in the /admins collection.
-    return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    // The super-admin's email is also checked for bootstrapping purposes.
+    return isSignedIn() && (
+      request.auth.token.email == 'forgegatehub@gmail.com' ||
+      exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+    );
   }
 }
-
-    
