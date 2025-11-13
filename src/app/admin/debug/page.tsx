@@ -14,10 +14,15 @@ function AdminDebugPageContent() {
   const { user, isUserLoading, firestore } = useUser();
 
   const { data: isAdmin, isLoading: isAdminLoading, error: isAdminError } = useQuery({
-    queryKey: ['isAdminCheckFirestore', user?.uid],
+    queryKey: ['isAdminCheckCombined', user?.uid],
     queryFn: async () => {
-      // A única fonte da verdade: a existência do documento de admin.
       if (!user || !firestore) return false;
+      
+      // 1. Verificação por email (super-admin)
+      const isSuperAdminByEmail = user.email === 'forgegatehub@gmail.com' || user.email === 'raf-el@live.com';
+      if (isSuperAdminByEmail) return true;
+
+      // 2. Verificação pelo documento na coleção /admins
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
       return adminDoc.exists();
@@ -53,7 +58,7 @@ function AdminDebugPageContent() {
             )}
             <Separator className="bg-cyan-400/20 my-4" />
             <p className="text-2xl">
-              <span className="text-gray-400">Is Admin (Firestore Check): </span>
+              <span className="text-gray-400">Is Admin (Combined Check): </span>
               <span className={isAdmin ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}>
                 {isAdminLoading ? 'Checking...' : isAdmin ? 'true' : 'false'}
               </span>
@@ -63,8 +68,8 @@ function AdminDebugPageContent() {
              )}
              <div className="text-left text-sm pt-4">
                 <h2 className="text-cyan-400 font-bold">O que isto significa:</h2>
-                <p className="text-gray-300 mt-2">Esta verificação espelha a regra de segurança principal: <code className="bg-gray-800 p-1 rounded">exists(/admins/$(request.auth.uid))</code>.</p>
-                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-red-400 font-bold">'false'</span>, significa que não existe um documento na coleção <code className="bg-gray-800 p-1 rounded">/admins</code> com o seu UID. Para corrigir isto, vá à página de <a href="/admin/users" className="underline">gestão de utilizadores</a> e promova a sua conta.</p>
+                <p className="text-gray-300 mt-2">Esta verificação espelha a regra de segurança no `firestore.rules`. Um utilizador é considerado administrador se o seu email for um dos super-admins OU se existir um documento com o seu UID na coleção `/admins`.</p>
+                <p className="text-gray-300 mt-2">Se o resultado for <span className="text-green-400 font-bold">'true'</span>, o sistema está a funcionar corretamente.</p>
              </div>
           </div>
         )}

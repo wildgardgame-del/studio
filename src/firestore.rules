@@ -19,10 +19,16 @@ service cloud.firestore {
     
     /**
      * @description A verificação principal de administrador.
-     * Um utilizador é administrador se o seu UID existir como um documento na coleção /admins.
+     * Um utilizador é administrador se:
+     * 1. O seu email estiver na lista de super-administradores.
+     * OU
+     * 2. O seu UID existir como um documento na coleção /admins.
      */
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && 
+             (request.auth.token.email == 'forgegatehub@gmail.com' ||
+              request.auth.token.email == 'raf-el@live.com' ||
+              exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
 
 
@@ -62,22 +68,15 @@ service cloud.firestore {
      * @path /admins/{userId}
      */
     match /admins/{userId} {
-      // Qualquer utilizador autenticado pode verificar se o seu próprio UID existe como admin.
-      // Isto é seguro porque a wildcard {userId} restringe o acesso.
       allow get: if isSignedIn();
       
-      // Apenas administradores existentes podem ver a lista completa.
       allow list: if isSignedIn() && isAdmin();
 
-      // Qualquer utilizador autenticado pode criar o PRIMEIRO documento de admin.
-      // Depois disso, apenas outros admins podem criar.
       allow create: if isSignedIn() && 
                       (isAdmin() || !exists(/databases/$(database)/documents/admins));
                       
-      // Apenas admins podem remover outros admins.
       allow delete: if isSignedIn() && isAdmin();
 
-      // Atualizações diretas não são permitidas.
       allow update: if false;
     }
 
