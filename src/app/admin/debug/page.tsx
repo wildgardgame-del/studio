@@ -52,7 +52,7 @@ function AdminDebugPageContent() {
         const adminDocRef = doc(firestore, 'admins', user.uid);
         const adminData: Omit<Admin, 'addedAt'> = {
             email: user.email!,
-            role: 'Admin', // This must be 'Admin' with a capital 'A'
+            role: 'Admin',
         };
         await setDoc(adminDocRef, { ...adminData, addedAt: serverTimestamp() });
       },
