@@ -41,14 +41,20 @@ service cloud.firestore {
      * @path /admins/{userId}
      */
     match /admins/{userId} {
+      // Any user can check their OWN admin status document.
+      allow get: if isSignedIn() && isOwner(userId);
+      
+      // Only admins can see the list of all other admins.
+      allow list: if isSignedIn() && isAdmin();
+
       // Any signed-in user can CREATE the VERY FIRST admin document if the collection is empty.
       // This is the bootstrap mechanism to avoid a hardcoded super admin.
-      // Afterwards, only existing admins can add or remove other admins.
+      // Afterwards, only existing admins can add other admins.
       allow create: if isSignedIn() && 
                       (isAdmin() || !exists(/databases/$(database)/documents/admins));
                       
-      // Admins can read the list of other admins and remove them.
-      allow read, delete: if isSignedIn() && isAdmin();
+      // Only admins can remove other admins.
+      allow delete: if isSignedIn() && isAdmin();
 
       // No one can update an admin document, only create or delete.
       allow update: if false;
@@ -138,6 +144,7 @@ service cloud.firestore {
   // This is the main check. An admin is a user who has a document
   // with their UID in the /admins collection. This is secure and efficient.
   function isAdmin() {
+    // This check is safe because exists() is allowed in list queries.
     return isSignedIn() && 
            exists(/databases/$(database)/documents/admins/$(request.auth.uid));
   }
