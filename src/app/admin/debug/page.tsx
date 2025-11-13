@@ -8,7 +8,7 @@ import { Loader2, ShieldPlus } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
-import { doc, getDoc, collection, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Admin } from '@/lib/types';
@@ -36,21 +36,11 @@ function AdminDebugPageContent() {
     enabled: !!user && !!firestore,
   });
 
-  const { data: isAdminsCollectionEmpty, isLoading: isAdminsCollectionLoading } = useQuery({
-    queryKey: ['isAdminsCollectionEmpty'],
-    queryFn: async () => {
-        if (!firestore) return true;
-        const adminsCollectionRef = collection(firestore, 'admins');
-        const snapshot = await getDocs(adminsCollectionRef);
-        return snapshot.empty;
-    },
-    enabled: !!firestore,
-  });
-
   const becomeFirstAdminMutation = useMutation({
       mutationFn: async () => {
         if (!user || !firestore) throw new Error("User or firestore not available");
         const adminDocRef = doc(firestore, 'admins', user.uid);
+        // Corrected to 'Admin' to match security rules
         const adminData: Omit<Admin, 'addedAt'> = {
             email: user.email!,
             role: 'Admin',
@@ -60,21 +50,21 @@ function AdminDebugPageContent() {
       onSuccess: () => {
         toast({
             title: "Success!",
-            description: "You have been promoted to the first Admin."
+            description: "You have been promoted to the first Admin. The page will now reload."
         });
         queryClient.invalidateQueries({ queryKey: ['adminStatus', user?.uid] });
-        queryClient.invalidateQueries({ queryKey: ['isAdminsCollectionEmpty'] });
+        setTimeout(() => window.location.reload(), 1500);
       },
       onError: (error: any) => {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: error.message || "Could not become first admin."
+            description: error.message || "Could not become first admin. This is expected if admins already exist."
         });
       }
   })
 
-  const isLoading = isUserLoading || isAdminLoading || isAdminsCollectionLoading;
+  const isLoading = isUserLoading || isAdminLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-black text-white">
@@ -109,32 +99,30 @@ function AdminDebugPageContent() {
                 {adminStatus?.isAdmin ? 'true' : 'false'}
               </span>
             </p>
-             {isAdminsCollectionEmpty && !adminStatus?.isAdmin && (
-                <>
-                    <Separator className="bg-cyan-400/20 my-4" />
-                    <Card className="bg-yellow-900/20 border-yellow-500/50 text-yellow-300 text-left">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 font-mono">
-                                <ShieldPlus />
-                                Ação Necessária
-                            </CardTitle>
-                             <CardDescription className="text-yellow-400/80 font-mono">
-                                A coleção de administradores está vazia. Promova-se para se tornar o primeiro administrador.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Button 
-                                onClick={() => becomeFirstAdminMutation.mutate()} 
-                                disabled={becomeFirstAdminMutation.isPending}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
-                            >
-                                {becomeFirstAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Tornar-me o Primeiro Administrador
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </>
-            )}
+            
+            <Separator className="bg-cyan-400/20 my-4" />
+            <Card className="bg-yellow-900/20 border-yellow-500/50 text-yellow-300 text-left">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-mono">
+                        <ShieldPlus />
+                        Ação Necessária
+                    </CardTitle>
+                        <CardDescription className="text-yellow-400/80 font-mono">
+                        Se não houver administradores no sistema, use este botão para se tornar o primeiro.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                        <Button 
+                        onClick={() => becomeFirstAdminMutation.mutate()} 
+                        disabled={becomeFirstAdminMutation.isPending}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                    >
+                        {becomeFirstAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Tornar-me o Primeiro Administrador
+                    </Button>
+                </CardContent>
+            </Card>
+
           </div>
         )}
       </main>
