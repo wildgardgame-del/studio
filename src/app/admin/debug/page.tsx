@@ -2,14 +2,13 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useUser, useFirebase } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
 import { doc, getDoc } from 'firebase/firestore';
-import { Badge } from '@/components/ui/badge';
 
 function AdminDebugPageContent() {
   const { user, isUserLoading, firestore } = useUser();
