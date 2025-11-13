@@ -10,7 +10,7 @@ import { collection, getDocs, writeBatch, serverTimestamp, doc } from "firebase/
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Suspense, useState, useEffect } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import type { User as AuthUser } from "firebase/auth";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import Link from 'next/link';
 
 type UserProfile = {
     id: string;
@@ -144,6 +145,12 @@ function SendNotificationsContent() {
               <div className="container py-12">
                   <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Send Notification</h1>
                   <p className="text-muted-foreground mt-2">Craft and send notifications to your users.</p>
+                  <Button asChild variant="link" className="p-0 text-accent mt-2">
+                        <Link href="/admin">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Dashboard
+                        </Link>
+                    </Button>
 
                   <Card className="mt-8">
                     <CardHeader>
@@ -268,3 +275,5 @@ export default function SendNotificationsPage() {
         </Suspense>
     )
 }
+
+    

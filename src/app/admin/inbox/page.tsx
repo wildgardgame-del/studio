@@ -8,13 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Suspense, useState } from 'react';
-import { Loader2, Mail, MailOpen } from "lucide-react";
+import { Loader2, Mail, MailOpen, ArrowLeft } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 import type { AdminMessage } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 function AdminInboxPageContent() {
     const { firestore } = useFirebase();
@@ -82,6 +84,12 @@ function AdminInboxPageContent() {
                     <div>
                         <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Admin Inbox</h1>
                         <p className="text-muted-foreground mt-2">Messages sent by users from the contact form.</p>
+                        <Button asChild variant="link" className="p-0 text-accent mt-2">
+                            <Link href="/admin">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to Dashboard
+                            </Link>
+                        </Button>
                     </div>
                     
                     <Card className="mt-8">
@@ -140,3 +148,5 @@ export default function AdminInboxPage() {
         </Suspense>
     )
 }
+
+    

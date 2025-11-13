@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Eye, Loader2, X, Trash2, ShieldQuestion } from 'lucide-react';
+import { Check, Eye, Loader2, X, Trash2, ShieldQuestion, ArrowLeft } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -376,6 +376,12 @@ function ManageGamesPageContent() {
                             <div>
                                 <h1 className="font-headline text-4xl font-bold tracking-tighter md:text-5xl">Manage Games</h1>
                                 <p className="text-muted-foreground mt-2">Review, approve, reject, and delete game submissions.</p>
+                                <Button asChild variant="link" className="p-0 text-accent mt-2">
+                                    <Link href="/admin">
+                                        <ArrowLeft className="mr-2 h-4 w-4" />
+                                        Back to Dashboard
+                                    </Link>
+                                </Button>
                             </div>
                             {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
                         </div>
@@ -421,3 +427,5 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
+
+    
