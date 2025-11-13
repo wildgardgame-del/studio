@@ -11,24 +11,16 @@ import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox } from 'lucide-react
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { collection, getDocs, query, where, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-import type { Admin } from '@/lib/types';
 
 
 function AdminDashboardPageContent() {
   const { user, isUserLoading, firestore } = useUser();
   const router = useRouter();
-
-  const adminRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'admins', user.uid);
-  }, [firestore, user]);
-
-  const { data: adminDoc, isLoading: isAdminLoading } = useDoc<Admin>(adminRef);
   
-  const isAdmin = !!adminDoc || user?.email === 'forgegatehub@gmail.com';
-  const isLoading = isUserLoading || isAdminLoading;
+  const isAdmin = user?.email === 'forgegatehub@gmail.com';
+  const isLoading = isUserLoading;
   
   const { data: pendingCount } = useQuery({
     queryKey: ['pending-games-count'],

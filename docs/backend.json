@@ -1,25 +1,6 @@
 
 {
   "entities": {
-    "Admin": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Admin",
-      "type": "object",
-      "description": "Represents an administrator user with elevated privileges.",
-      "properties": {
-        "email": {
-          "type": "string",
-          "description": "The email of the administrator.",
-          "format": "email"
-        },
-        "addedAt": {
-          "type": "string",
-          "description": "The timestamp when the user was made an admin.",
-          "format": "date-time"
-        }
-      },
-      "required": ["email", "addedAt"]
-    },
     "AdminMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Admin Message",
@@ -338,22 +319,6 @@
   "firestore": {
     "structure": [
       {
-        "path": "/admins/{userId}",
-        "definition": {
-          "entityName": "Admin",
-          "schema": {
-            "$ref": "#/backend/entities/Admin"
-          },
-          "description": "Stores a list of user IDs that have administrator privileges.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user who is an admin."
-            }
-          ]
-        }
-      },
-      {
         "path": "/admin_messages/{messageId}",
         "definition": {
           "entityName": "AdminMessage",
@@ -513,5 +478,3 @@
     "reasoning": "The Firestore data structure has been simplified to remove the concept of a separate game submission flow. All games, regardless of status, now live in the `/games` collection. The 'dev' role has been removed from the User entity, as it is no longer needed for game submission."
   }
 }
-
-    

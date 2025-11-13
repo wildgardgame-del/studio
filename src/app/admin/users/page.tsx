@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
-import type { User as AuthUser } from 'firebase/auth';
 
 type UserProfile = {
     id: string;
@@ -49,23 +48,8 @@ function ManageUsersPageContent() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
-    const [userToToggleAdmin, setUserToToggleAdmin] = useState<{user: UserProfile, makeAdmin: boolean} | null>(null);
 
-    const fetchAdminIds = async () => {
-        if (!firestore) return [];
-        try {
-            const adminSnapshot = await getDocs(collection(firestore, 'admins'));
-            return adminSnapshot.docs.map(doc => doc.id);
-        } catch (error) {
-            console.error("Error fetching admin IDs:", error);
-            const permissionError = new FirestorePermissionError({ path: 'admins', operation: 'list' });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({ variant: 'destructive', title: 'Error fetching admin roles' });
-            return [];
-        }
-    };
-    
-    const fetchAllUsers = async (adminIds: string[]) => {
+    const fetchAllUsers = async () => {
         if (!firestore) throw new Error("Firestore not available");
         
         try {
@@ -74,7 +58,10 @@ function ManageUsersPageContent() {
             const usersSnapshot = await getDocs(q);
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<UserProfile, 'isAdmin'>));
 
-            return users.map(user => ({ ...user, isAdmin: adminIds.includes(user.id) }));
+            return users.map(user => ({ 
+                ...user, 
+                isAdmin: user.email === 'forgegatehub@gmail.com' 
+            }));
 
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -92,50 +79,10 @@ function ManageUsersPageContent() {
         }
     };
     
-    const { data: adminIds, isLoading: isAdminIdsLoading } = useQuery({
-        queryKey: ['admin-ids'],
-        queryFn: fetchAdminIds,
+    const { data: allUsers, isLoading } = useQuery({
+        queryKey: ['all-users-with-admin-status'],
+        queryFn: fetchAllUsers,
         enabled: !!firestore,
-    });
-    
-    const { data: allUsers, isLoading: isUsersLoading } = useQuery({
-        queryKey: ['all-users-with-admin-status', adminIds],
-        queryFn: () => fetchAllUsers(adminIds || []),
-        enabled: !!adminIds,
-    });
-
-    const isLoading = isAdminIdsLoading || isUsersLoading;
-
-    const adminMutation = useMutation({
-        mutationFn: async ({ user, makeAdmin }: { user: UserProfile, makeAdmin: boolean }) => {
-           if (!firestore) throw new Error("Firestore not available");
-           const adminDocRef = doc(firestore, 'admins', user.id);
-           if (makeAdmin) {
-               await setDoc(adminDocRef, { 
-                   email: user.email,
-                   addedAt: serverTimestamp() 
-               });
-           } else {
-               await deleteDoc(adminDocRef);
-           }
-        },
-        onSuccess: (_, { user, makeAdmin }) => {
-            toast({
-                title: 'Role Updated',
-                description: `${user.username} is now ${makeAdmin ? 'an Admin' : 'a User'}.`
-            });
-            queryClient.invalidateQueries({queryKey: ['admin-ids']});
-        },
-        onError: (error, { user, makeAdmin }) => {
-            const permissionError = new FirestorePermissionError({
-                path: `admins/${user.id}`,
-                operation: makeAdmin ? 'create' : 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        },
-        onSettled: () => {
-            setUserToToggleAdmin(null);
-        }
     });
 
     const deleteUserMutation = useMutation({
@@ -147,12 +94,6 @@ function ManageUsersPageContent() {
             const batch = writeBatch(firestore);
             batch.delete(userDocRef);
             batch.delete(usernameDocRef);
-            
-            // Also delete from admins collection if they are an admin
-            if (userToDelete.isAdmin) {
-                const adminDocRef = doc(firestore, 'admins', userId);
-                batch.delete(adminDocRef);
-            }
 
             await batch.commit();
         },
@@ -162,7 +103,6 @@ function ManageUsersPageContent() {
                 description: `The user account has been successfully deleted.`,
             });
             queryClient.invalidateQueries({queryKey: ['all-users-with-admin-status']});
-            queryClient.invalidateQueries({queryKey: ['admin-ids']});
         },
         onError: (error, userId) => {
             const permissionError = new FirestorePermissionError({
@@ -200,28 +140,6 @@ function ManageUsersPageContent() {
                 </AlertDialogContent>
             </AlertDialog>
             
-            <AlertDialog open={!!userToToggleAdmin} onOpenChange={(open) => !open && setUserToToggleAdmin(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to {userToToggleAdmin?.makeAdmin ? 'promote' : 'demote'} <span className="font-bold">{userToToggleAdmin?.user.username}</span> {userToToggleAdmin?.makeAdmin ? 'to' : 'from'} an Admin role?
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                         onClick={() => userToToggleAdmin && adminMutation.mutate(userToToggleAdmin)}
-                         disabled={adminMutation.isPending}
-                         className={cn(userToToggleAdmin?.makeAdmin ? '' : buttonVariants({ variant: "destructive" }))}
-                    >
-                         {adminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                         Confirm
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <div className="flex min-h-screen flex-col">
                 <Header />
                 <main className="flex-1 bg-secondary/30">
@@ -279,20 +197,6 @@ function ManageUsersPageContent() {
                                                                         <Button 
                                                                             variant="ghost" 
                                                                             size="icon"
-                                                                            onClick={() => setUserToToggleAdmin({ user, makeAdmin: !user.isAdmin })}
-                                                                        >
-                                                                            {user.isAdmin ? <ShieldOff className="h-4 w-4 text-yellow-500" /> : <ShieldCheck className="h-4 w-4 text-green-500" />}
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>{user.isAdmin ? 'Demote to User' : 'Promote to Admin'}</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button 
-                                                                            variant="ghost" 
-                                                                            size="icon"
                                                                             onClick={() => setUserToDelete(user)}
                                                                         >
                                                                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -328,5 +232,3 @@ export default function ManageUsersPage() {
         </Suspense>
     )
 }
-
-    
