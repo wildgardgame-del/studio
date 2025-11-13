@@ -114,7 +114,7 @@ function AdminDebugPageContent() {
             </p>
             
             <Separator className="bg-cyan-400/20 my-4" />
-            <Card className="bg-yellow-900/20 border-yellow-500/50 text-yellow-300 text-left">
+             <Card className="bg-yellow-900/20 border-yellow-500/50 text-yellow-300 text-left">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-mono">
                         <ShieldPlus />
@@ -127,10 +127,10 @@ function AdminDebugPageContent() {
                 <CardContent>
                     <Button 
                         onClick={handleBecomeAdmin} 
-                        disabled={isUserLoading || isPromoting}
+                        disabled={!user || !firestore || isPromoting}
                         className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
                     >
-                        {(isUserLoading || isPromoting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {(isPromoting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Tornar-me o Primeiro Administrador
                     </Button>
                 </CardContent>
