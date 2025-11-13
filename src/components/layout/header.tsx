@@ -162,12 +162,20 @@ export default function Header() {
   const hasDevLicense = isPurchased('dev-account-upgrade');
   
   const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
-    queryKey: ['isAdminCheckSimpleEmail', user?.email],
-    queryFn: () => {
-      if (!user) return false;
-      return user.email === 'forgegatehub@gmail.com' || user.email === 'raf-el@live.com';
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      // Super admin check (can be expanded)
+      const superAdminEmails = ['forgegatehub@gmail.com', 'raf-el@live.com'];
+      if (superAdminEmails.includes(user.email || '')) {
+          return true;
+      }
+      // Firestore admin document check
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists();
     },
-    enabled: !!user,
+    enabled: !!user && !!firestore,
   });
 
 
@@ -494,5 +502,3 @@ export default function Header() {
     </header>
   );
 }
-
-    

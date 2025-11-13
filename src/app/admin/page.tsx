@@ -23,9 +23,13 @@ function AdminDashboardPageContent() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
+      const superAdminEmails = ['forgegatehub@gmail.com', 'raf-el@live.com'];
+      if (superAdminEmails.includes(user.email || '')) {
+          return true;
+      }
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists() || user.email === 'forgegatehub@gmail.com';
+      return adminDoc.exists();
     },
     enabled: !!user && !!firestore,
   });
