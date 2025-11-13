@@ -16,7 +16,6 @@ import {
   Bell,
   CheckCheck,
   MessageSquare,
-  Bug,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -240,16 +239,6 @@ export default function Header() {
                         {link.label}
                       </Link>
                   ))}
-                  {isAdmin && (
-                    <Link
-                        href="/admin/debug"
-                        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-muted/50 hover:text-cyan-300"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                        <Bug className="h-4 w-4" />
-                        Debug
-                    </Link>
-                   )}
                   <Link
                       href="/wishlist"
                       className={cn(
@@ -363,14 +352,6 @@ export default function Header() {
                           {link.label}
                       </Link>
                     ))}
-                     {isAdmin && (
-                        <Link
-                            href="/admin/debug"
-                            className="rounded-md px-3 py-2 transition-colors font-semibold text-cyan-400 hover:text-cyan-300"
-                        >
-                            Debug
-                        </Link>
-                    )}
                 </nav>
             </div>
 
@@ -497,3 +478,4 @@ export default function Header() {
   );
 
     
+
