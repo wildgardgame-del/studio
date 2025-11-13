@@ -9,14 +9,15 @@ import Autoplay from "embla-carousel-autoplay";
 import { Button } from '@/components/ui/button';
 import { GameCard } from '@/components/game-card';
 import heroImage from '@/lib/placeholder-images.json';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, Star, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser, useQuery } from '@/firebase';
 import { collection, query, where, orderBy, limit, getDoc, doc } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 export default function Home() {
@@ -25,6 +26,18 @@ export default function Home() {
   const [showAdultContent, setShowAdultContent] = useState(false);
   const [isAgeVerified, setIsAgeVerified] = useState(false);
   const [isUserCheckLoading, setIsUserCheckLoading] = useState(true);
+
+  // Debug check for isAdmin status, as requested
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists();
+    },
+    enabled: !!user && !!firestore,
+  });
 
   // Effect to check user's age verification and load content preference
   useEffect(() => {
@@ -86,6 +99,24 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
+        
+        {/* === ADMIN DEBUG PANEL === */}
+        {user && (
+          <div className="container py-4">
+            <Alert variant={isAdmin ? "default" : "destructive"} className={isAdmin ? "border-green-500" : ""}>
+              {isAdminLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isAdmin ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
+              <AlertTitle>Admin Status Debug</AlertTitle>
+              <AlertDescription>
+                {isAdminLoading 
+                  ? "Checking admin status..." 
+                  : `Is Admin: ${isAdmin ? 'true' : 'false'}. (User: ${user.email})`
+                }
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        {/* ======================= */}
+
         <section className="relative h-[50vh] w-full">
           <Image
             src={heroImage.placeholderImages[0].imageUrl}
