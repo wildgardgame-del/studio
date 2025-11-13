@@ -32,9 +32,11 @@ export default function Home() {
     queryKey: ['isAdmin', user?.uid],
     queryFn: async () => {
       if (!user || !firestore) return false;
+      // This is the new, robust check against the /admins collection
       const adminDocRef = doc(firestore, 'admins', user.uid);
       const adminDoc = await getDoc(adminDocRef);
-      return adminDoc.exists();
+      // Also check for the super-admin email as a fallback
+      return adminDoc.exists() || user.email === 'forgegatehub@gmail.com';
     },
     enabled: !!user && !!firestore,
   });

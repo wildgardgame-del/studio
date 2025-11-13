@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useMemo } from 'react';
@@ -11,7 +12,7 @@ import Footer from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { useDoc, useFirebase, useMemoFirebase, useUser } from '@/firebase';
 import type { Game } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { useGameStore } from '@/context/game-store-context';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { useQuery } from '@tanstack/react-query';
 
 
 function GamePageContent() {
@@ -36,7 +38,20 @@ function GamePageContent() {
     return doc(firestore, 'games', id);
   }, [firestore, id]);
 
-  const { data: game, isLoading } = useDoc<Game>(gameRef);
+  const { data: game, isLoading: isGameDataLoading } = useDoc<Game>(gameRef);
+  
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists() || user.email === 'forgegatehub@gmail.com';
+    },
+    enabled: !!user && !!firestore,
+  });
+
+  const isLoading = isGameDataLoading || isAdminLoading;
   
   const isWishlisted = game ? isInWishlist(game.id) : false;
   const gameIsPurchased = game ? isPurchased(game.id) : false;
@@ -56,7 +71,6 @@ function GamePageContent() {
       return null;
   }
   
-  const isAdmin = user?.email === 'ronneeh@gmail.com';
   const canViewGame = game && (game.status === 'approved' || isAdmin);
 
   if (isLoading) {
