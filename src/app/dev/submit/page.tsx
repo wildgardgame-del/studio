@@ -44,6 +44,7 @@ const formSchema = z.object({
   publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
   isPayWhatYouWant: z.boolean().default(false),
+  isInDevelopment: z.boolean().default(false),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
   genres: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -69,8 +70,11 @@ const formSchema = z.object({
       (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
       "Only .jpg, .jpeg, .png and .webp files are accepted."
     ),
-}).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
-    message: "You must provide either a direct download URL or a GitHub repository URL.",
+}).refine(data => {
+    if (data.isInDevelopment) return true; // If in development, download links are not required
+    return !!data.gameFileUrl || !!data.githubRepoUrl;
+}, {
+    message: "You must provide either a direct download URL or a GitHub repository URL if the game is not 'In Development'.",
     path: ["gameFileUrl"],
 });
 
@@ -110,6 +114,7 @@ function SubmitGamePageContent() {
       publisher: "",
       price: 0,
       isPayWhatYouWant: false,
+      isInDevelopment: false,
       description: "",
       longDescription: "",
       genres: [],
@@ -171,6 +176,7 @@ function SubmitGamePageContent() {
         publisher: values.publisher,
         price: values.price,
         isPayWhatYouWant: values.isPayWhatYouWant,
+        isInDevelopment: values.isInDevelopment,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
@@ -382,6 +388,27 @@ function SubmitGamePageContent() {
                     </FormItem>
                     )}/>
                 </div>
+                
+                 <FormField
+                    control={form.control}
+                    name="isInDevelopment"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-secondary/50">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">In Development</FormLabel>
+                            <FormDescription>
+                                Mark this if the game is not yet released. Download links will not be required.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
                 
                 <div>
                     <FormLabel>Game Download</FormLabel>

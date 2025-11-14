@@ -4,7 +4,7 @@
 import { Suspense, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github, Award } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github, Award, Clock } from 'lucide-react';
 import Image from 'next/image';
 
 import Header from '@/components/layout/header';
@@ -97,7 +97,7 @@ function GamePageContent() {
   const gameIsPurchased = game ? isPurchased(game.id) : false;
 
   useEffect(() => {
-      if (gameIsPurchased && game) {
+      if (gameIsPurchased && game && !game.isInDevelopment) {
           setIsDownloadLinkLoading(true);
           if (game.githubRepoUrl) {
               getLatestGitHubReleaseUrl(game.githubRepoUrl).then(url => {
@@ -167,6 +167,14 @@ function GamePageContent() {
   }
 
   const renderPurchaseButton = () => {
+    if (game.isInDevelopment) {
+        return (
+            <Button size="lg" className="w-full" disabled>
+                <Clock className="mr-2" /> Coming Soon
+            </Button>
+        );
+    }
+      
     if (gameIsPurchased) {
         return (
              <Button asChild size="lg" className="w-full" disabled={isDownloadLinkLoading || !downloadUrl}>

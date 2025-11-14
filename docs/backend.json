@@ -44,6 +44,10 @@
           "type": "boolean",
           "description": "Indicates if the game uses a 'pay what you want' pricing model."
         },
+        "isInDevelopment": {
+          "type": "boolean",
+          "description": "Indicates if the game is currently in development and not yet released."
+        },
         "releaseDate": {
           "type": "string",
           "description": "The date when the game was released.",

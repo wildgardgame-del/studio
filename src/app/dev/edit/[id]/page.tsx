@@ -45,6 +45,7 @@ const formSchema = z.object({
   publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
   isPayWhatYouWant: z.boolean().default(false),
+  isInDevelopment: z.boolean().default(false),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
   genres: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -57,8 +58,11 @@ const formSchema = z.object({
   isAdultContent: z.boolean().default(false),
   coverImage: z.any().optional(),
   screenshots: z.any().optional(),
-}).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
-    message: "You must provide either a direct download URL or a GitHub repository URL.",
+}).refine(data => {
+    if (data.isInDevelopment) return true; // If in development, download links are not required
+    return !!data.gameFileUrl || !!data.githubRepoUrl;
+}, {
+    message: "You must provide either a direct download URL or a GitHub repository URL if the game is not 'In Development'.",
     path: ["gameFileUrl"],
 });
 
@@ -106,7 +110,7 @@ function EditGamePageContent() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "", publisher: "", price: 0, isPayWhatYouWant: false, description: "", longDescription: "",
+      title: "", publisher: "", price: 0, isPayWhatYouWant: false, isInDevelopment: false, description: "", longDescription: "",
       genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", isAdultContent: false
     },
   });
@@ -118,6 +122,7 @@ function EditGamePageContent() {
         publisher: gameData.publisher || "",
         price: gameData.price,
         isPayWhatYouWant: gameData.isPayWhatYouWant || false,
+        isInDevelopment: gameData.isInDevelopment || false,
         description: gameData.description,
         longDescription: gameData.longDescription || "",
         genres: gameData.genres?.filter(g => g !== MATURE_TAG) || [],
@@ -197,6 +202,7 @@ function EditGamePageContent() {
         publisher: values.publisher,
         price: values.price,
         isPayWhatYouWant: values.isPayWhatYouWant,
+        isInDevelopment: values.isInDevelopment,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
@@ -410,6 +416,27 @@ function EditGamePageContent() {
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 </div>
                 
+                 <FormField
+                    control={form.control}
+                    name="isInDevelopment"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-secondary/50">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">In Development</FormLabel>
+                            <FormDescription>
+                                Mark this if the game is not yet released. Download links will not be required.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 <div>
                     <FormLabel>Game Download</FormLabel>
                     <FormDescription className="mb-4">Provide a link for users to download the game. You can use either a direct link or a GitHub repository.</FormDescription>

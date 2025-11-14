@@ -5,7 +5,8 @@ export type Game = {
   description: string;
   longDescription?: string;
   price: number;
-  isPayWhatYouWant?: boolean; // Re-add this field
+  isPayWhatYouWant?: boolean;
+  isInDevelopment?: boolean;
   genres: string[];
   coverImage: string;
   screenshots: string[];
