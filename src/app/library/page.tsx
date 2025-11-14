@@ -44,17 +44,7 @@ function LibraryGameCard({ gameId }: { gameId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <GameCard game={game} />
-      {game.gameFileUrl && (
-        <Button asChild>
-          <a href={game.gameFileUrl} target="_blank" rel="noopener noreferrer">
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </a>
-        </Button>
-      )}
-    </div>
+    <GameCard game={game} />
   );
 }
 

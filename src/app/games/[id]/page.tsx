@@ -4,7 +4,7 @@
 import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download } from 'lucide-react';
 import Image from 'next/image';
 
 import Header from '@/components/layout/header';
@@ -132,9 +132,18 @@ function GamePageContent() {
                 className="rounded-lg object-cover aspect-[3/4] shadow-lg w-full"
               />
               <div className="space-y-2">
-                <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)} disabled={gameIsPurchased}>
-                   <ShoppingCart className="mr-2" /> {gameIsPurchased ? 'In Library' : `Buy for $${game.price.toFixed(2)}`}
-                </Button>
+                {gameIsPurchased && game.gameFileUrl ? (
+                    <Button asChild size="lg" className="w-full">
+                        <a href={game.gameFileUrl} target="_blank" rel="noopener noreferrer">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Game
+                        </a>
+                    </Button>
+                ) : (
+                    <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)} disabled={gameIsPurchased}>
+                        <ShoppingCart className="mr-2" /> {gameIsPurchased ? 'In Library' : `Buy for $${game.price.toFixed(2)}`}
+                    </Button>
+                )}
                  <Button size="lg" variant="outline" className="w-full" onClick={() => handleToggleWishlist(game)} disabled={gameIsPurchased}>
                     <Heart className={cn("mr-2", isWishlisted && 'fill-accent text-accent')} />
                     {isWishlisted ? 'On Wishlist' : 'Add to Wishlist'}
