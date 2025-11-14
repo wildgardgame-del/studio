@@ -138,7 +138,7 @@ function AdminDashboardPageContent() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">${globalStats?.totalRevenue.toFixed(2)}</div>}
+                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">${(globalStats?.totalRevenue || 0).toFixed(2)}</div>}
                     <p className="text-xs text-muted-foreground">From all game sales</p>
                 </CardContent>
             </Card>
@@ -281,3 +281,5 @@ export default function AdminDashboardPage() {
         </Suspense>
     )
 }
+
+    
