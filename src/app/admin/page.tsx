@@ -7,7 +7,7 @@ import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox, ArrowLeft, Home, DollarSign, BarChart2 } from 'lucide-react';
+import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox, ArrowLeft, Home, DollarSign, BarChart2, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -267,6 +267,14 @@ function AdminDashboardPageContent() {
                     </CardContent>
                 </Link>
              </Card>
+             <Card className="hover:border-destructive/50 transition-colors col-span-1 md:col-span-2 lg:col-span-3">
+                <Link href="/admin/debug">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive"><Zap />Debug Zone</CardTitle>
+                        <CardDescription>Access developer and debugging tools. Use with caution.</CardDescription>
+                    </CardHeader>
+                </Link>
+             </Card>
           </div>
         </div>
       </main>
@@ -282,7 +290,3 @@ export default function AdminDashboardPage() {
         </Suspense>
     )
 }
-
-    
-
-    
