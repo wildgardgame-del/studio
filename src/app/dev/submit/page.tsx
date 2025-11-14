@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Suspense, useState, useRef } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github, HelpCircle } from "lucide-react";
+import { Suspense, useState, useRef, useEffect } from "react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github, HelpCircle, ShieldAlert } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -33,6 +33,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { availableGenres } from "@/lib/genres";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useGameStore } from "@/context/game-store-context";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MATURE_TAG = "Mature 18+";
@@ -83,12 +84,22 @@ const fileToDataUri = (file: File): Promise<string> => {
 
 function SubmitGamePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, firestore } = useFirebase();
+  const { user, isUserLoading, firestore } = useFirebase();
+  const { isPurchased, purchasedGames } = useGameStore();
   const { toast } = useToast();
   const router = useRouter();
 
   const coverImageRef = useRef<HTMLInputElement>(null);
   const screenshotsRef = useRef<HTMLInputElement>(null);
+
+  const isLoading = isUserLoading || purchasedGames === undefined;
+  const hasDevLicense = isPurchased('dev-account-upgrade') || isPurchased('dev-android-account-upgrade');
+  
+  useEffect(() => {
+    if (!isLoading && (!user || !hasDevLicense)) {
+      router.push('/apply-for-dev');
+    }
+  }, [isLoading, user, hasDevLicense, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -190,6 +201,24 @@ function SubmitGamePageContent() {
       });
        setIsSubmitting(false);
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !hasDevLicense) {
+       return (
+        <div className="flex min-h-screen flex-col items-center justify-center text-center p-4">
+            <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
+            <h1 className="text-3xl font-bold">Access Denied</h1>
+            <p className="text-muted-foreground mt-2 max-w-md">You need a publisher license to access this page. You are being redirected.</p>
+      </div>
+    );
   }
 
   return (

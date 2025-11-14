@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle, ShieldAlert } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -34,6 +34,7 @@ import { availableGenres } from "@/lib/genres";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useGameStore } from "@/context/game-store-context";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MATURE_TAG = "Mature 18+";
@@ -73,7 +74,8 @@ function EditGamePageContent() {
   const [existingCoverImage, setExistingCoverImage] = useState<string | null>(null);
   const [existingScreenshots, setExistingScreenshots] = useState<string[]>([]);
 
-  const { user, firestore } = useFirebase();
+  const { user, isUserLoading, firestore } = useFirebase();
+  const { isPurchased, purchasedGames } = useGameStore();
   const { toast } = useToast();
   const router = useRouter();
   const params = useParams();
@@ -81,6 +83,16 @@ function EditGamePageContent() {
 
   const coverImageRef = useRef<HTMLInputElement>(null);
   const screenshotsRef = useRef<HTMLInputElement>(null);
+  
+  const hasDevLicense = isPurchased('dev-account-upgrade') || isPurchased('dev-android-account-upgrade');
+  
+  useEffect(() => {
+    const isPageLoading = isUserLoading || purchasedGames === undefined;
+    if (!isPageLoading && (!user || !hasDevLicense)) {
+      router.push('/apply-for-dev');
+    }
+  }, [isUserLoading, purchasedGames, user, hasDevLicense, router]);
+
 
   const gameRef = useMemoFirebase(() => {
     if (!firestore || !gameId) return null;
@@ -227,8 +239,10 @@ function EditGamePageContent() {
         setIsSubmitting(false);
     }
   }
+  
+  const isLoading = isGameLoading || isUserLoading || purchasedGames === undefined;
 
-  if (isGameLoading) {
+  if (isLoading) {
       return (
           <div className="flex min-h-screen items-center justify-center">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -236,10 +250,22 @@ function EditGamePageContent() {
       )
   }
 
-  if (!gameData) {
+  if (!gameData || !user || !hasDevLicense) {
       return (
-           <div className="flex min-h-screen flex-col items-center justify-center">
-                <p>Game not found or you don't have permission to edit it.</p>
+           <div className="flex min-h-screen flex-col items-center justify-center text-center p-4">
+               <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
+                <h1 className="text-3xl font-bold">Access Denied</h1>
+                <p className="text-muted-foreground mt-2 max-w-md">
+                    { !user ? "You must be logged in to edit a game." :
+                      !hasDevLicense ? "You need a publisher license to access this page." :
+                      "Game not found or you don't have permission to edit it."
+                    }
+                </p>
+                <Button asChild className="mt-6">
+                    <Link href={!user ? "/login" : "/apply-for-dev"}>
+                        { !user ? "Login" : "Get License" }
+                    </Link>
+                </Button>
            </div>
       )
   }
