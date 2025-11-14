@@ -86,6 +86,7 @@ function AdminDashboardPageContent() {
       };
     },
     enabled: !!firestore && isAdmin,
+    staleTime: 0, // Force refetch on component mount
     refetchInterval: 900000, // 15 minutos
   });
 
