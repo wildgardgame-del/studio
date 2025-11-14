@@ -160,8 +160,9 @@ function ManageUsersPageContent() {
         },
         onError: (error, user) => {
              const permissionError = new FirestorePermissionError({
-                path: `users/${user.id} or usernames/${user.username.toLowerCase()}`,
+                path: `users/${user.id}`, // Simplified path for clearer error
                 operation: 'delete',
+                requestResourceData: { note: `Attempted to delete user, username, and admin status for ${user.username}` }
             });
             errorEmitter.emit('permission-error', permissionError);
         },
@@ -311,5 +312,3 @@ export default function ManageUsersPage() {
         </Suspense>
     )
 }
-
-    

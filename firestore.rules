@@ -121,8 +121,11 @@ service cloud.firestore {
       allow create: if isSignedIn()
                       && request.resource.data.userId == request.auth.uid
                       && username == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username.lower();
-      // Username documents should never be changed or deleted.
-      allow update, delete: if false;
+      
+      // Admins can delete username documents (as part of user deletion).
+      allow delete: if isAdmin();
+      // Username documents should never be changed.
+      allow update: if false;
     }
   }
 }
