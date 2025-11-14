@@ -8,13 +8,8 @@ export type Game = {
   genres: string[];
   coverImage: string;
   screenshots: string[];
-  rating: number;
-  reviews: {
-    id: number;
-    author: string;
-    text: string;
-    rating: number;
-  }[];
+  rating: number; // This will now be an aggregate rating
+  reviewCount?: number; // Add review count
   status?: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
   developerId?: string;
@@ -24,6 +19,19 @@ export type Game = {
   gameFileUrl?: string;
   isAdultContent?: boolean;
   submittedAt?: {
+    seconds: number;
+    nanoseconds: number;
+  };
+};
+
+export type Review = {
+  id: string;
+  gameId: string;
+  userId: string;
+  username: string; // Add username for display
+  rating: number;
+  comment: string;
+  reviewDate: {
     seconds: number;
     nanoseconds: number;
   };
