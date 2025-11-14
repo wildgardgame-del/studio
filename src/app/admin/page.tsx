@@ -7,12 +7,35 @@ import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox, ArrowLeft, Home } from 'lucide-react';
+import { Loader2, ShieldAlert, Gamepad2, Bell, Users, Inbox, ArrowLeft, Home, DollarSign, BarChart2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import type { Game } from '@/lib/types';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, CartesianGrid, XAxis, Bar } from 'recharts';
+
+const chartData = [
+  { month: "January", desktop: 1860, mobile: 800 },
+  { month: "February", desktop: 3050, mobile: 2000 },
+  { month: "March", desktop: 2370, mobile: 1200 },
+  { month: "April", desktop: 730, mobile: 1900 },
+  { month: "May", desktop: 2090, mobile: 1300 },
+  { month: "June", desktop: 2140, mobile: 1400 },
+]
+
+const chartConfig = {
+  desktop: {
+    label: "Sales",
+    color: "hsl(var(--primary))",
+  },
+  mobile: {
+    label: "Views",
+    color: "hsl(var(--accent))",
+  },
+}
 
 
 function AdminDashboardPageContent() {
@@ -32,29 +55,39 @@ function AdminDashboardPageContent() {
 
   const isLoading = isUserLoading || isAdminLoading;
   
-  const { data: pendingCount } = useQuery({
-    queryKey: ['pending-games-count'],
+  const { data: globalStats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['global-admin-stats'],
     queryFn: async () => {
-      if (!firestore || !isAdmin) return 0;
-      const q = query(collection(firestore, 'games'), where('status', '==', 'pending'));
-      const snapshot = await getDocs(q);
-      return snapshot.size;
+      if (!firestore || !isAdmin) return { pendingCount: 0, unreadMessageCount: 0, totalUsers: 0, totalGames: 0, totalRevenue: 0 };
+      
+      const pendingGamesQuery = query(collection(firestore, 'games'), where('status', '==', 'pending'));
+      const unreadMessagesQuery = query(collection(firestore, 'admin_messages'), where('isRead', '==', false));
+      const usersQuery = query(collection(firestore, 'users'));
+      const approvedGamesQuery = query(collection(firestore, 'games'), where('status', '==', 'approved'));
+
+      const [pendingSnapshot, unreadSnapshot, usersSnapshot, approvedGamesSnapshot] = await Promise.all([
+        getDocs(pendingGamesQuery),
+        getDocs(unreadMessagesQuery),
+        getDocs(usersQuery),
+        getDocs(approvedGamesQuery),
+      ]);
+
+      const approvedGames = approvedGamesSnapshot.docs.map(doc => doc.data() as Game);
+      // Placeholder revenue calculation
+      const totalRevenue = approvedGames.reduce((acc, game) => acc + (game.price || 0), 0) * 123; 
+      
+      return {
+        pendingCount: pendingSnapshot.size,
+        unreadMessageCount: unreadSnapshot.size,
+        totalUsers: usersSnapshot.size,
+        totalGames: approvedGamesSnapshot.size,
+        totalRevenue,
+      };
     },
     enabled: !!firestore && isAdmin,
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
-  
-  const { data: unreadMessageCount } = useQuery({
-    queryKey: ['unread-messages-count'],
-    queryFn: async () => {
-        if (!firestore || !isAdmin) return 0;
-        const q = query(collection(firestore, 'admin_messages'), where('isRead', '==', false));
-        const snapshot = await getDocs(q);
-        return snapshot.size;
-    },
-    enabled: !!firestore && isAdmin,
-    refetchInterval: 30000,
-  });
+
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
@@ -98,13 +131,93 @@ function AdminDashboardPageContent() {
           </Button>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Revenue (est.)</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">${globalStats?.totalRevenue.toFixed(2)}</div>}
+                    <p className="text-xs text-muted-foreground">From all game sales</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{globalStats?.totalUsers}</div>}
+                    <p className="text-xs text-muted-foreground">Total registered accounts</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Approved Games</CardTitle>
+                    <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{globalStats?.totalGames}</div>}
+                    <p className="text-xs text-muted-foreground">Live on the store</p>
+                </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Global Sales</CardTitle>
+                    <CardDescription>January - June 2024</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                        <BarChart accessibilityLayer data={chartData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>New Users</CardTitle>
+                    <CardDescription>January - June 2024</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                        <BarChart accessibilityLayer data={chartData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card className="hover:border-primary transition-colors">
                 <Link href="/admin/games">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center gap-2"><Gamepad2 className="text-accent"/>Manage Games</CardTitle>
-                            {pendingCount !== undefined && pendingCount > 0 && (
-                               <Badge className="bg-accent text-accent-foreground">{pendingCount}</Badge>
+                            {globalStats && globalStats.pendingCount > 0 && (
+                               <Badge className="bg-accent text-accent-foreground">{globalStats.pendingCount}</Badge>
                             )}
                         </div>
                         <CardDescription>Approve or reject games submitted by developers.</CardDescription>
@@ -141,8 +254,8 @@ function AdminDashboardPageContent() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center gap-2"><Inbox className="text-accent"/>Inbox</CardTitle>
-                            {unreadMessageCount !== undefined && unreadMessageCount > 0 && (
-                               <Badge className="bg-accent text-accent-foreground">{unreadMessageCount}</Badge>
+                            {globalStats && globalStats.unreadMessageCount > 0 && (
+                               <Badge className="bg-accent text-accent-foreground">{globalStats.unreadMessageCount}</Badge>
                             )}
                         </div>
                         <CardDescription>View and manage messages from users.</CardDescription>
@@ -167,3 +280,5 @@ export default function AdminDashboardPage() {
         </Suspense>
     )
 }
+
+    
