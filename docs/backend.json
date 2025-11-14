@@ -101,10 +101,6 @@
         "isAdultContent": {
           "type": "boolean",
           "description": "Whether the game is intended for mature audiences."
-        },
-        "isPayWhatYouWant": {
-          "type": "boolean",
-          "description": "If true, players can name their own price, starting from $0."
         }
       },
       "required": [

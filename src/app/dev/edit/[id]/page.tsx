@@ -54,7 +54,6 @@ const formSchema = z.object({
   gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
-  isPayWhatYouWant: z.boolean().default(false),
   coverImage: z.any().optional(),
   screenshots: z.any().optional(),
 }).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
@@ -107,11 +106,9 @@ function EditGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "", publisher: "", price: 0, description: "", longDescription: "",
-      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", isAdultContent: false, isPayWhatYouWant: false
+      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", isAdultContent: false
     },
   });
-
-  const isPayWhatYouWant = form.watch("isPayWhatYouWant");
 
   useEffect(() => {
     if (gameData) {
@@ -127,18 +124,11 @@ function EditGamePageContent() {
         gameFileUrl: gameData.gameFileUrl || "",
         githubRepoUrl: gameData.githubRepoUrl || "",
         isAdultContent: gameData.isAdultContent || false,
-        isPayWhatYouWant: gameData.isPayWhatYouWant || false,
       });
       setExistingCoverImage(gameData.coverImage);
       setExistingScreenshots(gameData.screenshots || []);
     }
   }, [gameData, form]);
-
-  useEffect(() => {
-    if (isPayWhatYouWant) {
-      form.setValue("price", 0);
-    }
-  }, [isPayWhatYouWant, form]);
 
   const coverImageFile = form.watch("coverImage");
   const screenshotsFiles = form.watch("screenshots");
@@ -198,8 +188,7 @@ function EditGamePageContent() {
       const updatedGameData = {
         title: values.title,
         publisher: values.publisher,
-        price: values.isPayWhatYouWant ? 0 : values.price,
-        isPayWhatYouWant: values.isPayWhatYouWant,
+        price: values.price,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
@@ -323,32 +312,11 @@ function EditGamePageContent() {
                   <FormField control={form.control} name="publisher" render={({ field }) => ( <FormItem><FormLabel>Developer / Publisher</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
 
-                <FormField
-                    control={form.control}
-                    name="isPayWhatYouWant"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <FormLabel className="text-base">Pay What You Want</FormLabel>
-                            <FormDescription>
-                                Allow players to name their own price, starting from $0.
-                            </FormDescription>
-                        </div>
-                        <FormControl>
-                            <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                            />
-                        </FormControl>
-                        </FormItem>
-                    )}
-                />
-
                 <FormField control={form.control} name="price" render={({ field }) => ( 
                   <FormItem>
                     <FormLabel>Price (USD)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} disabled={isPayWhatYouWant} /></FormControl>
-                    <FormDescription>{isPayWhatYouWant ? "Price is set to $0 because 'Pay What You Want' is enabled." : "Set to 0 for a free game."}</FormDescription>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormDescription>Set to 0 for a free game.</FormDescription>
                     <FormMessage />
                   </FormItem> 
                 )}/>
@@ -536,5 +504,3 @@ export default function EditGamePage() {
         </Suspense>
     )
 }
-
-    

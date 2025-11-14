@@ -178,15 +178,15 @@ function GamePageContent() {
             </Button>
         )
     }
-
-    if (game.isPayWhatYouWant) {
+    
+    if (game.price === 0) {
         return (
             <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)}>
-                <Award className="mr-2" /> Get Game
+                <Award className="mr-2" /> Get for Free
             </Button>
         )
     }
-    
+
     return (
         <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)}>
             <ShoppingCart className="mr-2" /> Buy for ${game.price.toFixed(2)}
