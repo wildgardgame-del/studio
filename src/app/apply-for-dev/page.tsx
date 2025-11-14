@@ -15,8 +15,6 @@ import { useGameStore } from "@/context/game-store-context";
 import type { Game } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
-import heroImage from '@/lib/placeholder-images.json';
-
 
 function ApplyForDevPageContent() {
     'use client';
@@ -61,8 +59,6 @@ function ApplyForDevPageContent() {
     const isLoading = isUserLoading || isLicenseLoading || isAndroidLicenseLoading;
     const hasStandardLicense = isPurchased('dev-account-upgrade');
     const hasAndroidLicense = isPurchased('dev-android-account-upgrade');
-    const devHeroImage = heroImage.placeholderImages.find(img => img.id === 'dev-page-hero')!;
-
 
     if (isLoading) {
         return (
@@ -97,25 +93,15 @@ function ApplyForDevPageContent() {
         <div className="flex min-h-screen flex-col">
             <Header />
             <main className="flex-1 bg-secondary/30">
-                <div className="container grid lg:grid-cols-2 gap-16 items-center py-16">
-                    <div className="hidden lg:block">
-                        <Image
-                            src={devHeroImage.imageUrl}
-                            alt={devHeroImage.description}
-                            data-ai-hint={devHeroImage.imageHint}
-                            width={1024}
-                            height={1024}
-                            className="rounded-xl shadow-2xl shadow-primary/20 aspect-square object-cover"
-                        />
+                 <div className="container py-16">
+                    <div className="mx-auto max-w-3xl flex flex-col items-center text-center">
+                        <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Become a Publisher</h1>
+                        <p className="text-lg text-muted-foreground mt-4">
+                            Choose the license that fits your needs and start publishing your games on our platform.
+                        </p>
                     </div>
-                    <div className="flex flex-col gap-8">
-                         <div className="text-center lg:text-left">
-                            <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Become a Publisher</h1>
-                            <p className="text-lg text-muted-foreground mt-4">
-                                Choose the license that fits your needs and start publishing your games on our platform.
-                            </p>
-                        </div>
-                        
+                    
+                    <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {devLicenseProduct ? (
                             <Card className="flex flex-col h-full">
                                 <CardHeader>

@@ -1,10 +1,28 @@
 {
   "placeholderImages": [
     {
-      "id": "dev-page-hero",
+      "id": "male-dev-workspace",
       "description": "An anime-style male game developer working on his computer in a cozy room at night, with multiple monitors showing game assets and code.",
       "imageUrl": "https://i.imgur.com/YAgIIcR.jpeg",
       "imageHint": "game developer"
+    },
+    {
+      "id": "female-dev-workspace",
+      "description": "An anime-style female game developer working on her computer in a cozy room at night, with a neon 'GAME DEV' sign on the wall.",
+      "imageUrl": "https://i.imgur.com/08S32s5.jpeg",
+      "imageHint": "game developer"
+    },
+    {
+      "id": "cyberpunk-samurai-cover",
+      "description": "A cyberpunk samurai warrior standing in a futuristic city with neon lights.",
+      "imageUrl": "https://i.imgur.com/tLh44vL.jpeg",
+      "imageHint": "cyberpunk samurai"
+    },
+    {
+      "id": "hero-bg",
+      "description": "A breathtaking futuristic cityscape with flying vehicles and towering neon-lit skyscrapers.",
+      "imageUrl": "https://i.imgur.com/T0v3ed9.jpeg",
+      "imageHint": "futuristic cityscape"
     }
   ]
 }

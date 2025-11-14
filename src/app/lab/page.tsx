@@ -34,7 +34,13 @@ function LabPageContent() {
     return labGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
   }, [labGames]);
   
-  const background = heroImage.placeholderImages.find(img => img.id === 'cyberpunk-samurai-cover') || heroImage.placeholderImages[0];
+  const background = useMemo(() => {
+    const devImages = heroImage.placeholderImages.filter(
+      img => img.id === 'male-dev-workspace' || img.id === 'female-dev-workspace'
+    );
+    if (devImages.length === 0) return heroImage.placeholderImages[0];
+    return devImages[Math.floor(Math.random() * devImages.length)];
+  }, []);
 
   return (
     <div className="relative flex min-h-screen flex-col">
