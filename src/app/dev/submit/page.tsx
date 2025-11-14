@@ -22,8 +22,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import Header from "@/components/ui/../components/layout/header";
-import Footer from "@/components/ui/../components/layout/footer";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -537,3 +537,5 @@ export default function SubmitGamePage() {
         </Suspense>
     )
 }
+
+    
