@@ -1,12 +1,13 @@
+
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
-import { Loader2, ShieldPlus, Trash2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldPlus, Trash2, ShieldAlert, ArrowLeft } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
-import { doc, getDocs, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, getDocs, collection, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Admin } from '@/lib/types';
