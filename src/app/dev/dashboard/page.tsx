@@ -13,6 +13,31 @@ import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase
 import { useGameStore } from '@/context/game-store-context';
 import { collection, query, where } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, CartesianGrid, XAxis, Bar, AreaChart, Area } from 'recharts';
+
+const chartData = [
+  { month: "January", desktop: 186, mobile: 80 },
+  { month: "February", desktop: 305, mobile: 200 },
+  { month: "March", desktop: 237, mobile: 120 },
+  { month: "April", desktop: 73, mobile: 190 },
+  { month: "May", desktop: 209, mobile: 130 },
+  { month: "June", desktop: 214, mobile: 140 },
+]
+
+const chartConfig = {
+  views: {
+    label: "Page Views",
+  },
+  desktop: {
+    label: "Sales",
+    color: "hsl(var(--primary))",
+  },
+  mobile: {
+    label: "Views",
+    color: "hsl(var(--accent))",
+  },
+}
 
 
 function DevDashboardPageContent() {
@@ -111,6 +136,67 @@ function DevDashboardPageContent() {
                 <CardContent>
                     <div className="text-2xl font-bold">+{totalDownloads}</div>
                     <p className="text-xs text-muted-foreground">From all purchases</p>
+                </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Overall Sales</CardTitle>
+                    <CardDescription>January - June 2024</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                        <BarChart accessibilityLayer data={chartData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Overall Page Views</CardTitle>
+                    <CardDescription>January - June 2024</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                        <AreaChart
+                            accessibilityLayer
+                            data={chartData}
+                            margin={{
+                            left: 12,
+                            right: 12,
+                            }}
+                        >
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                            />
+                            <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                            <Area
+                            dataKey="mobile"
+                            type="natural"
+                            fill="var(--color-mobile)"
+                            fillOpacity={0.4}
+                            stroke="var(--color-mobile)"
+                            stackId="a"
+                            />
+                        </AreaChart>
+                    </ChartContainer>
                 </CardContent>
             </Card>
           </div>
