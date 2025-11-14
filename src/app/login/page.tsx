@@ -19,7 +19,6 @@ import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
 import { useUser, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import heroImage from '@/lib/placeholder-images.json';
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -78,9 +77,8 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
         <Image
-            src={heroImage.placeholderImages[0].imageUrl}
-            alt="Futuristic city background"
-            data-ai-hint="cyberpunk city"
+            src="/images/GamerF.jpg"
+            alt="Gaming background"
             fill
             className="object-cover -z-10"
         />
