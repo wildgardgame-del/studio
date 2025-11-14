@@ -88,7 +88,7 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative h-[60vh] w-full min-h-[500px]">
           <Image
-            src="/images/bannerForgegate.png"
+            src="/images/bannerForgegate.jpg"
             alt="Forge Gate Hub Banner"
             fill
             className="object-cover"
