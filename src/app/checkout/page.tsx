@@ -8,7 +8,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, writeBatch, deleteDoc } from "firebase/firestore";
+import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,7 +33,7 @@ const formSchema = z.object({
 })
 
 function CheckoutPageContent() {
-    const { cartItems, clearCart } = useGameStore();
+    const { cartItems, clearCart, removeFromWishlist } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
@@ -65,44 +65,51 @@ function CheckoutPageContent() {
         
         // Simulate payment processing
         setTimeout(async () => {
-            const batch = writeBatch(firestore);
+            try {
+                const batch = writeBatch(firestore);
 
-            // Add all purchased items to the user's library and remove from wishlist
-            cartItems.forEach(item => {
-                const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                batch.set(libraryRef, { ...item });
+                // Add each purchased item's reference to the user's library
+                // and remove it from their wishlist.
+                cartItems.forEach(item => {
+                    const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
+                    // Store a reference with a purchase date, not the full game object
+                    batch.set(libraryRef, { 
+                        gameId: item.id,
+                        purchasedAt: serverTimestamp() 
+                    });
 
-                const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
-                batch.delete(wishlistRef); // Also delete from wishlist
-            });
-            
-            batch.commit()
-                .then(() => {
-                    clearCart();
-                    setIsProcessing(false);
-                    toast({
-                        title: "Payment successful!",
-                        description: "Your items are now available in your library.",
-                    });
-                    router.push('/library');
-                })
-                .catch((error) => {
-                    console.error("Error committing purchase to Firestore:", error);
-                    const permissionError = new FirestorePermissionError({
-                        path: `users/${user.uid}/library`,
-                        operation: 'write',
-                        requestResourceData: { cart: cartItems.map(i => ({...i})) }
-                    });
-                    
-                    errorEmitter.emit('permission-error', permissionError);
-                    
-                    toast({
-                        variant: "destructive",
-                        title: "Purchase Error",
-                        description: "Could not save your purchase. Please check your permissions and try again.",
-                    });
-                    setIsProcessing(false);
+                    // Also remove the game from the wishlist upon purchase
+                    const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
+                    batch.delete(wishlistRef);
                 });
+                
+                await batch.commit();
+
+                clearCart();
+                toast({
+                    title: "Payment successful!",
+                    description: "Your games are now available in your library.",
+                });
+                router.push('/library');
+
+            } catch (error) {
+                console.error("Error committing purchase to Firestore:", error);
+                const permissionError = new FirestorePermissionError({
+                    path: `users/${user.uid}/library`,
+                    operation: 'write',
+                    requestResourceData: { note: `Attempting to add ${cartItems.length} games to library.` }
+                });
+                
+                errorEmitter.emit('permission-error', permissionError);
+                
+                toast({
+                    variant: "destructive",
+                    title: "Purchase Error",
+                    description: "Could not save your purchase. Please check your permissions and try again.",
+                });
+            } finally {
+                setIsProcessing(false);
+            }
         }, 2000);
     }
     
