@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type LibraryItem = {
-  gameId: string;
+  id: string; // The document ID in the library subcollection is the gameId
   purchasedAt: any;
 }
 
@@ -64,11 +64,12 @@ export default function LibraryPage() {
 
   const libraryQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    // This query fetches the references to the games in the user's library.
+    // This query fetches the documents in the user's library.
+    // The ID of each document is the gameId.
     return query(collection(firestore, 'users', user.uid, 'library'));
   }, [user, firestore]);
 
-  // `data` here will be an array of `LibraryItem` objects, e.g., [{ gameId: 'cyberpunk-samurai', ... }]
+  // `data` here will be an array of `LibraryItem` objects, e.g., [{ id: 'cyberpunk-samurai', purchasedAt: ... }]
   const { data: libraryItems, isLoading } = useCollection<LibraryItem>(libraryQuery);
 
   if (isLoading) {
@@ -102,7 +103,7 @@ export default function LibraryPage() {
           {libraryItems && libraryItems.length > 0 ? (
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {libraryItems.map((item) => (
-                <LibraryGameCard key={item.gameId} gameId={item.gameId} />
+                <LibraryGameCard key={item.id} gameId={item.id} />
               ))}
             </div>
           ) : (
