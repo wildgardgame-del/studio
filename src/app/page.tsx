@@ -88,9 +88,8 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative h-[60vh] w-full min-h-[500px]">
           <Image
-            src={heroImage.placeholderImages[0].imageUrl}
-            alt={heroImage.placeholderImages[0].description}
-            data-ai-hint={heroImage.placeholderImages[0].imageHint}
+            src="/images/bannerForgegate.png"
+            alt="Forge Gate Hub Banner"
             fill
             className="object-cover"
             priority
@@ -98,7 +97,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
             <div>
-              <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={200} height={200} className="mx-auto mb-2 animate-pulse" style={{ animationDuration: '3s' }} />
+              <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={200} height={200} className="mx-auto mb-2" />
               <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
                 Enter the Forge
               </h1>
