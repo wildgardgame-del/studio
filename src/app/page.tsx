@@ -69,7 +69,7 @@ export default function Home() {
 
   const filteredFeaturedGames = useMemo(() => {
     if (!allFeaturedGames) return [];
-    let games = allFeaturedGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
+    let games = allFeaturedGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade' && !game.isInDevelopment);
     if (showAdultContent && isAgeVerified) {
       return games;
     }

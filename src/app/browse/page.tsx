@@ -81,7 +81,7 @@ function BrowsePageContent() {
     const filteredAndSortedGames = useMemo(() => {
         if (!allGames) return [];
 
-        let games = allGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
+        let games = allGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade' && !game.isInDevelopment);
         
         if (!showAdultContent) {
              games = games.filter(game => !game.isAdultContent);

@@ -16,6 +16,7 @@ import {
   Bell,
   CheckCheck,
   MessageSquare,
+  FlaskConical,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -52,6 +53,7 @@ import { Separator } from '../ui/separator';
 
 const navLinks = [
   { href: '/browse', label: 'Store', activeColorClass: 'text-primary', icon: ShoppingCart },
+  { href: '/lab', label: 'Lab', activeColorClass: 'text-accent', icon: FlaskConical },
   { href: '/library', label: 'Library', activeColorClass: 'text-accent', icon: Library },
 ];
 
