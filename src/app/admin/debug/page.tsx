@@ -3,7 +3,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useFirebase } from '@/firebase';
-import { Loader2, ShieldPlus, Trash2, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Loader2, ShieldPlus, Trash2, ShieldAlert, ArrowLeft, Gamepad2, Users } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +34,8 @@ function AdminDebugPageContent() {
   const queryClient = useQueryClient();
 
   const [showClearSalesDialog, setShowClearSalesDialog] = useState(false);
+  const [showClearGamesDialog, setShowClearGamesDialog] = useState(false);
+  const [showClearUsersDialog, setShowClearUsersDialog] = useState(false);
 
   const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
     queryKey: ['isAdmin', user?.uid],
@@ -81,6 +83,99 @@ function AdminDebugPageContent() {
       setShowClearSalesDialog(false);
     }
   });
+
+  const clearGamesMutation = useMutation({
+    mutationFn: async () => {
+      if (!firestore) throw new Error("Firestore not available");
+      const gamesRef = collection(firestore, 'games');
+      const gamesSnapshot = await getDocs(gamesRef);
+
+      const batch = writeBatch(firestore);
+      let deletedCount = 0;
+      gamesSnapshot.forEach(doc => {
+        // IMPORTANT: Do not delete the developer license 'games'
+        if (doc.id !== 'dev-account-upgrade' && doc.id !== 'dev-android-account-upgrade') {
+          batch.delete(doc.ref);
+          deletedCount++;
+        }
+      });
+      if (deletedCount === 0) {
+        toast({ title: 'No games to clear.' });
+        return;
+      }
+      await batch.commit();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Games Cleared!",
+        description: "All game records have been permanently deleted.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['all-games-with-devs'] });
+      queryClient.invalidateQueries({ queryKey: ['global-admin-stats'] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Error Clearing Games", description: error.message || "An unexpected error occurred." });
+    },
+    onSettled: () => {
+      setShowClearGamesDialog(false);
+    }
+  });
+
+  const clearUsersMutation = useMutation({
+    mutationFn: async () => {
+        if (!firestore) throw new Error("Firestore not available");
+
+        // 1. Get all admin IDs first
+        const adminsRef = collection(firestore, 'admins');
+        const adminsSnapshot = await getDocs(adminsRef);
+        const adminIds = new Set(adminsSnapshot.docs.map(doc => doc.id));
+        if (user) adminIds.add(user.uid); // Ensure current user is not deleted
+
+        // 2. Get all users
+        const usersRef = collection(firestore, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+
+        const batch = writeBatch(firestore);
+        let deletedCount = 0;
+
+        usersSnapshot.forEach(userDoc => {
+            // 3. If user is NOT an admin, add their deletion to the batch
+            if (!adminIds.has(userDoc.id)) {
+                batch.delete(userDoc.ref);
+                
+                // Also delete their corresponding username document
+                const username = userDoc.data().username;
+                if(username) {
+                    const usernameRef = doc(firestore, 'usernames', username.toLowerCase());
+                    batch.delete(usernameRef);
+                }
+                
+                deletedCount++;
+            }
+        });
+
+        if (deletedCount === 0) {
+            toast({ title: 'No users to clear.' });
+            return;
+        }
+
+        await batch.commit();
+    },
+    onSuccess: () => {
+        toast({
+            title: "Non-Admin Users Cleared!",
+            description: "All user accounts (except administrators) have been deleted.",
+        });
+        queryClient.invalidateQueries({ queryKey: ['all-users-for-management'] });
+        queryClient.invalidateQueries({ queryKey: ['global-admin-stats'] });
+    },
+    onError: (error: any) => {
+        toast({ variant: "destructive", title: "Error Clearing Users", description: error.message || "An unexpected error occurred." });
+    },
+    onSettled: () => {
+        setShowClearUsersDialog(false);
+    }
+});
   
   const isLoading = isUserLoading || isAdminLoading;
 
@@ -100,29 +195,25 @@ function AdminDebugPageContent() {
 
   return (
     <>
-    {/* Clear Sales Dialog */}
+    {/* Dialogs */}
     <AlertDialog open={showClearSalesDialog} onOpenChange={setShowClearSalesDialog}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action will permanently delete ALL sales records from the database. This is irreversible and will reset the Total Revenue counter to $0.00.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-                onClick={() => clearSalesMutation.mutate()}
-                className={cn(buttonVariants({ variant: "destructive" }))}
-                disabled={clearSalesMutation.isPending}
-            >
-                {clearSalesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Yes, delete all sales
-            </AlertDialogAction>
-            </AlertDialogFooter>
+            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action will permanently delete ALL sales records. This is irreversible.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => clearSalesMutation.mutate()} className={cn(buttonVariants({ variant: "destructive" }))} disabled={clearSalesMutation.isPending}>{clearSalesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Yes, delete sales</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
-
+    <AlertDialog open={showClearGamesDialog} onOpenChange={setShowClearGamesDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action will permanently delete ALL game submissions (except for core license products). This is irreversible.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => clearGamesMutation.mutate()} className={cn(buttonVariants({ variant: "destructive" }))} disabled={clearGamesMutation.isPending}>{clearGamesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Yes, delete games</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    <AlertDialog open={showClearUsersDialog} onOpenChange={setShowClearUsersDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action will permanently delete ALL users who are NOT administrators. This is irreversible.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => clearUsersMutation.mutate()} className={cn(buttonVariants({ variant: "destructive" }))} disabled={clearUsersMutation.isPending}>{clearUsersMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Yes, delete users</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
 
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -133,22 +224,26 @@ function AdminDebugPageContent() {
         <div className="space-y-6 max-w-2xl w-full">
             <Card className="border-destructive/50">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-destructive">
-                        <Trash2 />
-                        Clear Sales Data
-                    </CardTitle>
-                    <CardDescription>
-                        Permanently delete all sales transaction records. This is useful for resetting revenue statistics before a production launch.
-                    </CardDescription>
+                    <CardTitle className="flex items-center gap-2 text-destructive"><Trash2 />Clear Sales Data</CardTitle>
+                    <CardDescription>Permanently delete all sales transaction records. This is useful for resetting revenue statistics.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button 
-                        onClick={() => setShowClearSalesDialog(true)}
-                        variant="destructive"
-                    >
-                        Clear All Sales Records
-                    </Button>
-                </CardContent>
+                <CardContent><Button onClick={() => setShowClearSalesDialog(true)} variant="destructive">Clear All Sales</Button></CardContent>
+            </Card>
+
+             <Card className="border-destructive/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-destructive"><Gamepad2 />Clear Games Data</CardTitle>
+                    <CardDescription>Permanently delete all game submissions from the database.</CardDescription>
+                </CardHeader>
+                <CardContent><Button onClick={() => setShowClearGamesDialog(true)} variant="destructive">Clear All Games</Button></CardContent>
+            </Card>
+
+            <Card className="border-destructive/50">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-destructive"><Users />Clear Users Data</CardTitle>
+                    <CardDescription>Permanently delete all non-administrator user accounts.</CardDescription>
+                </CardHeader>
+                <CardContent><Button onClick={() => setShowClearUsersDialog(true)} variant="destructive">Clear All Users</Button></CardContent>
             </Card>
 
             <Button asChild variant="link" className="text-accent">

@@ -42,7 +42,8 @@ service cloud.firestore {
 
       // User can update their own profile, or an admin can.
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
-      // A user can delete their own profile, or an admin can.
+      
+      // A user can delete their own profile, or an admin can delete any profile.
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 
@@ -77,8 +78,9 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       // Only admins can read sales data for analytics. Users should not be able to read other user's sales.
       allow read, list: if isSignedIn() && isAdmin();
-      // Sales records are immutable.
-      allow update, delete: if false;
+      // Sales records are immutable, but admins can delete for cleanup.
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     match /users/{userId}/shopping_cart/{cartId} {
