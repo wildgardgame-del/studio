@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -361,7 +361,14 @@ function EditGamePageContent() {
                     </div>
                      <FormField control={form.control} name="githubRepoUrl" render={({ field }) => (
                         <FormItem>
-                            <FormLabel className="flex items-center gap-2 text-sm font-normal"><Github /> GitHub Repository</FormLabel>
+                            <FormLabel className="flex items-center gap-2 text-sm font-normal">
+                                <Github /> GitHub Repository
+                                <Button asChild variant="link" size="icon" className="h-4 w-4 text-accent">
+                                    <Link href="/dev/docs/github-releases" target="_blank">
+                                        <HelpCircle />
+                                    </Link>
+                                </Button>
+                            </FormLabel>
                             <FormControl><Input placeholder="https://github.com/user/repo" {...field} /></FormControl>
                             <FormDescription>We will automatically use the download link from your latest public release.</FormDescription>
                             <FormMessage />
