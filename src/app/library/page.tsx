@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, query, doc, getDoc } from 'firebase/firestore';
@@ -9,7 +10,6 @@ import { Library as LibraryIcon, Loader2, Download } from 'lucide-react';
 import Link from 'next/link';
 import type { Game } from '@/lib/types';
 import Image from 'next/image';
-import heroImage from '@/lib/placeholder-images.json';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -77,9 +77,8 @@ export default function LibraryPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <Image
-        src={heroImage.placeholderImages[0].imageUrl}
-        alt="Futuristic city background"
-        data-ai-hint="cyberpunk city"
+        src="/images/GamerF.jpg"
+        alt="Developer working on a game"
         fill
         className="object-cover -z-10"
       />
