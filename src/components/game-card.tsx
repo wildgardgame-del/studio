@@ -65,7 +65,7 @@ export function GameCard({ game, className }: GameCardProps) {
         </CardContent>
         <CardFooter className="flex items-center justify-between p-4 pt-0 mt-auto">
             <p className="text-xl font-bold text-accent">
-                {game.isPayWhatYouWant ? 'Pay What You Want' : game.price === 0 ? 'Free' : `$${game.price.toFixed(2)}`}
+                {game.isPayWhatYouWant ? 'Name a Price' : game.price === 0 ? 'Free' : `$${game.price.toFixed(2)}`}
             </p>
           <div className="flex items-center gap-1">
             <Button
