@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle, ShieldAlert } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -55,6 +55,7 @@ const formSchema = z.object({
   trailerUrls: z.string().optional(),
   gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
+  supportDevUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any().optional(),
   screenshots: z.any().optional(),
@@ -111,7 +112,7 @@ function EditGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "", publisher: "", price: 0, isPayWhatYouWant: false, isInDevelopment: false, description: "", longDescription: "",
-      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", isAdultContent: false
+      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", supportDevUrl: "", isAdultContent: false
     },
   });
 
@@ -130,6 +131,7 @@ function EditGamePageContent() {
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
         gameFileUrl: gameData.gameFileUrl || "",
         githubRepoUrl: gameData.githubRepoUrl || "",
+        supportDevUrl: gameData.supportDevUrl || "",
         isAdultContent: gameData.isAdultContent || false,
       });
       setExistingCoverImage(gameData.coverImage);
@@ -210,6 +212,7 @@ function EditGamePageContent() {
         trailerUrls: trailerUrls,
         gameFileUrl: values.gameFileUrl,
         githubRepoUrl: values.githubRepoUrl,
+        supportDevUrl: values.supportDevUrl,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
@@ -415,6 +418,15 @@ function EditGamePageContent() {
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><LinkIcon /> Official Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 </div>
+                
+                 <FormField control={form.control} name="supportDevUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2"><Heart /> Support/Donation Link (Optional)</FormLabel>
+                        <FormControl><Input placeholder="https://ko-fi.com/your-name" {...field} /></FormControl>
+                        <FormDescription>e.g., Ko-fi, Patreon, etc.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
                 
                  <FormField
                     control={form.control}

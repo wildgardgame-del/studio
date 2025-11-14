@@ -20,6 +20,7 @@ export type Game = {
   trailerUrls?: string[];
   gameFileUrl?: string;
   githubRepoUrl?: string;
+  supportDevUrl?: string;
   isAdultContent?: boolean;
   submittedAt?: {
     seconds: number;

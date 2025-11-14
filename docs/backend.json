@@ -109,6 +109,11 @@
         "isAdultContent": {
           "type": "boolean",
           "description": "Whether the game is intended for mature audiences."
+        },
+        "supportDevUrl": {
+            "type": "string",
+            "description": "URL to a developer's support/donation page (e.g., Ko-fi, Patreon).",
+            "format": "uri"
         }
       },
       "required": [

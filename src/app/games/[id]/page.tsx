@@ -230,6 +230,13 @@ function GamePageContent() {
                 </Button>
               </div>
                 <div className="space-y-2">
+                    {game.supportDevUrl && (
+                         <Button asChild variant="secondary" className="w-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border-pink-500/20">
+                            <a href={game.supportDevUrl} target="_blank" rel="noopener noreferrer">
+                                <Heart className="mr-2" /> Support the Dev
+                            </a>
+                        </Button>
+                    )}
                     {game.websiteUrl && (
                         <Button asChild variant="secondary" className="w-full">
                             <a href={game.websiteUrl} target="_blank" rel="noopener noreferrer">
