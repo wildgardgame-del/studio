@@ -54,7 +54,6 @@ const formSchema = z.object({
   trailerUrls: z.string().optional(),
   gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
-  supportDevUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any()
     .refine((file) => !!file, "Cover image is required.")
@@ -123,7 +122,6 @@ function SubmitGamePageContent() {
       trailerUrls: "",
       gameFileUrl: "",
       githubRepoUrl: "",
-      supportDevUrl: "",
       isAdultContent: false,
     },
   });
@@ -186,7 +184,6 @@ function SubmitGamePageContent() {
         trailerUrls: trailerUrls,
         gameFileUrl: values.gameFileUrl,
         githubRepoUrl: values.githubRepoUrl,
-        supportDevUrl: values.supportDevUrl,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
@@ -391,15 +388,6 @@ function SubmitGamePageContent() {
                     </FormItem>
                     )}/>
                 </div>
-                
-                 <FormField control={form.control} name="supportDevUrl" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="flex items-center gap-2"><Heart /> Support/Donation Link (Optional)</FormLabel>
-                        <FormControl><Input placeholder="https://ko-fi.com/your-name" {...field} /></FormControl>
-                         <FormDescription>e.g., Ko-fi, Patreon, etc.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}/>
                 
                  <FormField
                     control={form.control}

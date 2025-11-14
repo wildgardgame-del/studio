@@ -230,11 +230,11 @@ function GamePageContent() {
                 </Button>
               </div>
                 <div className="space-y-2">
-                    {game.supportDevUrl && (
+                    {(game.isPayWhatYouWant || game.price === 0) && (
                          <Button asChild variant="secondary" className="w-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border-pink-500/20">
-                            <a href={game.supportDevUrl} target="_blank" rel="noopener noreferrer">
+                            <Link href={`#`}>
                                 <Heart className="mr-2" /> Support the Dev
-                            </a>
+                            </Link>
                         </Button>
                     )}
                     {game.websiteUrl && (
