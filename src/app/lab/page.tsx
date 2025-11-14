@@ -13,7 +13,6 @@ import { GameCard } from '@/components/game-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
-import heroImage from '@/lib/placeholder-images.json';
 
 function LabPageContent() {
   const { firestore } = useFirebase();
@@ -33,21 +32,12 @@ function LabPageContent() {
     if (!labGames) return [];
     return labGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
   }, [labGames]);
-  
-  const background = useMemo(() => {
-    const devImages = heroImage.placeholderImages.filter(
-      img => img.id === 'male-dev-workspace' || img.id === 'female-dev-workspace'
-    );
-    if (devImages.length === 0) return heroImage.placeholderImages[0];
-    return devImages[Math.floor(Math.random() * devImages.length)];
-  }, []);
 
   return (
     <div className="relative flex min-h-screen flex-col">
        <Image
-        src={background.imageUrl}
-        alt={background.description}
-        data-ai-hint={background.imageHint}
+        src="/images/GamerF.jpg"
+        alt="Developer working on a game"
         fill
         className="object-cover -z-10"
       />
