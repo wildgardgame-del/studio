@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +32,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import heroImage from '@/lib/placeholder-images.json';
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
@@ -167,9 +167,8 @@ export function WelcomeForm() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <Image
-        src={heroImage.placeholderImages[0].imageUrl}
-        alt="Futuristic city background"
-        data-ai-hint="cyberpunk city"
+        src="/images/GamerF.jpg"
+        alt="Gaming background"
         fill
         className="object-cover -z-10"
       />
@@ -265,5 +264,7 @@ export function WelcomeForm() {
     </div>
   );
 }
+
+    
 
     
