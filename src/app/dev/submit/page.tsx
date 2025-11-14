@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
+import Header from "@/components/ui/../components/layout/header";
+import Footer from "@/components/ui/../components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,7 @@ const formSchema = z.object({
   gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
+  isPayWhatYouWant: z.boolean().default(false),
   coverImage: z.any()
     .refine((file) => !!file, "Cover image is required.")
     .refine((file) => file?.size <= 5_000_000, `Max file size is 5MB.`)
@@ -115,11 +117,19 @@ function SubmitGamePageContent() {
       gameFileUrl: "",
       githubRepoUrl: "",
       isAdultContent: false,
+      isPayWhatYouWant: false,
     },
   });
 
   const coverImage = form.watch("coverImage");
   const screenshots = form.watch("screenshots");
+  const isPayWhatYouWant = form.watch("isPayWhatYouWant");
+
+  useEffect(() => {
+    if (isPayWhatYouWant) {
+      form.setValue("price", 0);
+    }
+  }, [isPayWhatYouWant, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -163,7 +173,8 @@ function SubmitGamePageContent() {
       const newGameData = {
         title: values.title,
         publisher: values.publisher,
-        price: values.price,
+        price: values.isPayWhatYouWant ? 0 : values.price,
+        isPayWhatYouWant: values.isPayWhatYouWant,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
@@ -259,10 +270,32 @@ function SubmitGamePageContent() {
                   )}/>
                 </div>
                 
+                <FormField
+                    control={form.control}
+                    name="isPayWhatYouWant"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Pay What You Want</FormLabel>
+                            <FormDescription>
+                                Allow players to name their own price, starting from $0.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Price (USD)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormControl><Input type="number" step="0.01" {...field} disabled={isPayWhatYouWant} /></FormControl>
+                    <FormDescription>{isPayWhatYouWant ? "Price is set to $0 because 'Pay What You Want' is enabled." : "Set to 0 for a free game."}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -63,7 +64,11 @@ export function GameCard({ game, className }: GameCardProps) {
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between p-4 pt-0 mt-auto">
-          <p className="text-xl font-bold text-accent">${game.price.toFixed(2)}</p>
+           {game.isPayWhatYouWant ? (
+              <p className="text-lg font-bold text-accent">Pay What You Want</p>
+            ) : (
+              <p className="text-xl font-bold text-accent">${game.price.toFixed(2)}</p>
+            )}
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"

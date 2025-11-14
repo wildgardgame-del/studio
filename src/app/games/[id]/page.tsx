@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Suspense, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github, Award } from 'lucide-react';
 import Image from 'next/image';
 
 import Header from '@/components/layout/header';
@@ -166,6 +167,33 @@ function GamePageContent() {
     );
   }
 
+  const renderPurchaseButton = () => {
+    if (gameIsPurchased) {
+        return (
+             <Button asChild size="lg" className="w-full" disabled={isDownloadLinkLoading || !downloadUrl}>
+                <a href={downloadUrl || ''} target="_blank" rel="noopener noreferrer">
+                    {isDownloadLinkLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : game.githubRepoUrl ? <Github className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                    {isDownloadLinkLoading ? 'Getting Link...' : (downloadUrl ? 'Download Game' : 'Download N/A')}
+                </a>
+            </Button>
+        )
+    }
+
+    if (game.isPayWhatYouWant) {
+        return (
+            <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)}>
+                <Award className="mr-2" /> Get Game
+            </Button>
+        )
+    }
+    
+    return (
+        <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)}>
+            <ShoppingCart className="mr-2" /> Buy for ${game.price.toFixed(2)}
+        </Button>
+    )
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-secondary/30">
       <Header />
@@ -188,18 +216,7 @@ function GamePageContent() {
                 className="rounded-lg object-cover aspect-[3/4] shadow-lg w-full"
               />
               <div className="space-y-2">
-                {gameIsPurchased ? (
-                  <Button asChild size="lg" className="w-full" disabled={isDownloadLinkLoading || !downloadUrl}>
-                      <a href={downloadUrl || ''} target="_blank" rel="noopener noreferrer">
-                           {isDownloadLinkLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : game.githubRepoUrl ? <Github className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                           {isDownloadLinkLoading ? 'Getting Link...' : (downloadUrl ? 'Download Game' : 'Download N/A')}
-                      </a>
-                  </Button>
-                ) : (
-                    <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)} disabled={gameIsPurchased}>
-                        <ShoppingCart className="mr-2" /> {gameIsPurchased ? 'In Library' : `Buy for $${game.price.toFixed(2)}`}
-                    </Button>
-                )}
+                {renderPurchaseButton()}
                  <Button size="lg" variant="outline" className="w-full" onClick={() => handleToggleWishlist(game)} disabled={gameIsPurchased}>
                     <Heart className={cn("mr-2", isWishlisted && 'fill-accent text-accent')} />
                     {isWishlisted ? 'On Wishlist' : 'Add to Wishlist'}

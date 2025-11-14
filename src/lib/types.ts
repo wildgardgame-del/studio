@@ -19,6 +19,7 @@ export type Game = {
   gameFileUrl?: string;
   githubRepoUrl?: string;
   isAdultContent?: boolean;
+  isPayWhatYouWant?: boolean;
   submittedAt?: {
     seconds: number;
     nanoseconds: number;
