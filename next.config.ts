@@ -23,21 +23,15 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
+        protocol: 'https'
+        ,
         hostname: 'i.imgur.com',
         port: '',
         pathname: '/**',
       },
       {
-        protocol: 'https'
-        ,
-        hostname: 'imgur.com',
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
         port: '',
         pathname: '/**',
       },

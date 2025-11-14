@@ -15,6 +15,7 @@ import { useGameStore } from "@/context/game-store-context";
 import type { Game } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
+import heroImage from '@/lib/placeholder-images.json';
 
 
 function ApplyForDevPageContent() {
@@ -24,14 +25,12 @@ function ApplyForDevPageContent() {
     const router = useRouter();
     const { handleAddToCart, isPurchased } = useGameStore();
 
-    // Fetch the standard dev license
     const devLicenseRef = useMemoFirebase(() => {
         if (!firestore) return null;
         return doc(firestore, 'games', 'dev-account-upgrade');
     }, [firestore]);
     const { data: devLicenseProduct, isLoading: isLicenseLoading } = useDoc<Game>(devLicenseRef);
 
-    // Fetch the new Android dev license
     const androidLicenseRef = useMemoFirebase(() => {
         if (!firestore) return null;
         return doc(firestore, 'games', 'dev-android-account-upgrade');
@@ -48,13 +47,11 @@ function ApplyForDevPageContent() {
                 id: product.id,
                 title: product.title,
                 description: product.description,
-                longDescription: product.longDescription,
                 price: product.price,
                 genres: product.genres || [],
                 coverImage: product.coverImage,
                 screenshots: product.screenshots || [],
                 rating: product.rating || 0,
-                reviews: product.reviews || [],
             };
             handleAddToCart(gameToAdd);
             router.push('/checkout');
@@ -64,6 +61,7 @@ function ApplyForDevPageContent() {
     const isLoading = isUserLoading || isLicenseLoading || isAndroidLicenseLoading;
     const hasStandardLicense = isPurchased('dev-account-upgrade');
     const hasAndroidLicense = isPurchased('dev-android-account-upgrade');
+    const devHeroImage = heroImage.placeholderImages.find(img => img.id === 'dev-page-hero')!;
 
 
     if (isLoading) {
@@ -98,79 +96,65 @@ function ApplyForDevPageContent() {
     return (
         <div className="flex min-h-screen flex-col">
             <Header />
-            <main className="flex-1 bg-secondary/30 py-16">
-                <div className="container text-center">
-                     <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Become a Publisher</h1>
-                     <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
-                        Choose the license that fits your needs and start publishing your games on our platform.
-                    </p>
-                    <Button asChild variant="link" className="p-0 text-accent mt-2">
-                        <Link href="/">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Store
-                        </Link>
-                    </Button>
-                </div>
-                <div className="container mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    
-                    {/* Standard Dev License */}
-                    {devLicenseProduct ? (
-                        <Card className="flex flex-col h-full">
-                            <CardHeader className="text-center">
-                                <CardTitle className="font-headline text-2xl">{devLicenseProduct.title}</CardTitle>
-                                <CardDescription>{devLicenseProduct.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 flex flex-col items-center text-center">
-                                {devLicenseProduct.coverImage && (
-                                    <Image 
-                                        src={devLicenseProduct.coverImage} 
-                                        alt={devLicenseProduct.title} 
-                                        width={200}
-                                        height={267}
-                                        className="rounded-lg shadow-lg object-contain mb-6" 
-                                    />
-                                )}
-                                <p className="text-muted-foreground text-sm flex-1">{devLicenseProduct.longDescription}</p>
-                            </CardContent>
-                             <CardFooter className="flex-col items-stretch gap-4 p-6 bg-secondary/30">
-                                <div className="text-4xl font-bold text-primary text-center">${devLicenseProduct.price?.toFixed(2) || '0.00'}</div>
-                                <Button size="lg" className="w-full" onClick={() => handlePurchase(devLicenseProduct)} disabled={hasStandardLicense}>
-                                    {hasStandardLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : <><ShoppingCart className="mr-2" /> Purchase License</>}
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ) : <div className="border rounded-lg p-8 text-center text-muted-foreground">Standard License Unavailable</div>}
+            <main className="flex-1 bg-secondary/30">
+                <div className="container grid lg:grid-cols-2 gap-16 items-center py-16">
+                    <div className="hidden lg:block">
+                        <Image
+                            src={devHeroImage.imageUrl}
+                            alt={devHeroImage.description}
+                            data-ai-hint={devHeroImage.imageHint}
+                            width={1024}
+                            height={1024}
+                            className="rounded-xl shadow-2xl shadow-primary/20 aspect-square object-cover"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-8">
+                         <div className="text-center lg:text-left">
+                            <h1 className="font-headline text-4xl lg:text-5xl font-bold tracking-tight">Become a Publisher</h1>
+                            <p className="text-lg text-muted-foreground mt-4">
+                                Choose the license that fits your needs and start publishing your games on our platform.
+                            </p>
+                        </div>
+                        
+                        {devLicenseProduct ? (
+                            <Card className="flex flex-col h-full">
+                                <CardHeader>
+                                    <CardTitle className="font-headline text-2xl">{devLicenseProduct.title}</CardTitle>
+                                    <CardDescription>{devLicenseProduct.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-1">
+                                    <p className="text-muted-foreground text-sm">{devLicenseProduct.longDescription}</p>
+                                </CardContent>
+                                <CardFooter className="flex-col sm:flex-row items-center gap-4 p-6 bg-secondary/30">
+                                    <div className="text-4xl font-bold text-primary flex-1">${devLicenseProduct.price?.toFixed(2) || '0.00'}</div>
+                                    <Button size="lg" className="w-full sm:w-auto" onClick={() => handlePurchase(devLicenseProduct)} disabled={hasStandardLicense}>
+                                        {hasStandardLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : <><ShoppingCart className="mr-2" /> Purchase License</>}
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ) : <div className="border rounded-lg p-8 text-center text-muted-foreground">Standard License Unavailable</div>}
 
-                     {/* Android Dev License */}
-                    {androidLicenseProduct ? (
-                        <Card className="flex flex-col h-full border-primary border-2 relative">
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-sm font-semibold text-primary-foreground bg-primary rounded-full">
-                                MOST POPULAR
-                            </div>
-                            <CardHeader className="text-center">
-                                <CardTitle className="font-headline text-2xl">{androidLicenseProduct.title}</CardTitle>
-                                <CardDescription>{androidLicenseProduct.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 flex flex-col items-center text-center">
-                                {androidLicenseProduct.coverImage && (
-                                     <Image 
-                                        src={androidLicenseProduct.coverImage} 
-                                        alt={androidLicenseProduct.title} 
-                                        width={200}
-                                        height={267}
-                                        className="rounded-lg shadow-lg object-contain mb-6" 
-                                    />
-                                )}
-                               <p className="text-muted-foreground text-sm flex-1">{androidLicenseProduct.longDescription}</p>
-                            </CardContent>
-                            <CardFooter className="flex-col items-stretch gap-4 p-6 bg-secondary/30">
-                                <div className="text-4xl font-bold text-primary text-center">${androidLicenseProduct.price?.toFixed(2) || '0.00'}</div>
-                                <Button size="lg" className="w-full" onClick={() => handlePurchase(androidLicenseProduct)} disabled={hasAndroidLicense || true}>
-                                    {hasAndroidLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : 'Coming Soon'}
-                                 </Button>
-                            </CardFooter>
-                        </Card>
-                    ) : <div className="border rounded-lg p-8 text-center text-muted-foreground">Android License Unavailable</div>}
+                        {androidLicenseProduct ? (
+                            <Card className="flex flex-col h-full border-primary/50 relative">
+                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-sm font-semibold text-primary-foreground bg-primary rounded-full">
+                                    MOST POPULAR
+                                </div>
+                                <CardHeader>
+                                    <CardTitle className="font-headline text-2xl">{androidLicenseProduct.title}</CardTitle>
+                                    <CardDescription>{androidLicenseProduct.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-1">
+                                <p className="text-muted-foreground text-sm">{androidLicenseProduct.longDescription}</p>
+                                </CardContent>
+                                <CardFooter className="flex-col sm:flex-row items-center gap-4 p-6 bg-secondary/30">
+                                    <div className="text-4xl font-bold text-primary flex-1">${androidLicenseProduct.price?.toFixed(2) || '0.00'}</div>
+                                    <Button size="lg" className="w-full sm:w-auto" onClick={() => handlePurchase(androidLicenseProduct)} disabled={hasAndroidLicense || true}>
+                                        {hasAndroidLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : 'Coming Soon'}
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ) : <div className="border rounded-lg p-8 text-center text-muted-foreground">Android License Unavailable</div>}
+                    </div>
                 </div>
             </main>
             <Footer />
