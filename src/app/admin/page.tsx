@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser, useFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 
 
 function AdminDashboardPageContent() {
-  const { user, isUserLoading, firestore } = useUser();
+  const { user, isUserLoading, firestore } = useFirebase();
   const router = useRouter();
 
   const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
