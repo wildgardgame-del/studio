@@ -69,7 +69,7 @@ function AdminDashboardPageContent() {
       const [pendingSnapshot, unreadSnapshot, usersSnapshot, approvedGamesSnapshot, salesSnapshot] = await Promise.all([
         getDocs(pendingGamesQuery),
         getDocs(unreadMessagesQuery),
-        getDocs(usersSnapshot),
+        getDocs(usersQuery),
         getDocs(approvedGamesQuery),
         getDocs(salesQuery),
       ]);
@@ -86,6 +86,7 @@ function AdminDashboardPageContent() {
       };
     },
     enabled: !!firestore && isAdmin,
+    refetchInterval: 900000, // 15 minutos
   });
 
 
