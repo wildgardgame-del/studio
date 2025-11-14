@@ -34,7 +34,7 @@ function LabPageContent() {
     return labGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
   }, [labGames]);
   
-  const background = heroImage.placeholderImages.find(img => img.id === 'forest-guardian-cover') || heroImage.placeholderImages[0];
+  const background = heroImage.placeholderImages.find(img => img.id === 'cyberpunk-samurai-cover') || heroImage.placeholderImages[0];
 
   return (
     <div className="relative flex min-h-screen flex-col">
