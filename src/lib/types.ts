@@ -5,11 +5,12 @@ export type Game = {
   description: string;
   longDescription?: string;
   price: number;
+  isPayWhatYouWant?: boolean; // Re-add this field
   genres: string[];
   coverImage: string;
   screenshots: string[];
-  rating: number; // This will now be an aggregate rating
-  reviewCount?: number; // Add review count
+  rating: number; 
+  reviewCount?: number; 
   status?: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
   developerId?: string;
@@ -29,7 +30,7 @@ export type Review = {
   id: string;
   gameId: string;
   userId: string;
-  username: string; // Add username for display
+  username: string; 
   rating: number;
   comment: string;
   reviewDate: {
@@ -38,7 +39,6 @@ export type Review = {
   };
 };
 
-// This type is no longer used, but kept for reference to avoid breaking other parts of the app.
 export type DeveloperApplication = {
   id: string;
   userId: string;

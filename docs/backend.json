@@ -40,6 +40,10 @@
           "type": "number",
           "description": "The price of the game."
         },
+        "isPayWhatYouWant": {
+          "type": "boolean",
+          "description": "Indicates if the game uses a 'pay what you want' pricing model."
+        },
         "releaseDate": {
           "type": "string",
           "description": "The date when the game was released.",
@@ -108,6 +112,7 @@
         "title",
         "description",
         "price",
+        "isPayWhatYouWant",
         "developerId",
         "imageUrl",
         "status",

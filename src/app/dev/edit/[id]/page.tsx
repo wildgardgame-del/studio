@@ -44,6 +44,7 @@ const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
   publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
+  isPayWhatYouWant: z.boolean().default(false),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
   genres: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -58,7 +59,7 @@ const formSchema = z.object({
   screenshots: z.any().optional(),
 }).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
     message: "You must provide either a direct download URL or a GitHub repository URL.",
-    path: ["gameFileUrl"], // Assign error to one of the fields
+    path: ["gameFileUrl"],
 });
 
 const fileToDataUri = (file: File): Promise<string> => {
@@ -105,7 +106,7 @@ function EditGamePageContent() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "", publisher: "", price: 0, description: "", longDescription: "",
+      title: "", publisher: "", price: 0, isPayWhatYouWant: false, description: "", longDescription: "",
       genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", isAdultContent: false
     },
   });
@@ -116,9 +117,10 @@ function EditGamePageContent() {
         title: gameData.title,
         publisher: gameData.publisher || "",
         price: gameData.price,
+        isPayWhatYouWant: gameData.isPayWhatYouWant || false,
         description: gameData.description,
         longDescription: gameData.longDescription || "",
-        genres: gameData.genres?.filter(g => g !== MATURE_TAG) || [], // Exclude mature tag from form state
+        genres: gameData.genres?.filter(g => g !== MATURE_TAG) || [],
         websiteUrl: gameData.websiteUrl || "",
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
         gameFileUrl: gameData.gameFileUrl || "",
@@ -132,6 +134,14 @@ function EditGamePageContent() {
 
   const coverImageFile = form.watch("coverImage");
   const screenshotsFiles = form.watch("screenshots");
+  const isPayWhatYouWant = form.watch("isPayWhatYouWant");
+
+  useEffect(() => {
+    if (isPayWhatYouWant) {
+        form.setValue("price", 0);
+    }
+  }, [isPayWhatYouWant, form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !gameId || !gameRef) {
@@ -154,14 +164,12 @@ function EditGamePageContent() {
       let coverImageUrl = existingCoverImage;
       let screenshotUrls = [...existingScreenshots]; 
 
-      // Handle new cover image upload
       if (values.coverImage && values.coverImage.name) {
         const coverImageDataUri = await fileToDataUri(values.coverImage);
         coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
         toast({ title: "New cover image uploaded!" });
       }
 
-      // Handle new screenshots upload
       if (values.screenshots && values.screenshots.length > 0) {
         const newScreenshotUrls = await Promise.all(
           Array.from(values.screenshots).map(async (file: any) => {
@@ -169,13 +177,12 @@ function EditGamePageContent() {
             return uploadImage({ fileDataUri: dataUri, fileName: file.name });
           })
         );
-        screenshotUrls = [...screenshotUrls, ...newScreenshotUrls]; // Append new screenshots
+        screenshotUrls = [...screenshotUrls, ...newScreenshotUrls];
         toast({ title: "New screenshots uploaded!", description: "Finalizing submission..." });
       }
 
       const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
-      // Handle automatic genre tagging
       let finalGenres = [...values.genres];
       if (values.isAdultContent) {
           if (!finalGenres.includes(MATURE_TAG)) {
@@ -189,6 +196,7 @@ function EditGamePageContent() {
         title: values.title,
         publisher: values.publisher,
         price: values.price,
+        isPayWhatYouWant: values.isPayWhatYouWant,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
@@ -200,10 +208,10 @@ function EditGamePageContent() {
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
         developerId: user.uid,
-        status: 'pending' as const, // Always return to pending status for re-approval
+        status: 'pending' as const,
         submittedAt: gameData?.submittedAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
-        rejectionReason: null, // Clear previous rejection reason
+        rejectionReason: null,
       };
       
       await updateDoc(gameRef, updatedGameData);
@@ -312,14 +320,36 @@ function EditGamePageContent() {
                   <FormField control={form.control} name="publisher" render={({ field }) => ( <FormItem><FormLabel>Developer / Publisher</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
 
-                <FormField control={form.control} name="price" render={({ field }) => ( 
-                  <FormItem>
-                    <FormLabel>Price (USD)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormDescription>Set to 0 for a free game.</FormDescription>
-                    <FormMessage />
-                  </FormItem> 
-                )}/>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <FormField control={form.control} name="price" render={({ field }) => ( 
+                      <FormItem>
+                        <FormLabel>Price (USD)</FormLabel>
+                        <FormControl><Input type="number" step="0.01" {...field} disabled={isPayWhatYouWant} /></FormControl>
+                        <FormDescription>Set to 0 for a free game.</FormDescription>
+                        <FormMessage />
+                      </FormItem> 
+                    )}/>
+                     <FormField
+                        control={form.control}
+                        name="isPayWhatYouWant"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 h-full mt-1">
+                                <div className="space-y-0.5">
+                                    <FormLabel>Pay What You Want</FormLabel>
+                                    <FormDescription className="text-xs">
+                                        Allow players to download for free or pay an amount of their choice.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Short Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 <FormField control={form.control} name="longDescription" render={({ field }) => ( <FormItem><FormLabel>Full Description</FormLabel><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem> )}/>

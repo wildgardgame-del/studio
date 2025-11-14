@@ -53,7 +53,6 @@ async function getLatestGitHubReleaseUrl(repoUrl: string): Promise<string | null
     }
 
     const release: GitHubRelease = await response.json();
-    // Find the first asset that is a .zip file, or just the first asset if none are zips.
     const zipAsset = release.assets.find(asset => asset.name.endsWith('.zip'));
     const asset = zipAsset || release.assets[0];
 
@@ -179,10 +178,10 @@ function GamePageContent() {
         )
     }
     
-    if (game.price === 0) {
+    if (game.isPayWhatYouWant || game.price === 0) {
         return (
             <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)}>
-                <Award className="mr-2" /> Get for Free
+                <Award className="mr-2" /> Get Game
             </Button>
         )
     }

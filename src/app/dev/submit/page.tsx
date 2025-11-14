@@ -43,6 +43,7 @@ const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
   publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
+  isPayWhatYouWant: z.boolean().default(false),
   description: z.string().min(10, "Short description must be at least 10 characters."),
   longDescription: z.string().min(30, "Full description must be at least 30 characters."),
   genres: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -70,7 +71,7 @@ const formSchema = z.object({
     ),
 }).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
     message: "You must provide either a direct download URL or a GitHub repository URL.",
-    path: ["gameFileUrl"], // Assign error to one of the fields
+    path: ["gameFileUrl"],
 });
 
 
@@ -108,6 +109,7 @@ function SubmitGamePageContent() {
       title: "",
       publisher: "",
       price: 0,
+      isPayWhatYouWant: false,
       description: "",
       longDescription: "",
       genres: [],
@@ -121,6 +123,13 @@ function SubmitGamePageContent() {
 
   const coverImage = form.watch("coverImage");
   const screenshots = form.watch("screenshots");
+  const isPayWhatYouWant = form.watch("isPayWhatYouWant");
+
+  useEffect(() => {
+    if (isPayWhatYouWant) {
+        form.setValue("price", 0);
+    }
+  }, [isPayWhatYouWant, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
@@ -136,12 +145,10 @@ function SubmitGamePageContent() {
     toast({ title: "Starting submission...", description: "Please wait while we upload your files." });
 
     try {
-      // 1. Upload Cover Image
       const coverImageDataUri = await fileToDataUri(values.coverImage);
       const coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
       toast({ title: "Cover image uploaded!", description: "Now uploading screenshots..." });
       
-      // 2. Upload Screenshots
       const screenshotUrls = await Promise.all(
         Array.from(values.screenshots).map(async (file: any) => {
             const dataUri = await fileToDataUri(file);
@@ -152,7 +159,6 @@ function SubmitGamePageContent() {
       
       const trailerUrls = values.trailerUrls?.split(',').map(url => url.trim()).filter(url => url) || [];
 
-      // Handle automatic genre tagging
       let finalGenres = [...values.genres];
       if (values.isAdultContent) {
         if (!finalGenres.includes(MATURE_TAG)) {
@@ -160,11 +166,11 @@ function SubmitGamePageContent() {
         }
       }
 
-      // 3. Prepare game data for Firestore
       const newGameData = {
         title: values.title,
         publisher: values.publisher,
         price: values.price,
+        isPayWhatYouWant: values.isPayWhatYouWant,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
@@ -182,7 +188,6 @@ function SubmitGamePageContent() {
         reviews: [],
       };
 
-      // 4. Save to Firestore (non-blocking)
       addDocumentNonBlocking(collection(firestore, `games`), newGameData);
 
       toast({
@@ -259,15 +264,38 @@ function SubmitGamePageContent() {
                     </FormItem>
                   )}/>
                 </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <FormField control={form.control} name="price" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (USD)</FormLabel>
+                        <FormControl><Input type="number" step="0.01" {...field} disabled={isPayWhatYouWant} /></FormControl>
+                        <FormDescription>Set to 0 for a free game.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}/>
+                    <FormField
+                        control={form.control}
+                        name="isPayWhatYouWant"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 h-full mt-1">
+                                <div className="space-y-0.5">
+                                    <FormLabel>Pay What You Want</FormLabel>
+                                    <FormDescription className="text-xs">
+                                        Allow players to download for free or pay an amount of their choice.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
-                <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price (USD)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormDescription>Set to 0 for a free game.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
 
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem>
