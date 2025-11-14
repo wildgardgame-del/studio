@@ -76,7 +76,7 @@ function ManageUsersPageContent() {
     };
     
     const { data: allUsers, isLoading: isLoadingUsers } = useQuery({
-        queryKey: ['all-users'],
+        queryKey: ['all-users-for-management'],
         queryFn: fetchAllUsers,
         enabled: !!firestore,
     });
@@ -155,7 +155,7 @@ function ManageUsersPageContent() {
                 title: "User Deleted",
                 description: `${user.username} has been permanently removed from the system.`,
             });
-            queryClient.invalidateQueries({queryKey: ['all-users']});
+            queryClient.invalidateQueries({queryKey: ['all-users-for-management']});
             queryClient.invalidateQueries({queryKey: ['admin-ids']});
         },
         onError: (error, user) => {
@@ -312,3 +312,5 @@ export default function ManageUsersPage() {
         </Suspense>
     )
 }
+
+    
