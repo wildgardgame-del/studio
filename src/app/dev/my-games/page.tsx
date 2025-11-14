@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense } from 'react';
@@ -7,7 +8,7 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, PlusCircle, Pencil, Info, ArrowLeft } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Info, ArrowLeft, BarChart2 } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/layout/header';
@@ -102,7 +103,13 @@ function MyGamesPageContent() {
                                         </Badge>
                                     )}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right space-x-1">
+                                    <Button asChild variant="ghost" size="sm">
+                                        <Link href={`/dev/stats/${game.id}`}>
+                                            <BarChart2 className="mr-2 h-4 w-4" />
+                                            Stats
+                                        </Link>
+                                    </Button>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <div className="inline-block"> {/* Wrapper div for Tooltip with disabled button */}
@@ -173,3 +180,4 @@ export default function MyGamesPage() {
         </Suspense>
     )
 }
+
