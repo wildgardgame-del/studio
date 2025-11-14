@@ -1,10 +1,10 @@
 
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github } from 'lucide-react';
 import Image from 'next/image';
 
 import Header from '@/components/layout/header';
@@ -27,6 +27,42 @@ import { useQuery } from '@tanstack/react-query';
 import { Reviews } from '@/components/reviews';
 import { Separator } from '@/components/ui/separator';
 
+type GitHubReleaseAsset = {
+  name: string;
+  browser_download_url: string;
+};
+
+type GitHubRelease = {
+  assets: GitHubReleaseAsset[];
+};
+
+
+async function getLatestGitHubReleaseUrl(repoUrl: string): Promise<string | null> {
+  if (!repoUrl) return null;
+  try {
+    const url = new URL(repoUrl);
+    const pathParts = url.pathname.split('/').filter(p => p);
+    if (pathParts.length < 2) return null;
+    const [owner, repo] = pathParts;
+    
+    const api_url = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+    const response = await fetch(api_url);
+    if (!response.ok) {
+        console.error(`GitHub API error: ${response.statusText}`);
+        return null;
+    }
+
+    const release: GitHubRelease = await response.json();
+    // Find the first asset that is a .zip file, or just the first asset if none are zips.
+    const zipAsset = release.assets.find(asset => asset.name.endsWith('.zip'));
+    const asset = zipAsset || release.assets[0];
+
+    return asset ? asset.browser_download_url : null;
+  } catch (error) {
+    console.error("Error fetching from GitHub API:", error);
+    return null;
+  }
+}
 
 function GamePageContent() {
   const params = useParams();
@@ -34,6 +70,9 @@ function GamePageContent() {
   const { firestore } = useFirebase();
   const { user } = useUser();
   const { handleAddToCart, handleToggleWishlist, isInWishlist, isPurchased } = useGameStore();
+
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [isDownloadLinkLoading, setIsDownloadLinkLoading] = useState(false);
 
   const gameRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
@@ -57,6 +96,24 @@ function GamePageContent() {
   
   const isWishlisted = game ? isInWishlist(game.id) : false;
   const gameIsPurchased = game ? isPurchased(game.id) : false;
+
+  useEffect(() => {
+      if (gameIsPurchased && game) {
+          setIsDownloadLinkLoading(true);
+          if (game.githubRepoUrl) {
+              getLatestGitHubReleaseUrl(game.githubRepoUrl).then(url => {
+                  setDownloadUrl(url);
+                  setIsDownloadLinkLoading(false);
+              });
+          } else if (game.gameFileUrl) {
+              setDownloadUrl(game.gameFileUrl);
+              setIsDownloadLinkLoading(false);
+          } else {
+              setDownloadUrl(null);
+              setIsDownloadLinkLoading(false);
+          }
+      }
+  }, [game, gameIsPurchased]);
   
   const getYouTubeVideoId = (url: string): string | null => {
       try {
@@ -132,13 +189,13 @@ function GamePageContent() {
                 className="rounded-lg object-cover aspect-[3/4] shadow-lg w-full"
               />
               <div className="space-y-2">
-                {gameIsPurchased && game.gameFileUrl ? (
-                    <Button asChild size="lg" className="w-full">
-                        <a href={game.gameFileUrl} target="_blank" rel="noopener noreferrer">
-                            <Download className="mr-2 h-4 w-4" />
-                            Download Game
-                        </a>
-                    </Button>
+                {gameIsPurchased ? (
+                  <Button asChild size="lg" className="w-full" disabled={isDownloadLinkLoading || !downloadUrl}>
+                      <a href={downloadUrl || ''} target="_blank" rel="noopener noreferrer">
+                           {isDownloadLinkLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : game.githubRepoUrl ? <Github className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                           {isDownloadLinkLoading ? 'Getting Link...' : (downloadUrl ? 'Download Game' : 'Download N/A')}
+                      </a>
+                  </Button>
                 ) : (
                     <Button size="lg" className="w-full" onClick={() => handleAddToCart(game)} disabled={gameIsPurchased}>
                         <ShoppingCart className="mr-2" /> {gameIsPurchased ? 'In Library' : `Buy for $${game.price.toFixed(2)}`}

@@ -80,6 +80,11 @@
             "description": "URL to the game's downloadable file (e.g., a zip file).",
             "format": "uri"
         },
+        "githubRepoUrl": {
+            "type": "string",
+            "description": "URL to the game's GitHub repository for fetching release assets.",
+            "format": "uri"
+        },
         "status": {
           "type": "string",
           "enum": [

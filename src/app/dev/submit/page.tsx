@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -33,6 +33,7 @@ import { uploadImage } from "@/ai/flows/upload-image-flow";
 import { Checkbox } from "@/components/ui/checkbox";
 import { availableGenres } from "@/lib/genres";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MATURE_TAG = "Mature 18+";
@@ -48,7 +49,8 @@ const formSchema = z.object({
   }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
-  gameFileUrl: z.string().url("Please enter a valid URL for the game file.").optional().or(z.literal('')),
+  gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any()
     .refine((file) => !!file, "Cover image is required.")
@@ -65,7 +67,11 @@ const formSchema = z.object({
       (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
       "Only .jpg, .jpeg, .png and .webp files are accepted."
     ),
+}).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
+    message: "You must provide either a direct download URL or a GitHub repository URL.",
+    path: ["gameFileUrl"], // Assign error to one of the fields
 });
+
 
 const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -97,6 +103,7 @@ function SubmitGamePageContent() {
       websiteUrl: "",
       trailerUrls: "",
       gameFileUrl: "",
+      githubRepoUrl: "",
       isAdultContent: false,
     },
   });
@@ -153,6 +160,7 @@ function SubmitGamePageContent() {
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         gameFileUrl: values.gameFileUrl,
+        githubRepoUrl: values.githubRepoUrl,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
@@ -317,14 +325,30 @@ function SubmitGamePageContent() {
                     )}/>
                 </div>
                 
-                <FormField control={form.control} name="gameFileUrl" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Download /> Game File URL</FormLabel>
-                    <FormControl><Input placeholder="https://example.com/my-game.zip" {...field} /></FormControl>
-                    <FormDescription>The direct download link for your game's file (e.g., a .zip hosted on Google Drive, Dropbox, etc.).</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                <div>
+                    <FormLabel>Game Download</FormLabel>
+                    <FormDescription className="mb-4">Provide a link for users to download the game. You can use either a direct link or a GitHub repository.</FormDescription>
+                    <FormField control={form.control} name="gameFileUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm font-normal"><Download /> Direct Download URL</FormLabel>
+                        <FormControl><Input placeholder="https://example.com/my-game.zip" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                    <div className="relative my-4 flex items-center">
+                        <Separator className="flex-1" />
+                        <span className="mx-2 text-xs text-muted-foreground">OR</span>
+                        <Separator className="flex-1" />
+                    </div>
+                     <FormField control={form.control} name="githubRepoUrl" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center gap-2 text-sm font-normal"><Github /> GitHub Repository</FormLabel>
+                            <FormControl><Input placeholder="https://github.com/user/repo" {...field} /></FormControl>
+                            <FormDescription>We will automatically use the download link from your latest public release.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
 
 
                 <FormField

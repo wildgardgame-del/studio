@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { availableGenres } from "@/lib/genres";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MATURE_TAG = "Mature 18+";
@@ -49,10 +50,14 @@ const formSchema = z.object({
   }),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
-  gameFileUrl: z.string().url("Please enter a valid URL for the game file.").optional().or(z.literal('')),
+  gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any().optional(),
   screenshots: z.any().optional(),
+}).refine(data => !!data.gameFileUrl || !!data.githubRepoUrl, {
+    message: "You must provide either a direct download URL or a GitHub repository URL.",
+    path: ["gameFileUrl"], // Assign error to one of the fields
 });
 
 const fileToDataUri = (file: File): Promise<string> => {
@@ -89,7 +94,7 @@ function EditGamePageContent() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "", publisher: "", price: 0, description: "", longDescription: "",
-      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", isAdultContent: false,
+      genres: [], websiteUrl: "", trailerUrls: "", gameFileUrl: "", githubRepoUrl: "", isAdultContent: false,
     },
   });
 
@@ -105,6 +110,7 @@ function EditGamePageContent() {
         websiteUrl: gameData.websiteUrl || "",
         trailerUrls: gameData.trailerUrls?.join(', ') || "",
         gameFileUrl: gameData.gameFileUrl || "",
+        githubRepoUrl: gameData.githubRepoUrl || "",
         isAdultContent: gameData.isAdultContent || false,
       });
       setExistingCoverImage(gameData.coverImage);
@@ -177,6 +183,7 @@ function EditGamePageContent() {
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         gameFileUrl: values.gameFileUrl,
+        githubRepoUrl: values.githubRepoUrl,
         coverImage: coverImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
@@ -338,14 +345,30 @@ function EditGamePageContent() {
                     <FormField control={form.control} name="trailerUrls" render={({ field }) => ( <FormItem><FormLabel className="flex items-center gap-2"><Youtube /> YouTube Trailers</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Separate multiple links with commas.</FormDescription><FormMessage /></FormItem> )}/>
                 </div>
                 
-                <FormField control={form.control} name="gameFileUrl" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Download /> Game File URL</FormLabel>
-                    <FormControl><Input placeholder="https://example.com/my-game.zip" {...field} /></FormControl>
-                    <FormDescription>The direct download link for your game's file (e.g., a .zip hosted on Google Drive, Dropbox, etc.).</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                <div>
+                    <FormLabel>Game Download</FormLabel>
+                    <FormDescription className="mb-4">Provide a link for users to download the game. You can use either a direct link or a GitHub repository.</FormDescription>
+                    <FormField control={form.control} name="gameFileUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-sm font-normal"><Download /> Direct Download URL</FormLabel>
+                        <FormControl><Input placeholder="https://example.com/my-game.zip" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                    <div className="relative my-4 flex items-center">
+                        <Separator className="flex-1" />
+                        <span className="mx-2 text-xs text-muted-foreground">OR</span>
+                        <Separator className="flex-1" />
+                    </div>
+                     <FormField control={form.control} name="githubRepoUrl" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center gap-2 text-sm font-normal"><Github /> GitHub Repository</FormLabel>
+                            <FormControl><Input placeholder="https://github.com/user/repo" {...field} /></FormControl>
+                            <FormDescription>We will automatically use the download link from your latest public release.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
 
 
                  <FormField
