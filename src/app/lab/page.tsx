@@ -12,6 +12,8 @@ import Footer from '@/components/layout/footer';
 import { GameCard } from '@/components/game-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
+import heroImage from '@/lib/placeholder-images.json';
 
 function LabPageContent() {
   const { firestore } = useFirebase();
@@ -31,9 +33,19 @@ function LabPageContent() {
     if (!labGames) return [];
     return labGames.filter(game => game.id !== 'dev-account-upgrade' && game.id !== 'dev-android-account-upgrade');
   }, [labGames]);
+  
+  const background = heroImage.placeholderImages.find(img => img.id === 'forest-guardian-cover') || heroImage.placeholderImages[0];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
+       <Image
+        src={background.imageUrl}
+        alt={background.description}
+        data-ai-hint={background.imageHint}
+        fill
+        className="object-cover -z-10"
+      />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm -z-10" />
       <Header />
       <main className="flex-1">
         <div className="container py-12">
@@ -54,7 +66,7 @@ function LabPageContent() {
           ) : filteredGames.length > 0 ? (
             <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredGames.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard key={game.id} game={game} hidePrice />
               ))}
             </div>
           ) : (

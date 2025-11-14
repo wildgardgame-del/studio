@@ -20,9 +20,10 @@ import { Badge } from './ui/badge';
 type GameCardProps = {
   game: Game;
   className?: string;
+  hidePrice?: boolean;
 };
 
-export function GameCard({ game, className }: GameCardProps) {
+export function GameCard({ game, className, hidePrice = false }: GameCardProps) {
   const { handleAddToCart, handleToggleWishlist, isInWishlist, isPurchased } = useGameStore();
 
   const isWishlisted = isInWishlist(game.id);
@@ -64,10 +65,12 @@ export function GameCard({ game, className }: GameCardProps) {
           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between p-4 pt-0 mt-auto">
-            <p className="text-xl font-bold text-green-400">
-                {game.isPayWhatYouWant ? 'Name a Price' : game.price === 0 ? 'Free' : `$${game.price.toFixed(2)}`}
-            </p>
-          <div className="flex items-center gap-1">
+            {!hidePrice && (
+                <p className="text-xl font-bold text-green-400">
+                    {game.isPayWhatYouWant ? 'Name a Price' : game.price === 0 ? 'Free' : `$${game.price.toFixed(2)}`}
+                </p>
+            )}
+          <div className={cn("flex items-center gap-1", hidePrice && "w-full justify-end")}>
             <Button
               variant="ghost"
               size="icon"
