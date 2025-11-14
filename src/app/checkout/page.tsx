@@ -8,7 +8,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
+import { doc, writeBatch, serverTimestamp, collection } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -67,18 +67,26 @@ function CheckoutPageContent() {
         setTimeout(async () => {
             try {
                 const batch = writeBatch(firestore);
+                const salesRef = collection(firestore, 'sales');
 
-                // Add each purchased item's reference to the user's library
-                // and remove it from their wishlist.
                 cartItems.forEach(item => {
+                    // 1. Add game to user's library
                     const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                    // Store a reference with a purchase date, not the full game object
                     batch.set(libraryRef, { 
                         gameId: item.id,
                         purchasedAt: serverTimestamp() 
                     });
 
-                    // Also remove the game from the wishlist upon purchase
+                    // 2. Create a sale record
+                    const saleRef = doc(salesRef); // Auto-generates a new ID
+                    batch.set(saleRef, {
+                        gameId: item.id,
+                        userId: user.uid,
+                        priceAtPurchase: item.price,
+                        purchaseDate: serverTimestamp(),
+                    });
+
+                    // 3. Remove game from wishlist
                     const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
                     batch.delete(wishlistRef);
                 });
@@ -95,9 +103,9 @@ function CheckoutPageContent() {
             } catch (error) {
                 console.error("Error committing purchase to Firestore:", error);
                 const permissionError = new FirestorePermissionError({
-                    path: `users/${user.uid}/library`,
+                    path: `users/${user.uid}/library or /sales`,
                     operation: 'write',
-                    requestResourceData: { note: `Attempting to add ${cartItems.length} games to library.` }
+                    requestResourceData: { note: `Attempting to process ${cartItems.length} items.` }
                 });
                 
                 errorEmitter.emit('permission-error', permissionError);

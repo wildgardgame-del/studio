@@ -245,6 +245,20 @@
         "reviewDate"
       ]
     },
+    "Sale": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Sale",
+      "type": "object",
+      "description": "Represents a single game sale transaction.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the sale record." },
+        "gameId": { "type": "string", "description": "The ID of the game that was sold." },
+        "userId": { "type": "string", "description": "The ID of the user who purchased the game." },
+        "priceAtPurchase": { "type": "number", "description": "The price of the game at the time of purchase." },
+        "purchaseDate": { "type": "string", "format": "date-time", "description": "The timestamp of when the sale occurred." }
+      },
+      "required": ["id", "gameId", "userId", "priceAtPurchase", "purchaseDate"]
+    },
     "ShoppingCart": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ShoppingCart",
@@ -421,6 +435,22 @@
             {
               "name": "userId",
               "description": "The UID of the user who is an admin."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/backend/entities/Sale"
+          },
+          "description": "Stores records of each individual game sale. Admins can read these records for analytics.",
+          "params": [
+            {
+              "name": "saleId",
+              "description": "The unique identifier for the sale transaction."
             }
           ]
         }

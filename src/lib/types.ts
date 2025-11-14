@@ -89,3 +89,14 @@ export type Admin = {
     nanoseconds: number;
   };
 }
+
+export type Sale = {
+    id: string;
+    gameId: string;
+    userId: string;
+    priceAtPurchase: number;
+    purchaseDate: {
+        seconds: number;
+        nanoseconds: number;
+    };
+};

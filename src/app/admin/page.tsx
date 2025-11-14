@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
-import type { Game } from '@/lib/types';
+import type { Game, Sale } from '@/lib/types';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, Bar } from 'recharts';
 
@@ -64,17 +64,18 @@ function AdminDashboardPageContent() {
       const unreadMessagesQuery = query(collection(firestore, 'admin_messages'), where('isRead', '==', false));
       const usersQuery = query(collection(firestore, 'users'));
       const approvedGamesQuery = query(collection(firestore, 'games'), where('status', '==', 'approved'));
+      const salesQuery = query(collection(firestore, 'sales'));
 
-      const [pendingSnapshot, unreadSnapshot, usersSnapshot, approvedGamesSnapshot] = await Promise.all([
+      const [pendingSnapshot, unreadSnapshot, usersSnapshot, approvedGamesSnapshot, salesSnapshot] = await Promise.all([
         getDocs(pendingGamesQuery),
         getDocs(unreadMessagesQuery),
         getDocs(usersQuery),
         getDocs(approvedGamesQuery),
+        getDocs(salesQuery),
       ]);
 
-      const approvedGames = approvedGamesSnapshot.docs.map(doc => doc.data() as Game);
-      // Placeholder revenue calculation
-      const totalRevenue = approvedGames.reduce((acc, game) => acc + (game.price || 0), 0) * 123; 
+      const sales = salesSnapshot.docs.map(doc => doc.data() as Sale);
+      const totalRevenue = sales.reduce((acc, sale) => acc + (sale.priceAtPurchase || 0), 0);
       
       return {
         pendingCount: pendingSnapshot.size,
@@ -133,7 +134,7 @@ function AdminDashboardPageContent() {
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Revenue (est.)</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -280,5 +281,3 @@ export default function AdminDashboardPage() {
         </Suspense>
     )
 }
-
-    
