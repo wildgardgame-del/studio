@@ -49,7 +49,7 @@ export function GameCard({ game, className }: GameCardProps) {
           />
         </Link>
       </CardHeader>
-      <div className="bg-[hsl(var(--playstation-blue))] flex-1 flex flex-col">
+      <div className="bg-secondary/30 flex-1 flex flex-col">
         <CardContent className="p-4 flex-1">
           <Link href={`/games/${game.id}`}>
             <CardTitle className="font-headline text-lg truncate hover:text-primary">{game.title}</CardTitle>
