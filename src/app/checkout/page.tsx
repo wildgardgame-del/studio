@@ -17,7 +17,10 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 
-const RECIPIENT_ADDRESS = "0xYourWalletAddressHere"; // TODO: Replace with a real address
+// --- IMPORTANT ---
+// THIS IS THE WALLET ADDRESS THAT WILL RECEIVE ALL PAYMENTS FROM GAME SALES.
+// REPLACE IT WITH YOUR OWN PERSONAL OR BUSINESS POLYGON WALLET ADDRESS.
+const RECIPIENT_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"; 
 
 function CheckoutPageContent() {
     const { cartItems, clearCart } = useGameStore();
