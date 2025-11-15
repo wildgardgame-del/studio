@@ -75,7 +75,7 @@ export function WelcomeForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      username: user?.displayName?.replace(/\s/g, '') || "",
       day: "",
       month: "",
       year: "",
@@ -90,12 +90,14 @@ export function WelcomeForm() {
         const docSnap = await getDoc(usernameRef);
         return docSnap.exists();
     } catch (error) {
+        // This case is critical. If we can't check for a username, we can't let them proceed.
+        // The error emitter will be caught by the global error boundary.
         const permissionError = new FirestorePermissionError({
             path: usernameRef.path,
             operation: 'get',
         });
         errorEmitter.emit('permission-error', permissionError);
-        throw permissionError;
+        throw permissionError; // Re-throw to stop the submission process
     }
   };
 
@@ -132,34 +134,32 @@ export function WelcomeForm() {
         // 2. Create username uniqueness document
         const usernameRef = doc(firestore, "usernames", values.username.toLowerCase());
         const usernameData = {
-            userId: user.uid,
-            username: values.username
+            userId: user.uid
         };
         batch.set(usernameRef, usernameData);
+        
+        // Since we have security rules on creating the username, we must await the commit.
+        await batch.commit();
 
-        // Non-blocking write with contextual error handling
-        batch.commit()
-            .then(() => {
-                toast({
-                    title: "Profile Complete!",
-                    description: "Welcome to GameSphere!",
-                });
-                window.location.reload();
-            })
-            .catch((serverError) => {
-                // This will catch errors from either write operation in the batch
-                const permissionError = new FirestorePermissionError({
-                    path: `users/${user.uid} or usernames/${values.username.toLowerCase()}`,
-                    operation: 'create',
-                    requestResourceData: { user: userData, username: usernameData },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                setIsSubmitting(false);
+        toast({
+            title: "Profile Complete!",
+            description: "Welcome to Forge Gate Hub!",
+        });
+        
+        // Force a reload to re-evaluate the AuthGate with the new user profile state.
+        window.location.reload();
+
+    } catch (error: any) {
+        console.error("Error during profile creation:", error);
+        // If the error came from our username check, it's already been handled.
+        // If it came from the batch write, we should inform the user.
+        if (error.name !== 'FirebaseError') { // Don't double-toast permission errors
+             toast({
+                variant: 'destructive',
+                title: 'Error Creating Profile',
+                description: "Could not save your profile. You may not have the required permissions or the username was taken.",
             });
-
-    } catch (error) {
-        console.error("Error during username check:", error);
-        // Toast is not shown here because the error is thrown and displayed by the listener
+        }
         setIsSubmitting(false);
     }
   }
@@ -210,7 +210,7 @@ export function WelcomeForm() {
                             <FormControl><SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger></FormControl>
                             <SelectContent><SelectGroup>{days.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectGroup></SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -223,7 +223,7 @@ export function WelcomeForm() {
                             <FormControl><SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger></FormControl>
                             <SelectContent><SelectGroup>{months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectGroup></SelectContent>
                           </Select>
-                           <FormMessage />
+                           <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -236,7 +236,7 @@ export function WelcomeForm() {
                            <FormControl><SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger></FormControl>
                             <SelectContent><SelectGroup>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectGroup></SelectContent>
                           </Select>
-                           <FormMessage />
+                           <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -264,7 +264,3 @@ export function WelcomeForm() {
     </div>
   );
 }
-
-    
-
-    

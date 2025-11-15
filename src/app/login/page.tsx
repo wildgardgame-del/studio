@@ -48,6 +48,8 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
+      // The AuthGate component will handle redirecting new users to the welcome form.
+      // Existing users will be implicitly redirected by the useEffect above after state updates.
       router.push('/');
 
     } catch (error: any) {
@@ -101,6 +103,9 @@ export default function LoginPage() {
                             {isGoogleSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Continue with Google
                         </Button>
+                    </div>
+                    <div className="mt-4 text-center text-sm">
+                        No account needed to browse. <br /> <Link href="/browse" className="underline text-accent">Start exploring now!</Link>
                     </div>
                 </CardContent>
             </Card>

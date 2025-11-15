@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -70,7 +71,11 @@ const checkUserProfileExists = async (firestore: Firestore, user: User): Promise
         return docSnap.exists();
     } catch (error) {
         console.error("Error checking user profile:", error);
-        return false; // Assume profile exists to avoid blocking the user on error
+        // If we can't check (e.g. due to permissions on an initial read),
+        // we assume the profile exists to avoid blocking an existing user.
+        // The AuthGate will handle the case where a new user tries to create
+        // a profile and fails due to permissions.
+        return true; 
     }
 };
 
