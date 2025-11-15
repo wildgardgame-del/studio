@@ -4,8 +4,7 @@ import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import type { Game } from '@/lib/types';
 
-// This is your test secret API key.
-// It will be read from the .env file.
+// Make sure to have your Stripe secret key in your .env.local file
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export async function POST(req: Request) {
@@ -62,5 +61,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-    

@@ -28,7 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/firebase";
 
-// Initialize Stripe.js with your publishable key
+// Make sure to have your Stripe publishable key in your .env.local file
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const formSchema = z.object({
@@ -78,11 +78,13 @@ function CheckoutPageContent() {
                 }),
             });
 
+            const responseBody = await response.json();
+
             if (!response.ok) {
-                throw new Error('Failed to create checkout session.');
+                throw new Error(responseBody.error || 'Failed to create checkout session.');
             }
 
-            const { sessionId } = await response.json();
+            const { sessionId } = responseBody;
             
             const stripe = await stripePromise;
             if (!stripe) {
@@ -103,7 +105,7 @@ function CheckoutPageContent() {
              toast({
                 variant: "destructive",
                 title: "Checkout Error",
-                description: "There was an issue initiating the payment process. Please try again.",
+                description: error.message || "There was an issue initiating the payment process. Please try again.",
             });
         } finally {
             setIsProcessing(false);
@@ -200,5 +202,3 @@ export default function CheckoutPage() {
         </Suspense>
     )
 }
-
-    
