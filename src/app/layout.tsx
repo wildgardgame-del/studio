@@ -10,6 +10,9 @@ import { AuthGate } from '@/components/AuthGate';
 export const metadata: Metadata = {
   title: 'Forge Gate Hub',
   description: 'Your universe of games.',
+  icons: {
+    icon: '/images/ForgegateLogo128.png',
+  },
 };
 
 export default function RootLayout({
