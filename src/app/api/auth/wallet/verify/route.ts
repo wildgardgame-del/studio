@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
-import { getAdminApp, getAdminFirestore } from '@/firebase/admin-app';
+import { getAdminApp, getAdminAuth, getAdminFirestore } from '@/firebase/admin-app';
+import { getAuth } from 'firebase-admin/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Use Admin SDK to create a custom token
-    const adminAuth = getAdminApp().auth();
+    const adminAuth = getAuth(getAdminApp());
     const customToken = await adminAuth.createCustomToken(address);
     
     // Asynchronously delete the nonce after creating the token using Admin SDK syntax
