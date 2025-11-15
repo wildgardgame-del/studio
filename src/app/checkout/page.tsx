@@ -2,24 +2,12 @@
 'use client';
 
 import Image from "next/image";
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Loader2 } from "lucide-react";
+import { Loader2, Wallet } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, writeBatch, serverTimestamp, collection } from "firebase/firestore";
 
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button";
 import Footer from "@/components/layout/footer";
 import Header from "@/components/layout/header";
 import { useGameStore } from "@/context/game-store-context";
@@ -27,10 +15,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-
-const formSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
-})
 
 function CheckoutPageContent() {
     const { cartItems, clearCart, removeFromWishlist } = useGameStore();
@@ -40,17 +24,9 @@ function CheckoutPageContent() {
     const { user, firestore } = useFirebase();
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
-    const tax = subtotal * 0.08;
-    const total = subtotal + tax;
+    const total = subtotal; // No tax for crypto simulation
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            email: user?.email || "",
-        },
-    });
-
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+    async function handleCryptoPayment() {
         if (!user || !firestore) {
             toast({
                 variant: "destructive",
@@ -86,7 +62,7 @@ function CheckoutPageContent() {
                         purchaseDate: serverTimestamp(),
                     });
 
-                    // 3. Remove game from wishlist
+                    // 3. Remove game from wishlist if it's there
                     const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
                     batch.delete(wishlistRef);
                 });
@@ -147,21 +123,17 @@ function CheckoutPageContent() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Confirm Purchase</CardTitle>
-                            <CardDescription>Enter your email to receive your order confirmation.</CardDescription>
+                            <CardDescription>Review your order and proceed to payment.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    
-                                    <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
-                                        {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}
-                                    </Button>
-                                </form>
-                            </Form>
+                             <Button onClick={handleCryptoPayment} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
+                                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <Wallet className="mr-2 h-5 w-5" />
+                                {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)} with Crypto`}
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-4 text-center">
+                                This is a simulated transaction. No real funds will be used.
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
@@ -181,11 +153,6 @@ function CheckoutPageContent() {
                                         <span>${item.price.toFixed(2)}</span>
                                     </div>
                                 ))}
-                            </div>
-                            <Separator />
-                            <div className="space-y-2 text-muted-foreground">
-                                <div className="flex justify-between"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span>Taxes</span><span>${tax.toFixed(2)}</span></div>
                             </div>
                             <Separator />
                             <div className="flex justify-between font-bold text-lg">
