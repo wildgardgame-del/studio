@@ -15,12 +15,14 @@ import { useGameStore } from "@/context/game-store-context";
 import type { Game } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 function ApplyForDevPageContent() {
     'use client';
     
     const { user, isUserLoading, firestore } = useFirebase();
     const router = useRouter();
+    const { toast } = useToast();
     const { handleAddToCart, isPurchased } = useGameStore();
 
     const devLicenseRef = useMemoFirebase(() => {
@@ -41,11 +43,14 @@ function ApplyForDevPageContent() {
             return;
         }
         if (product) {
+            // Since the PC license is now free, we set its price to 0 before adding to cart
+            const price = product.id === 'dev-account-upgrade' ? 0 : product.price;
+
             const gameToAdd: Game = {
                 id: product.id,
                 title: product.title,
                 description: product.description,
-                price: product.price,
+                price: price,
                 genres: product.genres || [],
                 coverImage: product.coverImage,
                 screenshots: product.screenshots || [],
@@ -103,7 +108,10 @@ function ApplyForDevPageContent() {
                     
                     <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {devLicenseProduct ? (
-                            <Card className="flex flex-col h-full">
+                            <Card className="flex flex-col h-full border-primary/50 relative">
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-sm font-semibold text-primary-foreground bg-primary rounded-full">
+                                    LIMITED TIME OFFER
+                                </div>
                                 <CardHeader>
                                     <CardTitle className="font-headline text-2xl">{devLicenseProduct.title}</CardTitle>
                                     <CardDescription>{devLicenseProduct.description}</CardDescription>
@@ -112,19 +120,19 @@ function ApplyForDevPageContent() {
                                     <p className="text-muted-foreground text-sm">{devLicenseProduct.longDescription}</p>
                                 </CardContent>
                                 <CardFooter className="flex-col sm:flex-row items-center gap-4 p-6 bg-secondary/30">
-                                    <div className="text-4xl font-bold text-primary flex-1">${devLicenseProduct.price?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-4xl font-bold text-primary flex-1">
+                                      <span className="text-muted-foreground line-through mr-4 text-3xl">${devLicenseProduct.price?.toFixed(2)}</span>
+                                      <span>Free</span>
+                                    </div>
                                     <Button size="lg" className="w-full sm:w-auto" onClick={() => handlePurchase(devLicenseProduct)} disabled={hasStandardLicense}>
-                                        {hasStandardLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : <><ShoppingCart className="mr-2" /> Purchase License</>}
+                                        {hasStandardLicense ? <><CheckCircle2 className="mr-2" />Already Owned</> : <><ShoppingCart className="mr-2" /> Get License</>}
                                     </Button>
                                 </CardFooter>
                             </Card>
                         ) : <div className="border rounded-lg p-8 text-center text-muted-foreground">Standard License Unavailable</div>}
 
                         {androidLicenseProduct ? (
-                            <Card className="flex flex-col h-full border-primary/50 relative">
-                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-sm font-semibold text-primary-foreground bg-primary rounded-full">
-                                    MOST POPULAR
-                                </div>
+                            <Card className="flex flex-col h-full">
                                 <CardHeader>
                                     <CardTitle className="font-headline text-2xl">{androidLicenseProduct.title}</CardTitle>
                                     <CardDescription>{androidLicenseProduct.description}</CardDescription>
