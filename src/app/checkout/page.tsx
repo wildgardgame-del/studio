@@ -57,23 +57,54 @@ function CheckoutPageContent() {
         return null;
     };
 
-    const handleCryptoPayment = async () => {
+    const handlePayment = async () => {
         if (!user || !firestore) {
             toast({ variant: "destructive", title: "You are not logged in" });
             router.push('/login');
             return;
         }
 
+        setIsProcessing(true);
+        
+        // Handle free checkout
+        if (total <= 0) {
+            try {
+                const batch = writeBatch(firestore);
+                cartItems.forEach(item => {
+                    const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
+                    batch.set(libraryRef, { gameId: item.id, purchasedAt: serverTimestamp() });
+
+                    const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
+                    batch.delete(wishlistRef);
+                });
+
+                await batch.commit();
+
+                clearCart();
+                toast({
+                    title: "Success!",
+                    description: "Your free games are now in your library.",
+                });
+                router.push('/library');
+            } catch (error: any) {
+                console.error("Free checkout error:", error);
+                 toast({ variant: "destructive", title: "Error", description: "Could not add free games to your library." });
+            } finally {
+                setIsProcessing(false);
+            }
+            return;
+        }
+        
+        // Handle paid checkout
         let currentSigner = signer;
         if (!currentSigner) {
             currentSigner = await connectWallet();
         }
 
         if (!currentSigner) {
-            return; // Stop if wallet connection failed
+            setIsProcessing(false); // Stop if wallet connection failed
+            return;
         }
-
-        setIsProcessing(true);
 
         try {
             const tx = await currentSigner.sendTransaction({
@@ -81,11 +112,9 @@ function CheckoutPageContent() {
                 value: ethers.parseEther(total.toString()) 
             });
 
-            // Optimistic confirmation: We proceed as soon as the transaction is sent
             toast({ title: "Transaction Sent!", description: "Processing your order..." });
             
-            // Wait a moment for the user to see the toast before proceeding
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await tx.wait(1); // Wait for one confirmation
 
             const batch = writeBatch(firestore);
             const salesRef = collection(firestore, 'sales');
@@ -100,7 +129,7 @@ function CheckoutPageContent() {
                     userId: user.uid,
                     priceAtPurchase: item.price,
                     purchaseDate: serverTimestamp(),
-                    txHash: tx.hash // Save transaction hash
+                    txHash: tx.hash
                 });
 
                 const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
@@ -154,17 +183,29 @@ function CheckoutPageContent() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Confirm Purchase</CardTitle>
-                            <CardDescription>Review your order and proceed to payment with your crypto wallet.</CardDescription>
+                            <CardDescription>
+                                {total > 0
+                                ? "Review your order and proceed to payment with your crypto wallet."
+                                : "Confirm to add the free game(s) to your library."
+                                }
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <Button onClick={handleCryptoPayment} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
+                             <Button onClick={handlePayment} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
                                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                <Wallet className="mr-2 h-5 w-5" />
-                                {isProcessing ? 'Processing...' : (signer ? `Pay with Crypto` : 'Connect Wallet & Pay')}
+                                {total > 0 && <Wallet className="mr-2 h-5 w-5" />}
+                                {isProcessing 
+                                    ? 'Processing...' 
+                                    : total > 0 
+                                        ? (signer ? `Pay ${total.toFixed(2)} with Crypto` : 'Connect Wallet & Pay')
+                                        : 'Get Free Games'
+                                }
                             </Button>
-                            <p className="text-xs text-muted-foreground mt-4 text-center">
-                                You will be prompted to connect your wallet and confirm the transaction.
-                            </p>
+                            {total > 0 && (
+                                <p className="text-xs text-muted-foreground mt-4 text-center">
+                                    You will be prompted to connect your wallet and confirm the transaction.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
