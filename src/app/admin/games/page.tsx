@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Eye, Loader2, X, Trash2, ShieldQuestion, ArrowLeft } from 'lucide-react';
+import { Check, Eye, Loader2, X, Trash2, ShieldQuestion, ArrowLeft, Pencil } from 'lucide-react';
 import type { Game } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -264,6 +264,11 @@ function ManageGamesPageContent() {
                                         <ShieldQuestion className="mr-2 h-4 w-4" /> Request Revision
                                     </Button>
                                 )}
+                                <Button asChild variant="ghost" size="sm">
+                                    <Link href={`/dev/edit/${game.id}`}>
+                                        <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    </Link>
+                                </Button>
                                 <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive/80" onClick={() => setGameToDelete(game)}>
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                 </Button>
@@ -427,7 +432,3 @@ export default function ManageGamesPage() {
         </Suspense>
     )
 }
-
-    
-
-    
