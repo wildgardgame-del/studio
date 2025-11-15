@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
 import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart, Image as ImageIcon } from "lucide-react";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc, getDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from 'next/link';
@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFirebase, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirebase, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError, useQuery } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadImage } from "@/ai/flows/upload-image-flow";
@@ -94,13 +94,25 @@ function EditGamePageContent() {
   const screenshotsRef = useRef<HTMLInputElement>(null);
   
   const hasDevLicense = isPurchased('dev-account-upgrade') || isPurchased('dev-android-account-upgrade');
+
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.uid],
+    queryFn: async () => {
+      if (!user || !firestore) return false;
+      const adminDocRef = doc(firestore, 'admins', user.uid);
+      const adminDoc = await getDoc(adminDocRef);
+      return adminDoc.exists();
+    },
+    enabled: !!user && !!firestore,
+  });
   
   useEffect(() => {
-    const isPageLoading = isUserLoading || purchasedGames === undefined;
-    if (!isPageLoading && (!user || !hasDevLicense)) {
+    const isPageLoading = isUserLoading || purchasedGames === undefined || isAdminLoading;
+    // Don't redirect admins, even if they don't have a dev license
+    if (!isPageLoading && !isAdmin && (!user || !hasDevLicense)) {
       router.push('/apply-for-dev');
     }
-  }, [isUserLoading, purchasedGames, user, hasDevLicense, router]);
+  }, [isUserLoading, purchasedGames, user, hasDevLicense, router, isAdmin, isAdminLoading]);
 
 
   const gameRef = useMemoFirebase(() => {
@@ -158,8 +170,9 @@ function EditGamePageContent() {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not update game. Invalid context.' });
       return;
     }
-
-    if (gameData?.developerId !== user.uid) {
+    
+    // Admins can edit any game, others must be the developer.
+    if (!isAdmin && gameData?.developerId !== user.uid) {
       toast({ variant: 'destructive', title: 'Unauthorized', description: 'You do not have permission to edit this game.' });
       if (gameRef) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: gameRef.path, operation: 'update' }));
@@ -226,7 +239,7 @@ function EditGamePageContent() {
         bannerImage: bannerImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
-        developerId: user.uid,
+        developerId: gameData?.developerId || user.uid, // Preserve original developer
         status: 'pending' as const,
         submittedAt: gameData?.submittedAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -239,8 +252,9 @@ function EditGamePageContent() {
         title: "Changes Submitted!",
         description: `${values.title} has been sent for re-approval.`,
       });
-
-      router.push('/dev/my-games');
+      
+      const destination = isAdmin ? '/admin/games' : '/dev/my-games';
+      router.push(destination);
 
     } catch (error: any) {
         console.error("Error updating game:", error);
@@ -268,7 +282,9 @@ function EditGamePageContent() {
     }
   }
   
-  const isLoading = isGameLoading || isUserLoading || purchasedGames === undefined;
+  const isLoading = isGameLoading || isUserLoading || purchasedGames === undefined || isAdminLoading;
+  const isOwner = gameData?.developerId === user?.uid;
+  const canAccess = isOwner || isAdmin;
 
   if (isLoading) {
       return (
@@ -278,20 +294,20 @@ function EditGamePageContent() {
       )
   }
 
-  if (!gameData || !user || !hasDevLicense) {
+  if (!gameData || !user || !canAccess) {
       return (
            <div className="flex min-h-screen flex-col items-center justify-center text-center p-4">
                <ShieldAlert className="h-20 w-20 text-destructive mb-4" />
                 <h1 className="text-3xl font-bold">Access Denied</h1>
                 <p className="text-muted-foreground mt-2 max-w-md">
                     { !user ? "You must be logged in to edit a game." :
-                      !hasDevLicense ? "You need a publisher license to access this page." :
-                      "Game not found or you don't have permission to edit it."
+                      !gameData ? "Game not found." :
+                      "You do not have permission to edit this game."
                     }
                 </p>
                 <Button asChild className="mt-6">
-                    <Link href={!user ? "/login" : "/apply-for-dev"}>
-                        { !user ? "Login" : "Get License" }
+                    <Link href={!user ? "/login" : "/browse"}>
+                        { !user ? "Login" : "Back to Store" }
                     </Link>
                 </Button>
            </div>
@@ -309,9 +325,9 @@ function EditGamePageContent() {
               Update the details for your game: {gameData?.title}.
             </CardDescription>
              <Button asChild variant="link" className="mx-auto text-accent">
-                <Link href="/dev/my-games">
+                <Link href={isAdmin ? "/admin/games" : "/dev/my-games"}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to My Games
+                    Back to {isAdmin ? "Manage Games" : "My Games"}
                 </Link>
             </Button>
           </CardHeader>
