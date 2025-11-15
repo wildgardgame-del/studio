@@ -1,4 +1,5 @@
 
+
 export type Game = {
   id: string;
   title: string;
@@ -8,8 +9,10 @@ export type Game = {
   isPayWhatYouWant?: boolean;
   isInDevelopment?: boolean;
   genres: string[];
+  tags?: string[];
+  releaseDate?: string;
   coverImage: string;
-  bannerImage?: string; // New field for the banner
+  bannerImage?: string;
   screenshots: string[];
   rating: number; 
   reviewCount?: number; 

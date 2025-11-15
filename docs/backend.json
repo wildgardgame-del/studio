@@ -57,6 +57,11 @@
           "type": "string",
           "description": "The genre of the game (e.g., Action, RPG, Strategy)."
         },
+        "tags": {
+            "type": "array",
+            "description": "Descriptive tags for the game (e.g., Single-player, Multiplayer).",
+            "items": { "type": "string" }
+        },
         "developerId": {
           "type": "string",
           "description": "The ID of the developer user who submitted the game."
