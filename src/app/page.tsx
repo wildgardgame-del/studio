@@ -102,7 +102,7 @@ export default function Home() {
                 Enter the Forge
               </h1>
               <p className="mt-4 max-w-2xl text-lg text-muted-foreground mx-auto">
-                Forje as suas maiores aventuras, conquiste mundos épicos e publique os seus próprios jogos numa plataforma que defende os criadores.
+                Forje as suas aventuras, conquiste mundos épicos e publique os seus próprios jogos numa plataforma que defende os criadores.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Button asChild size="lg" className="font-bold">
