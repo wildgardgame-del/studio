@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
-import { doc, getDoc } from 'firebase/firestore';
 import { getAdminApp, getAdminFirestore } from '@/firebase/admin-app';
 
 export async function POST(req: NextRequest) {
@@ -16,14 +15,14 @@ export async function POST(req: NextRequest) {
     
     // Use Admin SDK to read from Firestore
     const firestore = getAdminFirestore();
-    const nonceRef = doc(firestore, 'nonces', address);
-    const nonceDoc = await getDoc(nonceRef);
+    const nonceRef = firestore.collection('nonces').doc(address);
+    const nonceDoc = await nonceRef.get();
 
-    if (!nonceDoc.exists()) {
+    if (!nonceDoc.exists) {
       return NextResponse.json({ error: 'Invalid or expired nonce' }, { status: 400 });
     }
 
-    const { message } = nonceDoc.data();
+    const { message } = nonceDoc.data()!;
     
     const recoveredAddress = ethers.verifyMessage(message, signature);
 
@@ -32,8 +31,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Use Admin SDK to create a custom token
-    const adminAuth = getAdminApp().auth;
+    const adminAuth = getAdminApp().auth();
     const customToken = await adminAuth.createCustomToken(address);
+    
+    // Asynchronously delete the nonce after creating the token
+    nonceRef.delete().catch(err => console.error("Error deleting nonce post-verification:", err));
     
     return NextResponse.json({ token: customToken });
 

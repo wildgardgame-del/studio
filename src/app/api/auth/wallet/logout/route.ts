@@ -3,7 +3,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, deleteDoc } from 'firebase/firestore';
 import { getAdminFirestore } from '@/firebase/admin-app';
 
 export async function POST(req: NextRequest) {
@@ -13,10 +12,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
-    // Use the Admin Firestore instance to delete the nonce
+    // Use the Admin Firestore instance with Admin SDK syntax
     const firestore = getAdminFirestore();
-    const nonceRef = doc(firestore, 'nonces', address);
-    await deleteDoc(nonceRef);
+    const nonceRef = firestore.collection('nonces').doc(address);
+    await nonceRef.delete();
 
     return NextResponse.json({ success: true });
   } catch (error) {
