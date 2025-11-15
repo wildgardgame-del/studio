@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'User is not authenticated' }, { status: 401 });
   }
 
-  const origin = headers().get('origin') || 'http://localhost:9002';
+  const origin = (await headers()).get('origin') || 'http://localhost:9002';
 
   try {
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = cartItems.map((item) => {
