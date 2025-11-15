@@ -2,11 +2,10 @@
 'use client';
 
 import Image from "next/image";
-import { Loader2, Wallet } from "lucide-react";
-import { Suspense, useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, writeBatch, serverTimestamp, collection } from "firebase/firestore";
-import { ethers } from "ethers";
 
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/layout/footer";
@@ -17,48 +16,15 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 
-// --- IMPORTANT ---
-// THE RECIPIENT ADDRESS IS NOW MANAGED IN YOUR ENVIRONMENT VARIABLES.
-// SET 'NEXT_PUBLIC_RECIPIENT_WALLET_ADDRESS' in .env.local
-const RECIPIENT_ADDRESS = process.env.NEXT_PUBLIC_RECIPIENT_WALLET_ADDRESS;
-
 function CheckoutPageContent() {
     const { cartItems, clearCart } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
-    const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
     const router = useRouter();
     const { toast } = useToast();
     const { user, firestore } = useFirebase();
 
-    useEffect(() => {
-        if (typeof window.ethereum !== 'undefined') {
-            const browserProvider = new ethers.BrowserProvider(window.ethereum);
-            setProvider(browserProvider);
-        }
-    }, []);
-
     const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
     const total = subtotal;
-
-    const connectWallet = async () => {
-        if (provider) {
-            try {
-                const accounts = await provider.send("eth_requestAccounts", []);
-                if (accounts.length > 0) {
-                    const walletSigner = await provider.getSigner();
-                    setSigner(walletSigner);
-                    toast({ title: "Wallet Connected", description: `Connected to: ${walletSigner.address.substring(0, 6)}...` });
-                    return walletSigner;
-                }
-            } catch (error: any) {
-                toast({ variant: "destructive", title: "Wallet Connection Failed", description: error.message });
-            }
-        } else {
-            toast({ variant: "destructive", title: "MetaMask not found", description: "Please install MetaMask to use this feature." });
-        }
-        return null;
-    };
 
     const handlePayment = async () => {
         if (!user || !firestore) {
@@ -68,63 +34,23 @@ function CheckoutPageContent() {
         }
 
         setIsProcessing(true);
-        
-        // Handle free checkout
-        if (total <= 0) {
-            try {
-                const batch = writeBatch(firestore);
-                cartItems.forEach(item => {
-                    const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                    batch.set(libraryRef, { gameId: item.id, purchasedAt: serverTimestamp() });
-
-                    const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
-                    batch.delete(wishlistRef);
-                });
-
-                await batch.commit();
-
-                clearCart();
-                toast({
-                    title: "Success!",
-                    description: "Your free games are now in your library.",
-                });
-                router.push('/library');
-            } catch (error: any) {
-                console.error("Free checkout error:", error);
-                 toast({ variant: "destructive", title: "Error", description: "Could not add free games to your library." });
-            } finally {
-                setIsProcessing(false);
-            }
-            return;
-        }
-        
-        // Handle paid checkout
-        if (!RECIPIENT_ADDRESS) {
-            toast({ variant: "destructive", title: "Configuration Error", description: "The recipient wallet address is not configured." });
-            setIsProcessing(false);
-            return;
-        }
-        
-        let currentSigner = signer;
-        if (!currentSigner) {
-            currentSigner = await connectWallet();
-        }
-
-        if (!currentSigner) {
-            setIsProcessing(false); // Stop if wallet connection failed
-            return;
-        }
 
         try {
-            const tx = await currentSigner.sendTransaction({
-                to: RECIPIENT_ADDRESS,
-                value: ethers.parseEther(total.toString()) 
+            // Simulate calling a backend checkout API
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cartItems }),
             });
 
-            toast({ title: "Transaction Sent!", description: "Processing your order..." });
-            
-            await tx.wait(1); // Wait for one confirmation
+            if (!response.ok) {
+                const { error } = await response.json();
+                throw new Error(error || 'Checkout failed.');
+            }
 
+            const confirmation = await response.json();
+            
+            // On successful simulated payment, update Firestore
             const batch = writeBatch(firestore);
             const salesRef = collection(firestore, 'sales');
 
@@ -138,7 +64,7 @@ function CheckoutPageContent() {
                     userId: user.uid,
                     priceAtPurchase: item.price,
                     purchaseDate: serverTimestamp(),
-                    txHash: tx.hash
+                    txHash: confirmation.transactionId, // Use simulated transaction ID
                 });
 
                 const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
@@ -156,11 +82,12 @@ function CheckoutPageContent() {
 
         } catch (error: any) {
             console.error("Payment error:", error);
-            if (error.code === 'ACTION_REJECTED') {
-                 toast({ variant: "destructive", title: "Transaction Rejected", description: "You rejected the transaction in your wallet." });
-            } else {
-                 toast({ variant: "destructive", title: "Payment Error", description: error.message || "An unknown error occurred." });
-            }
+            const permissionError = new FirestorePermissionError({
+                path: `users/${user.uid}/library or sales`,
+                operation: 'create',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: "destructive", title: "Purchase Error", description: error.message || "Could not complete your purchase." });
         } finally {
             setIsProcessing(false);
         }
@@ -193,28 +120,14 @@ function CheckoutPageContent() {
                         <CardHeader>
                             <CardTitle>Confirm Purchase</CardTitle>
                             <CardDescription>
-                                {total > 0
-                                ? "Review your order and proceed to payment with your crypto wallet."
-                                : "Confirm to add the free game(s) to your library."
-                                }
+                               Review your order and confirm your purchase.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                              <Button onClick={handlePayment} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
                                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {total > 0 && <Wallet className="mr-2 h-5 w-5" />}
-                                {isProcessing 
-                                    ? 'Processing...' 
-                                    : total > 0 
-                                        ? (signer ? `Pay ${total.toFixed(2)} with Crypto` : 'Connect Wallet & Pay')
-                                        : 'Get Free Games'
-                                }
+                                {isProcessing ? 'Processing...' : 'Confirm Purchase'}
                             </Button>
-                            {total > 0 && (
-                                <p className="text-xs text-muted-foreground mt-4 text-center">
-                                    You will be prompted to connect your wallet and confirm the transaction.
-                                </p>
-                            )}
                         </CardContent>
                     </Card>
                 </div>

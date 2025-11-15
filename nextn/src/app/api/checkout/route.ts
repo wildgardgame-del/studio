@@ -18,11 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   // In a real application, you would now integrate with your payment processor
-  // (e.g., Stripe, PayPal, or a crypto payment gateway).
-  // For this example, we'll just simulate a successful transaction.
-
-  const requestHeaders = headers();
-  const origin = requestHeaders.get('origin') || 'http://localhost:9002';
+  // (e.g., Stripe, PayPal). For this example, we'll just simulate a successful transaction.
 
   try {
     // Simulate a successful payment confirmation
