@@ -19,20 +19,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'User is not authenticated' }, { status: 401 });
   }
 
-  const origin = (await headers()).get('origin') || 'http://localhost:9002';
+  const origin = headers().get('origin') || 'http://localhost:9002';
 
   try {
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = cartItems.map((item) => {
         // For 'Pay what you want' or free games, ensure a minimum of $0.50 for Stripe processing if a payment is made.
         // If price is 0, we can still represent it, Stripe handles it.
         const price = item.price || 0;
+        const imageUrl = item.coverImage && item.coverImage.startsWith('http') ? item.coverImage : undefined;
+
 
         return {
             price_data: {
                 currency: 'usd',
                 product_data: {
                     name: item.title,
-                    images: item.coverImage ? [item.coverImage] : [],
+                    images: imageUrl ? [imageUrl] : [],
                     description: item.description,
                 },
                 unit_amount: Math.round(price * 100), // Price in cents
