@@ -105,7 +105,7 @@ service cloud.firestore {
     match /users/{userId}/library/{gameId} {
       // User can view their own library. Admin has full access.
       allow get, list: if isSignedIn() && (isOwner(userId) || isAdmin());
-      // User can have games added to their library (e.g. on purchase). Admin can also add.
+      // User can have games added to their library (e.g. on purchase).
       allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
       // Games in the library should not be updated by the user, but admin can manage them.
       allow update: if isSignedIn() && isAdmin();
