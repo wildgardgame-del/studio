@@ -40,16 +40,12 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Allow user to create their own document if they are signed in and the ID matches.
+      // Allow user to read/update/delete their own profile, or an admin to do so.
+      allow read, update, delete: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow create: if isSignedIn() && isOwner(userId);
-      
-      // Allow user to read/update their own profile, or an admin to do so.
-      allow get, update: if isSignedIn() && (isOwner(userId) || isAdmin());
       
       // Only admins can list all users.
       allow list: if isSignedIn() && isAdmin();
-      
-      // A user can delete their own profile, or an admin can delete any profile.
-      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
     }
 
     match /usernames/{username} {
