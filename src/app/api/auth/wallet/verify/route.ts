@@ -1,11 +1,11 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { doc, getDoc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { getAdminApp } from '@/firebase/admin-app';
-
-export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
