@@ -39,21 +39,31 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
-      allow list: if isSignedIn() && isAdmin(); // Only admins can list all users
-
-      // A user can only create their own document.
-      // We also check that the ID in the document matches the auth token.
-      // For wallet users, email might be null, so we don't enforce it.
-      allow create: if isSignedIn() 
-                    && isOwner(userId)
-                    && request.resource.data.id == userId;
-
-      // User can update their own profile, or an admin can.
-      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // Allow user to create their own document if they are signed in and the ID matches.
+      allow create: if isSignedIn() && isOwner(userId);
+      
+      // Allow user to read/update their own profile, or an admin to do so.
+      allow get, update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      
+      // Only admins can list all users.
+      allow list: if isSignedIn() && isAdmin();
       
       // A user can delete their own profile, or an admin can delete any profile.
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    match /usernames/{username} {
+      // Allow user to create their own username document if the userId in the document matches their auth uid.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Anyone can check if a username exists.
+      allow read: if true;
+
+      // Admins can delete username documents (as part of user deletion).
+      allow delete: if isAdmin();
+      
+      // Username documents should never be changed.
+      allow update: if false;
     }
 
     match /games/{gameId} {
@@ -131,22 +141,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       // Only admins can read, update, or delete admin messages.
       allow read, update, delete, list: if isSignedIn() && isAdmin();
-    }
-
-    match /usernames/{username} {
-      // Anyone can check if a username exists.
-      allow read: if true;
-
-      // A user can only create their OWN username document.
-      // We verify this by checking that the userId in the document being created
-      // matches the authenticated user's ID.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      
-      // Admins can delete username documents (as part of user deletion).
-      allow delete: if isAdmin();
-      
-      // Username documents should never be changed.
-      allow update: if false;
     }
   }
 }
