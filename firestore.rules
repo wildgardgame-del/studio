@@ -136,14 +136,15 @@ service cloud.firestore {
     match /usernames/{username} {
       // Anyone can check if a username exists.
       allow read: if true;
-      // A user can only create their OWN username document for uniqueness check.
-      // We verify this by checking against the user's profile document.
-      allow create: if isSignedIn()
-                      && request.resource.data.userId == request.auth.uid
-                      && username == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username.lower();
+
+      // A user can only create their OWN username document.
+      // We verify this by checking that the userId in the document being created
+      // matches the authenticated user's ID.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       
       // Admins can delete username documents (as part of user deletion).
       allow delete: if isAdmin();
+      
       // Username documents should never be changed.
       allow update: if false;
     }
