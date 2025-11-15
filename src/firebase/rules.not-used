@@ -1,0 +1,146 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------
+    // Helper Functions
+    // ----------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      // Check if the user is the owner of an *existing* document.
+      return isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+    }
+
+    function isAdmin() {
+      // An admin is a signed-in user whose UID exists as a document in the /admins collection.
+      return isSignedIn() && (request.auth.token.email == 'forgegatehub@gmail.com' || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    // ----------------------
+    // Collection Rules
+    // ----------------------
+    
+    // Nonces for wallet sign-in
+    match /nonces/{address} {
+      // Anyone can create a nonce for their address to initiate sign-in.
+      // Anyone can delete their nonce (e.g., after successful sign-in).
+      // Reading is restricted to prevent enumeration.
+      allow create, delete: if true;
+      allow read: if false;
+    }
+
+    match /users/{userId} {
+      // Allow user to create their own document if they are signed in and the ID matches.
+      allow create: if isSignedIn() && isOwner(userId);
+      
+      // Allow user to read/update their own profile, or an admin to do so.
+      allow get, update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      
+      // Only admins can list all users.
+      allow list: if isSignedIn() && isAdmin();
+      
+      // A user can delete their own profile, or an admin can delete any profile.
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    match /usernames/{username} {
+      // Allow user to create their own username document if the userId in the document matches their auth uid.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Anyone can check if a username exists.
+      allow read: if true;
+
+      // Admins can delete username documents (as part of user deletion).
+      allow delete: if isAdmin();
+      
+      // Username documents should never be changed.
+      allow update: if false;
+    }
+
+    match /games/{gameId} {
+      // Anyone can view games.
+      allow get: if true;
+      allow list: if true;
+
+      // Only signed-in users can submit a game (create).
+      // The developerId in the new game must match the user's UID.
+      allow create: if isSignedIn() && request.resource.data.developerId == request.auth.uid;
+
+      // Only the original developer or an admin can update a game.
+      // We check `resource.data.developerId` which is the value *before* the update.
+      allow update: if isSignedIn() && (isAdmin() || (resource != null && resource.data.developerId == request.auth.uid));
+
+      // Only admins can delete games.
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    match /admins/{userId} {
+      // Only admins can see who else is an admin.
+      allow get, list: if isSignedIn() && isAdmin();
+      // Only admins can create or delete other admin documents.
+      allow create, delete: if isSignedIn() && isAdmin();
+      // Role updates should be prevented. Delete and re-create if needed.
+      allow update: if false; 
+    }
+
+    match /sales/{saleId} {
+      // A user can create their own sale record (as part of a purchase).
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // Only admins can read sales data for analytics. Users should not be able to read other user's sales.
+      allow read, list: if isSignedIn() && isAdmin();
+      // Sales records are immutable, but admins can delete for cleanup.
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId}/shopping_cart/{cartId} {
+      // User can only access their own shopping cart. Admin has full access.
+      allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    match /users/{userId}/wishlist/{wishlistId} {
+      // User can only access their own wishlist. Admin has full access.
+      allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    match /users/{userId}/library/{gameId} {
+      // User can view their own library. Admin has full access.
+      allow get, list: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // User can have games added to their library (e.g. on purchase).
+      allow create: if isSignedIn() && (isOwner(userId) || isAdmin());
+      // Games in the library should not be updated by the user, but admin can manage them.
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+    
+    match /reviews/{reviewId} {
+      // Anyone can read reviews.
+      allow get, list: if true;
+      // Only a signed-in user can create a review, and they must be the author.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // The original author OR an admin can update or delete it.
+      allow update, delete: if isSignedIn() && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid));
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      // User can manage their own notifications. Admin has full access.
+      allow read, write: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    match /admin_messages/{messageId} {
+      // Any signed-in user can create a message for admins.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // Only admins can read, update, or delete admin messages.
+      allow read, update, delete, list: if isSignedIn() && isAdmin();
+    }
+  }
+}
