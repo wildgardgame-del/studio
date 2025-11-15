@@ -1,13 +1,14 @@
+
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { ethers } from 'ethers';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -38,6 +39,8 @@ export interface FirebaseContextState {
   isUserLoading: boolean;
   isNewUser: boolean | null;
   userError: Error | null;
+  // Auth functions
+  signInWithWallet: () => Promise<void>;
 }
 
 // Return type for useFirebase()
@@ -50,6 +53,7 @@ export interface FirebaseServicesAndUser {
   isUserLoading: boolean;
   isNewUser: boolean | null;
   userError: Error | null;
+  signInWithWallet: () => Promise<void>;
 }
 
 // Return type for useUser() - specific to user auth state
@@ -64,7 +68,9 @@ export interface UserHookResult {
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
 const checkUserProfileExists = async (firestore: Firestore, user: User): Promise<boolean> => {
-    const userRef = doc(firestore, "users", user.uid);
+    // For wallet users, UID is the address. Check if profile exists.
+    const uid = user.providerData.some(p => p.providerId === 'custom') ? user.uid : user.uid;
+    const userRef = doc(firestore, "users", uid);
     try {
         const docSnap = await getDoc(userRef);
         return docSnap.exists();
@@ -91,6 +97,51 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     isNewUser: null,
     userError: null,
   });
+
+  const signInWithWallet = useCallback(async () => {
+    if (typeof window.ethereum === 'undefined') {
+      throw new Error('MetaMask is not installed. Please install it to continue.');
+    }
+    if (!auth) {
+        throw new Error('Firebase Auth not initialized.');
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+
+    // 1. Get nonce from server
+    const nonceRes = await fetch('/api/auth/wallet/nonce', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address }),
+    });
+    if (!nonceRes.ok) throw new Error('Failed to get nonce from server.');
+    const { message } = await nonceRes.json();
+    
+    // 2. Sign message
+    const signature = await signer.signMessage(message);
+
+    // 3. Verify signature and get custom token
+    const verifyRes = await fetch('/api/auth/wallet/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address, signature }),
+    });
+    if (!verifyRes.ok) throw new Error('Signature verification failed.');
+    const { token } = await verifyRes.json();
+    
+    // 4. Sign in with custom token
+    await signInWithCustomToken(auth, token);
+    
+    // 5. Clean up nonce
+    await fetch('/api/auth/wallet/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address }),
+    });
+  }, [auth]);
+
 
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {
@@ -139,8 +190,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       isUserLoading: userAuthState.isUserLoading,
       isNewUser: userAuthState.isNewUser,
       userError: userAuthState.userError,
+      signInWithWallet
     };
-  }, [firebaseApp, firestore, auth, storage, userAuthState]);
+  }, [firebaseApp, firestore, auth, storage, userAuthState, signInWithWallet]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -176,6 +228,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     isUserLoading: context.isUserLoading,
     isNewUser: context.isNewUser,
     userError: context.userError,
+    signInWithWallet: context.signInWithWallet
   };
 };
 

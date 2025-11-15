@@ -4,8 +4,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wallet } from "lucide-react";
 import Image from "next/image";
+import { ethers } from 'ethers';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,16 +18,18 @@ import {
 } from "@/components/ui/card"
 import Header from "@/components/layout/header"
 import Footer from "@/components/layout/footer"
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { user, isUserLoading, signInWithWallet } = useFirebase(); // Use signInWithWallet from the hook
+  const auth = useFirebase().auth;
   const router = useRouter();
   const { toast } = useToast();
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
+  const [isWalletSigningIn, setIsWalletSigningIn] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -66,6 +69,27 @@ export default function LoginPage() {
     }
   };
 
+  const handleWalletSignIn = async () => {
+    setIsWalletSigningIn(true);
+    try {
+      await signInWithWallet();
+      toast({
+        title: "Login Successful",
+        description: "Welcome!",
+      });
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Wallet Login Failed",
+        description: error.message || "Could not sign in with wallet. Please try again.",
+      });
+    } finally {
+      setIsWalletSigningIn(false);
+    }
+  }
+
+
   if (isUserLoading || user) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center">
@@ -92,14 +116,22 @@ export default function LoginPage() {
                     </div>
                     <CardTitle className="text-2xl font-headline text-center">Access Forge Gate Hub</CardTitle>
                     <CardDescription className="text-center">
-                        Use your Google account to sign in or create an account.
+                        Sign in or create an account.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
-                        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleSigningIn}>
+                        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleSigningIn || isWalletSigningIn}>
                             {isGoogleSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Continue with Google
+                        </Button>
+                        <div className="relative my-2">
+                          <Separator />
+                          <span className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">OR</span>
+                        </div>
+                        <Button variant="secondary" className="w-full" onClick={handleWalletSignIn} disabled={isWalletSigningIn || isGoogleSigningIn}>
+                            {isWalletSigningIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
+                            Continue with Wallet
                         </Button>
                     </div>
                 </CardContent>
