@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, type ReactNode } from 'react';
@@ -20,6 +21,19 @@ type FirebaseServices = {
   storage: FirebaseStorage;
 };
 
+// Build the config object directly from environment variables at the top level of the client component
+// This is a more robust way to ensure they are read correctly on the client side.
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+};
+
+
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   // Use state to hold the initialized services. Start with null.
   const [firebaseServices, setFirebaseServices] = useState<FirebaseServices | null>(null);
@@ -27,7 +41,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
   useEffect(() => {
     // This effect runs only on the client, after the component has mounted.
     // This is the correct place to initialize Firebase.
-    const services = initializeFirebase();
+    const services = initializeFirebase(firebaseConfig);
     setFirebaseServices(services);
     
     // The empty dependency array [] ensures this effect runs only once.
