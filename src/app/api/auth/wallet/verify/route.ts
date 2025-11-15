@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const adminAuth = getAdminApp().auth();
     const customToken = await adminAuth.createCustomToken(address);
     
-    // Asynchronously delete the nonce after creating the token
+    // Asynchronously delete the nonce after creating the token using Admin SDK syntax
     nonceRef.delete().catch(err => console.error("Error deleting nonce post-verification:", err));
     
     return NextResponse.json({ token: customToken });
