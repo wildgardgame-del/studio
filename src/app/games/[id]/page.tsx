@@ -275,14 +275,14 @@ function GamePageContent() {
 
             {/* Right Column */}
             <div className="md:col-span-2 lg:col-span-3 space-y-8 pt-12 md:pt-0">
+               <div className="prose prose-invert max-w-none text-muted-foreground text-lg">
+                  <p>{game.longDescription || game.description}</p>
+               </div>
+
                <div className="flex flex-wrap gap-2">
                   {game.genres.map(genre => (
                     <Badge key={genre} variant="secondary" className="text-sm">{genre}</Badge>
                   ))}
-               </div>
-
-               <div className="prose prose-invert max-w-none text-muted-foreground text-lg">
-                  <p>{game.longDescription || game.description}</p>
                </div>
                
               {game.screenshots && game.screenshots.length > 0 && (
