@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getFirestore } from 'firebase/firestore'; // Use the modular import
 import { initializeFirebase } from '@/firebase';
 
 export async function POST(req: NextRequest) {
