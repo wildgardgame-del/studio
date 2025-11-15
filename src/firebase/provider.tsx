@@ -99,14 +99,14 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   const signInWithWallet = useCallback(async () => {
-    if (typeof window.ethereum === 'undefined') {
+    if (typeof (window as any).ethereum === 'undefined') {
       throw new Error('MetaMask is not installed. Please install it to continue.');
     }
     if (!auth) {
         throw new Error('Firebase Auth not initialized.');
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new ethers.BrowserProvider((window as any).ethereum);
     const signer = await provider.getSigner();
     const address = await signer.getAddress();
 
