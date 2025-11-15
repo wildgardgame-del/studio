@@ -1,10 +1,11 @@
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { getAdminFirestore } from '@/firebase/admin-app';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,8 +17,8 @@ export async function POST(req: NextRequest) {
     const nonce = uuidv4();
     const message = `Welcome to GameSphere!\n\nSign this message to authenticate your address: ${address}\n\nNonce: ${nonce}`;
     
-    // Use standard client initialization to write the nonce
-    const { firestore } = initializeFirebase();
+    // Use the Admin Firestore instance
+    const firestore = getAdminFirestore();
     const nonceRef = doc(firestore, 'nonces', address);
     
     await setDoc(nonceRef, { 

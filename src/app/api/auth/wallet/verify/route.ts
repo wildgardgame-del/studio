@@ -1,11 +1,11 @@
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { doc, getDoc } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
-import { getAdminApp } from '@/firebase/admin-app';
+import { getAdminApp, getAdminFirestore } from '@/firebase/admin-app';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Address and signature are required' }, { status: 400 });
     }
     
-    // Use standard client initialization to read from Firestore
-    const { firestore } = initializeFirebase();
+    // Use Admin SDK to read from Firestore
+    const firestore = getAdminFirestore();
     const nonceRef = doc(firestore, 'nonces', address);
     const nonceDoc = await getDoc(nonceRef);
 
@@ -31,15 +31,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Signature verification failed' }, { status: 401 });
     }
 
-    // Initialize Firebase Admin SDK ONLY here, where it's needed
-    const { auth: adminAuth } = getAdminApp();
+    // Use Admin SDK to create a custom token
+    const adminAuth = getAdminApp().auth;
     const customToken = await adminAuth.createCustomToken(address);
     
     return NextResponse.json({ token: customToken });
 
   } catch (error: any) {
     console.error('Verification error:', error);
-    // Be careful not to leak sensitive error details in production
     const errorMessage = process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error';
     return NextResponse.json({ error: 'Internal Server Error', details: errorMessage }, { status: 500 });
   }

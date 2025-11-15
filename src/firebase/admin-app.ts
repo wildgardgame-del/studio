@@ -1,57 +1,62 @@
 
-import { getApps, initializeApp, cert, App } from 'firebase-admin/app';
+import { initializeApp, cert, getApps, getApp, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import 'dotenv/config';
 
 let adminApp: App | undefined;
-let adminAuth: Auth | undefined;
 
-// This function initializes and returns the admin app and auth instances.
+function getServiceAccount() {
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (serviceAccountKey) {
+    try {
+      return JSON.parse(serviceAccountKey);
+    } catch (e) {
+      console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY from JSON", e);
+    }
+  }
+
+  // Fallback for separate variables if the single key isn't present
+  if (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    return {
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    };
+  }
+
+  return null;
+}
+
+
+// This function initializes and returns the admin app.
 // It ensures that initialization only happens once.
-export function getAdminApp() {
-  // Check if already initialized to avoid re-initializing
-  if (adminApp && adminAuth) {
-    return {
-      app: adminApp,
-      auth: adminAuth,
-    };
+export function getAdminApp(): App {
+  if (adminApp) {
+    return adminApp;
   }
 
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountKey) {
-      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set or not accessible in this environment.');
-    }
+  const serviceAccount = getServiceAccount();
 
-    // Parse the service account key from the environment variable.
-    // This will throw an error if the key is malformed, which is caught below.
-    const serviceAccount = JSON.parse(serviceAccountKey);
-
-    // Initialize the app if it hasn't been initialized yet.
-    if (getApps().length === 0) {
-      adminApp = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } else {
-      // If apps already exist, get the default one.
-      adminApp = getApps()[0];
-    }
-    
-    // Get the auth service from the initialized app.
-    adminAuth = getAuth(adminApp);
-
-    // Return the initialized services.
-    return {
-      app: adminApp,
-      auth: adminAuth,
-    };
-
-  } catch (error) {
-    // Log the detailed error for server-side debugging.
-    console.error("Firebase Admin SDK Initialization Error:", (error as Error).message);
-    
-    // Throw a more generic error to be handled by the calling function.
-    // This prevents leaking sensitive details about the service account key.
-    throw new Error("Firebase Admin SDK could not be initialized. This function should only be called in a server environment with the required environment variables.");
+  if (!serviceAccount) {
+    throw new Error('Firebase Admin SDK service account credentials are not set. Please set FIREBASE_SERVICE_ACCOUNT_KEY or the individual project an client variables in your environment.');
   }
+  
+  if (getApps().length === 0) {
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    adminApp = getApp();
+  }
+
+  return adminApp;
+}
+
+export function getAdminAuth(): Auth {
+  return getAuth(getAdminApp());
+}
+
+export function getAdminFirestore(): Firestore {
+  return getFirestore(getAdminApp());
 }

@@ -1,9 +1,10 @@
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { getAdminFirestore } from '@/firebase/admin-app';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,8 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
-    // Use standard client initialization to delete the nonce
-    const { firestore } = initializeFirebase();
+    // Use the Admin Firestore instance to delete the nonce
+    const firestore = getAdminFirestore();
     const nonceRef = doc(firestore, 'nonces', address);
     await deleteDoc(nonceRef);
 
