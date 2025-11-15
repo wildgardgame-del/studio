@@ -207,7 +207,7 @@ function GamePageContent() {
     <div className="flex min-h-screen flex-col bg-secondary/30">
       <Header />
       <main className="flex-1">
-        <section className="relative w-full h-[40vh] min-h-[300px] md:h-[50vh] md:min-h-[400px]">
+        <section className="relative w-full h-[30vh] min-h-[250px] md:h-[40vh] md:min-h-[350px]">
           <Image 
             src={bannerImageUrl}
             alt={`Banner for ${game.title}`}
@@ -216,21 +216,9 @@ function GamePageContent() {
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-           <div className="absolute inset-0 flex items-end justify-start p-4 md:p-8">
-              <div className="container">
-                <h1 className="text-4xl lg:text-6xl font-bold font-headline text-primary-foreground shadow-2xl">{game.title}</h1>
-                {game.publisher && <p className="text-xl text-primary-foreground/90 mt-1 shadow-md">by {game.publisher}</p>}
-              </div>
-          </div>
         </section>
 
-        <div className="container -mt-24 md:-mt-32 relative z-10">
-          {game.status !== 'approved' && isAdmin && (
-            <div className="mb-6 rounded-lg border-l-4 border-yellow-400 bg-yellow-50 p-4 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
-              <p className="font-bold">Admin Preview Mode</p>
-              <p className="text-sm">You are viewing this page as an admin. This game has a status of <span className="font-semibold">{game.status}</span> and is not visible to the public.</p>
-            </div>
-          )}
+        <div className="container -mt-16 md:-mt-24 relative z-10">
           <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-8">
             {/* Left Column */}
             <div className="md:col-span-1 lg:col-span-1 space-y-4">
@@ -274,7 +262,20 @@ function GamePageContent() {
             </div>
 
             {/* Right Column */}
-            <div className="md:col-span-2 lg:col-span-3 space-y-8 pt-12 md:pt-0">
+            <div className="md:col-span-2 lg:col-span-3 space-y-8">
+               
+               <div className="space-y-2">
+                 <h1 className="text-4xl lg:text-5xl font-bold font-headline text-primary-foreground">{game.title}</h1>
+                 {game.publisher && <p className="text-xl text-muted-foreground mt-1">by {game.publisher}</p>}
+               </div>
+               
+               {game.status !== 'approved' && isAdmin && (
+                <div className="rounded-lg border-l-4 border-yellow-400 bg-yellow-50 p-4 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
+                  <p className="font-bold">Admin Preview Mode</p>
+                  <p className="text-sm">You are viewing this page as an admin. This game has a status of <span className="font-semibold">{game.status}</span> and is not visible to the public.</p>
+                </div>
+              )}
+
                <div className="prose prose-invert max-w-none text-muted-foreground text-lg">
                   <p>{game.longDescription || game.description}</p>
                </div>
@@ -356,3 +357,5 @@ export default function GamePage() {
         </Suspense>
     )
 }
+
+    
