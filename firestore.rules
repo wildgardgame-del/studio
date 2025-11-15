@@ -30,10 +30,11 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isSignedIn() && isAdmin();
 
+      // Allow create if user is owner AND (emails match OR auth email is null for wallet users)
       allow create: if isSignedIn() 
                     && isOwner(userId)
                     && request.resource.data.id == userId
-                    && request.resource.data.email == request.auth.token.email;
+                    && (request.resource.data.email == request.auth.token.email || request.auth.token.email == null);
 
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
