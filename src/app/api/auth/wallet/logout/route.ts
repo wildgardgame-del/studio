@@ -1,7 +1,10 @@
+'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
     }
 
+    // Use standard client initialization to delete the nonce
     const { firestore } = initializeFirebase();
     const nonceRef = doc(firestore, 'nonces', address);
     await deleteDoc(nonceRef);

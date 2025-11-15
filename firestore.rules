@@ -28,17 +28,26 @@ service cloud.firestore {
     // ----------------------
     // Collection Rules
     // ----------------------
+    
+    // Nonces for wallet sign-in
+    match /nonces/{address} {
+      // Anyone can create a nonce for their address to initiate sign-in.
+      // Anyone can delete their nonce (e.g., after successful sign-in).
+      // Reading is restricted to prevent enumeration.
+      allow create, delete: if true;
+      allow read: if false;
+    }
 
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isSignedIn() && isAdmin(); // Only admins can list all users
 
       // A user can only create their own document.
-      // We also check that the ID and email in the document match the auth token.
+      // We also check that the ID in the document matches the auth token.
+      // For wallet users, email might be null, so we don't enforce it.
       allow create: if isSignedIn() 
                     && isOwner(userId)
-                    && request.resource.data.id == userId
-                    && request.resource.data.email == request.auth.token.email;
+                    && request.resource.data.id == userId;
 
       // User can update their own profile, or an admin can.
       allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
