@@ -8,7 +8,7 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, writeBatch, serverTimestamp, collection } from "firebase/firestore";
+import { loadStripe } from '@stripe/stripe-js';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,18 +26,21 @@ import { useGameStore } from "@/context/game-store-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { useFirebase } from "@/firebase";
+
+// Initialize Stripe.js with your publishable key
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
 })
 
 function CheckoutPageContent() {
-    const { cartItems, clearCart, removeFromWishlist } = useGameStore();
+    const { cartItems } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
-    const { user, firestore } = useFirebase();
+    const { user } = useFirebase();
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
     const tax = subtotal * 0.08;
@@ -51,7 +54,7 @@ function CheckoutPageContent() {
     });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!user || !firestore) {
+        if (!user) {
             toast({
                 variant: "destructive",
                 title: "You are not logged in",
@@ -63,62 +66,48 @@ function CheckoutPageContent() {
 
         setIsProcessing(true);
         
-        // Simulate payment processing
-        setTimeout(async () => {
-            try {
-                const batch = writeBatch(firestore);
-                const salesRef = collection(firestore, 'sales');
+        try {
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cartItems: cartItems,
+                    userId: user.uid,
+                }),
+            });
 
-                cartItems.forEach(item => {
-                    // 1. Add game to user's library
-                    const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                    batch.set(libraryRef, { 
-                        gameId: item.id,
-                        purchasedAt: serverTimestamp() 
-                    });
-
-                    // 2. Create a sale record
-                    const saleRef = doc(salesRef); // Auto-generates a new ID
-                    batch.set(saleRef, {
-                        gameId: item.id,
-                        userId: user.uid,
-                        priceAtPurchase: item.price,
-                        purchaseDate: serverTimestamp(),
-                    });
-
-                    // 3. Remove game from wishlist
-                    const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
-                    batch.delete(wishlistRef);
-                });
-                
-                await batch.commit();
-
-                clearCart();
-                toast({
-                    title: "Payment successful!",
-                    description: "Your games are now available in your library.",
-                });
-                router.push('/library');
-
-            } catch (error) {
-                console.error("Error committing purchase to Firestore:", error);
-                const permissionError = new FirestorePermissionError({
-                    path: `users/${user.uid}/library or /sales`,
-                    operation: 'write',
-                    requestResourceData: { note: `Attempting to process ${cartItems.length} items.` }
-                });
-                
-                errorEmitter.emit('permission-error', permissionError);
-                
-                toast({
-                    variant: "destructive",
-                    title: "Purchase Error",
-                    description: "Could not save your purchase. Please check your permissions and try again.",
-                });
-            } finally {
-                setIsProcessing(false);
+            if (!response.ok) {
+                throw new Error('Failed to create checkout session.');
             }
-        }, 2000);
+
+            const { sessionId } = await response.json();
+            
+            const stripe = await stripePromise;
+            if (!stripe) {
+                throw new Error('Stripe.js has not loaded yet.');
+            }
+
+            const { error } = await stripe.redirectToCheckout({ sessionId });
+
+            if (error) {
+                console.error("Stripe redirect error:", error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Payment Error',
+                    description: error.message || 'Could not redirect to payment page.',
+                });
+            }
+        } catch (error: any) {
+             toast({
+                variant: "destructive",
+                title: "Checkout Error",
+                description: "There was an issue initiating the payment process. Please try again.",
+            });
+        } finally {
+            setIsProcessing(false);
+        }
     }
     
     if (cartItems.length === 0 && !isProcessing) {
@@ -147,18 +136,18 @@ function CheckoutPageContent() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Confirm Purchase</CardTitle>
-                            <CardDescription>Enter your email to receive your order confirmation.</CardDescription>
+                            <CardDescription>You will be redirected to our secure payment processor to complete your purchase.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                     <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Email for receipt</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
                                     
                                     <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
                                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}
+                                        {isProcessing ? 'Redirecting...' : `Proceed to Pay $${total.toFixed(2)}`}
                                     </Button>
                                 </form>
                             </Form>
@@ -211,3 +200,5 @@ export default function CheckoutPage() {
         </Suspense>
     )
 }
+
+    

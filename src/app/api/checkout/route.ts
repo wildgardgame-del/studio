@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import type { Game } from '@/lib/types';
 
 // This is your test secret API key.
+// It will be read from the .env file.
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export async function POST(req: Request) {
@@ -23,15 +24,19 @@ export async function POST(req: Request) {
 
   try {
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = cartItems.map((item) => {
+        // For 'Pay what you want' or free games, ensure a minimum of $0.50 for Stripe processing if a payment is made.
+        // If price is 0, we can still represent it, Stripe handles it.
+        const price = item.price || 0;
+
         return {
             price_data: {
                 currency: 'usd',
                 product_data: {
                     name: item.title,
-                    images: [item.coverImage],
+                    images: item.coverImage ? [item.coverImage] : [],
                     description: item.description,
                 },
-                unit_amount: Math.round(item.price * 100), // Price in cents
+                unit_amount: Math.round(price * 100), // Price in cents
             },
             quantity: 1,
         };
@@ -42,10 +47,12 @@ export async function POST(req: Request) {
       line_items,
       mode: 'payment',
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout`,
+      cancel_url: `${origin}/checkout/cancel`,
       metadata: {
         userId,
         gameIds: JSON.stringify(cartItems.map(item => item.id)),
+        // Store prices for each game to handle DB write on success
+        gamePrices: JSON.stringify(cartItems.map(item => ({ id: item.id, price: item.price }))),
       }
     });
 
@@ -55,3 +62,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+    
