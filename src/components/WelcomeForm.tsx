@@ -54,11 +54,12 @@ const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2,
 
 const formSchema = z.object({
   username: z.string().min(3, "Nickname must be at least 3 characters.").max(19, "Nickname can be at most 19 characters."),
+  email: z.string().optional(),
   day: z.string().min(1, "Day is required."),
   month: z.string().min(1, "Month is required."),
   year: z.string().min(1, "Year is required."),
 }).refine(data => {
-  if (!data.year || !data.month || !data.day) return true; // Let individual field validation handle this
+  if (!data.year || !data.month || !data.day) return true; 
   const date = new Date(`${data.year}-${data.month}-${data.day}`);
   return date.getDate() === parseInt(data.day);
 }, {
@@ -72,10 +73,22 @@ export function WelcomeForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // Zod schema that is conditional based on the user object
+  const conditionalFormSchema = formSchema.superRefine((data, ctx) => {
+    if (!user?.email && !z.string().email().safeParse(data.email).success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A valid email is required for wallet users.",
+        path: ["email"],
+      });
+    }
+  });
+  
+  const form = useForm<z.infer<typeof conditionalFormSchema>>({
+    resolver: zodResolver(conditionalFormSchema),
     defaultValues: {
       username: "",
+      email: "",
       day: "",
       month: "",
       year: "",
@@ -99,7 +112,7 @@ export function WelcomeForm() {
     }
   };
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof conditionalFormSchema>) {
     if (!user || !firestore) return;
     setIsSubmitting(true);
 
@@ -122,7 +135,8 @@ export function WelcomeForm() {
         const userData = {
             id: user.uid,
             username: values.username,
-            email: user.email,
+            // Use provided email for wallet users, or existing email for others
+            email: user.email || values.email, 
             registrationDate: serverTimestamp(),
             dateOfBirth: dateOfBirth.toISOString().split('T')[0],
             isAgeVerified,
@@ -197,6 +211,26 @@ export function WelcomeForm() {
                     </FormItem>
                   )}
                 />
+                
+                {/* Conditionally render Email field */}
+                {!user?.email && (
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="you@example.com" {...field} />
+                        </FormControl>
+                         <FormDescription>
+                          We need an email to contact you about your account.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
@@ -264,7 +298,3 @@ export function WelcomeForm() {
     </div>
   );
 }
-
-    
-
-    
