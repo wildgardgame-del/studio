@@ -3,9 +3,10 @@
 
 import Image from "next/image";
 import { Loader2, Wallet } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { doc, writeBatch, serverTimestamp, collection } from "firebase/firestore";
+import { ethers } from "ethers";
 
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/layout/footer";
@@ -16,85 +17,115 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 
+const RECIPIENT_ADDRESS = "0xYourWalletAddressHere"; // TODO: Replace with a real address
+
 function CheckoutPageContent() {
-    const { cartItems, clearCart, removeFromWishlist } = useGameStore();
+    const { cartItems, clearCart } = useGameStore();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+    const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
     const router = useRouter();
     const { toast } = useToast();
     const { user, firestore } = useFirebase();
 
-    const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
-    const total = subtotal; // No tax for crypto simulation
+    useEffect(() => {
+        if (typeof window.ethereum !== 'undefined') {
+            const browserProvider = new ethers.BrowserProvider(window.ethereum);
+            setProvider(browserProvider);
+        }
+    }, []);
 
-    async function handleCryptoPayment() {
+    const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
+    const total = subtotal;
+
+    const connectWallet = async () => {
+        if (provider) {
+            try {
+                const accounts = await provider.send("eth_requestAccounts", []);
+                if (accounts.length > 0) {
+                    const walletSigner = await provider.getSigner();
+                    setSigner(walletSigner);
+                    toast({ title: "Wallet Connected", description: `Connected to: ${walletSigner.address.substring(0, 6)}...` });
+                    return walletSigner;
+                }
+            } catch (error: any) {
+                toast({ variant: "destructive", title: "Wallet Connection Failed", description: error.message });
+            }
+        } else {
+            toast({ variant: "destructive", title: "MetaMask not found", description: "Please install MetaMask to use this feature." });
+        }
+        return null;
+    };
+
+    const handleCryptoPayment = async () => {
         if (!user || !firestore) {
-            toast({
-                variant: "destructive",
-                title: "You are not logged in",
-                description: "Please log in to complete your purchase.",
-            });
+            toast({ variant: "destructive", title: "You are not logged in" });
             router.push('/login');
             return;
         }
 
+        let currentSigner = signer;
+        if (!currentSigner) {
+            currentSigner = await connectWallet();
+        }
+
+        if (!currentSigner) {
+            return; // Stop if wallet connection failed
+        }
+
         setIsProcessing(true);
-        
-        // Simulate payment processing
-        setTimeout(async () => {
-            try {
-                const batch = writeBatch(firestore);
-                const salesRef = collection(firestore, 'sales');
 
-                cartItems.forEach(item => {
-                    // 1. Add game to user's library
-                    const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
-                    batch.set(libraryRef, { 
-                        gameId: item.id,
-                        purchasedAt: serverTimestamp() 
-                    });
+        try {
+            const tx = await currentSigner.sendTransaction({
+                to: RECIPIENT_ADDRESS,
+                value: ethers.parseEther(total.toString()) 
+            });
 
-                    // 2. Create a sale record
-                    const saleRef = doc(salesRef); // Auto-generates a new ID
-                    batch.set(saleRef, {
-                        gameId: item.id,
-                        userId: user.uid,
-                        priceAtPurchase: item.price,
-                        purchaseDate: serverTimestamp(),
-                    });
+            // Optimistic confirmation: We proceed as soon as the transaction is sent
+            toast({ title: "Transaction Sent!", description: "Processing your order..." });
+            
+            // Wait a moment for the user to see the toast before proceeding
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-                    // 3. Remove game from wishlist if it's there
-                    const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
-                    batch.delete(wishlistRef);
+            const batch = writeBatch(firestore);
+            const salesRef = collection(firestore, 'sales');
+
+            cartItems.forEach(item => {
+                const libraryRef = doc(firestore, `users/${user.uid}/library`, item.id);
+                batch.set(libraryRef, { gameId: item.id, purchasedAt: serverTimestamp() });
+
+                const saleRef = doc(salesRef);
+                batch.set(saleRef, {
+                    gameId: item.id,
+                    userId: user.uid,
+                    priceAtPurchase: item.price,
+                    purchaseDate: serverTimestamp(),
+                    txHash: tx.hash // Save transaction hash
                 });
-                
-                await batch.commit();
 
-                clearCart();
-                toast({
-                    title: "Payment successful!",
-                    description: "Your games are now available in your library.",
-                });
-                router.push('/library');
+                const wishlistRef = doc(firestore, `users/${user.uid}/wishlist`, item.id);
+                batch.delete(wishlistRef);
+            });
+            
+            await batch.commit();
 
-            } catch (error) {
-                console.error("Error committing purchase to Firestore:", error);
-                const permissionError = new FirestorePermissionError({
-                    path: `users/${user.uid}/library or /sales`,
-                    operation: 'write',
-                    requestResourceData: { note: `Attempting to process ${cartItems.length} items.` }
-                });
-                
-                errorEmitter.emit('permission-error', permissionError);
-                
-                toast({
-                    variant: "destructive",
-                    title: "Purchase Error",
-                    description: "Could not save your purchase. Please check your permissions and try again.",
-                });
-            } finally {
-                setIsProcessing(false);
+            clearCart();
+            toast({
+                title: "Purchase successful!",
+                description: "Your games are now in your library.",
+            });
+            router.push('/library');
+
+        } catch (error: any) {
+            console.error("Payment error:", error);
+            if (error.code === 'ACTION_REJECTED') {
+                 toast({ variant: "destructive", title: "Transaction Rejected", description: "You rejected the transaction in your wallet." });
+            } else {
+                 toast({ variant: "destructive", title: "Payment Error", description: error.message || "An unknown error occurred." });
             }
-        }, 2000);
+        } finally {
+            setIsProcessing(false);
+        }
     }
     
     if (cartItems.length === 0 && !isProcessing) {
@@ -123,16 +154,16 @@ function CheckoutPageContent() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Confirm Purchase</CardTitle>
-                            <CardDescription>Review your order and proceed to payment.</CardDescription>
+                            <CardDescription>Review your order and proceed to payment with your crypto wallet.</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <Button onClick={handleCryptoPayment} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg" disabled={isProcessing}>
                                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 <Wallet className="mr-2 h-5 w-5" />
-                                {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)} with Crypto`}
+                                {isProcessing ? 'Processing...' : (signer ? `Pay with Crypto` : 'Connect Wallet & Pay')}
                             </Button>
                             <p className="text-xs text-muted-foreground mt-4 text-center">
-                                This is a simulated transaction. No real funds will be used.
+                                You will be prompted to connect your wallet and confirm the transaction.
                             </p>
                         </CardContent>
                     </Card>
