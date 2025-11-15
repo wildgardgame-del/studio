@@ -227,7 +227,7 @@ function GamePageContent() {
                 alt={`Cover art for ${game.title}`}
                 width={600}
                 height={800}
-                className="rounded-lg object-cover aspect-[3/4] shadow-lg w-full"
+                className="rounded-lg border object-cover aspect-[3/4] shadow-lg w-full"
               />
               <div className="space-y-2">
                 {renderPurchaseButton()}
