@@ -97,7 +97,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
             <div>
-              <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={200} height={200} className="mx-auto mb-2" />
+              <Image src="/images/logo-512.png" alt="Forge Gate Hub Logo" width={200} height={200} className="mx-auto mb-2 animate-float" />
               <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
                 Enter the Forge
               </h1>
