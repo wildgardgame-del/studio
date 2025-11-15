@@ -201,7 +201,7 @@ function GamePageContent() {
     )
   }
   
-  const bannerImageUrl = (game.screenshots && game.screenshots.length > 0) ? game.screenshots[0] : game.coverImage;
+  const bannerImageUrl = game.bannerImage || (game.screenshots && game.screenshots.length > 0 ? game.screenshots[0] : game.coverImage);
 
   return (
     <div className="flex min-h-screen flex-col bg-secondary/30">

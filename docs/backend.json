@@ -70,6 +70,11 @@
           "description": "URL of the game's main image.",
           "format": "uri"
         },
+        "bannerImage": {
+            "type": "string",
+            "description": "URL of the game's banner image for the store page.",
+            "format": "uri"
+        },
         "trailerUrls": {
           "type": "array",
           "description": "URLs of the game's trailers.",

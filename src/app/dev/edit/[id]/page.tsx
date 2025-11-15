@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, Trash2, Info, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart, Image as ImageIcon } from "lucide-react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -57,6 +57,7 @@ const formSchema = z.object({
   githubRepoUrl: z.string().url("Must be a valid GitHub repository URL.").optional().or(z.literal('')),
   isAdultContent: z.boolean().default(false),
   coverImage: z.any().optional(),
+  bannerImage: z.any().optional(),
   screenshots: z.any().optional(),
 }).refine(data => {
     if (data.isInDevelopment) return true; // If in development, download links are not required
@@ -78,6 +79,7 @@ const fileToDataUri = (file: File): Promise<string> => {
 function EditGamePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingCoverImage, setExistingCoverImage] = useState<string | null>(null);
+  const [existingBannerImage, setExistingBannerImage] = useState<string | null>(null);
   const [existingScreenshots, setExistingScreenshots] = useState<string[]>([]);
 
   const { user, isUserLoading, firestore } = useFirebase();
@@ -88,6 +90,7 @@ function EditGamePageContent() {
   const gameId = params.id as string;
 
   const coverImageRef = useRef<HTMLInputElement>(null);
+  const bannerImageRef = useRef<HTMLInputElement>(null);
   const screenshotsRef = useRef<HTMLInputElement>(null);
   
   const hasDevLicense = isPurchased('dev-account-upgrade') || isPurchased('dev-android-account-upgrade');
@@ -133,11 +136,13 @@ function EditGamePageContent() {
         isAdultContent: gameData.isAdultContent || false,
       });
       setExistingCoverImage(gameData.coverImage);
+      setExistingBannerImage(gameData.bannerImage || null);
       setExistingScreenshots(gameData.screenshots || []);
     }
   }, [gameData, form]);
 
   const coverImageFile = form.watch("coverImage");
+  const bannerImageFile = form.watch("bannerImage");
   const screenshotsFiles = form.watch("screenshots");
   const isPayWhatYouWant = form.watch("isPayWhatYouWant");
 
@@ -167,12 +172,19 @@ function EditGamePageContent() {
 
     try {
       let coverImageUrl = existingCoverImage;
+      let bannerImageUrl = existingBannerImage;
       let screenshotUrls = [...existingScreenshots]; 
 
       if (values.coverImage && values.coverImage.name) {
         const coverImageDataUri = await fileToDataUri(values.coverImage);
         coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
         toast({ title: "New cover image uploaded!" });
+      }
+
+      if (values.bannerImage && values.bannerImage.name) {
+        const bannerImageDataUri = await fileToDataUri(values.bannerImage);
+        bannerImageUrl = await uploadImage({ fileDataUri: bannerImageDataUri, fileName: values.bannerImage.name });
+        toast({ title: "New banner image uploaded!" });
       }
 
       if (values.screenshots && values.screenshots.length > 0) {
@@ -211,6 +223,7 @@ function EditGamePageContent() {
         gameFileUrl: values.gameFileUrl,
         githubRepoUrl: values.githubRepoUrl,
         coverImage: coverImageUrl,
+        bannerImage: bannerImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
         developerId: user.uid,
@@ -490,56 +503,86 @@ function EditGamePageContent() {
                         </FormItem>
                     )}
                 />
+                
+                <Separator />
+                
+                <div className="space-y-6">
+                    <FormField control={form.control} name="coverImage" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Cover Image</FormLabel>
+                        <FormControl>
+                            <Input type="file" className="hidden" ref={coverImageRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => field.onChange(e.target.files?.[0])} />
+                        </FormControl>
+                        {coverImageFile && coverImageFile.name ? (
+                            <div className="relative w-48 mx-auto">
+                                <Image src={URL.createObjectURL(coverImageFile)} alt="New cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
+                                <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}> <Trash2 className="h-4 w-4"/> </Button>
+                            </div>
+                        ) : existingCoverImage ? (
+                            <div className="relative w-48 mx-auto">
+                                <Image src={existingCoverImage} alt="Current cover" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
+                                <Button type="button" variant="secondary" size="sm" className="absolute bottom-2 left-1/2 -translate-x-1/2" onClick={() => coverImageRef.current?.click()}>Replace</Button>
+                            </div>
+                        ) : (
+                            <button type="button" onClick={() => coverImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                                <Upload className="h-8 w-8"/><span>Upload a cover image</span><span className="text-xs">(Max 5MB)</span>
+                            </button>
+                        )}
+                        <FormDescription>
+                        Recommended resolution: 600x800px (3:4 aspect ratio).
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
 
-                <FormField control={form.control} name="coverImage" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cover Image</FormLabel>
-                    <FormControl>
-                        <Input type="file" className="hidden" ref={coverImageRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => field.onChange(e.target.files?.[0])} />
-                    </FormControl>
-                     {coverImageFile && coverImageFile.name ? (
-                        <div className="relative w-48 mx-auto">
-                            <Image src={URL.createObjectURL(coverImageFile)} alt="New cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
-                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}> <Trash2 className="h-4 w-4"/> </Button>
-                        </div>
-                    ) : existingCoverImage ? (
-                        <div className="relative w-48 mx-auto">
-                            <Image src={existingCoverImage} alt="Current cover" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
-                            <Button type="button" variant="secondary" size="sm" className="absolute bottom-2 left-1/2 -translate-x-1/2" onClick={() => coverImageRef.current?.click()}>Replace</Button>
-                        </div>
-                    ) : (
-                        <button type="button" onClick={() => coverImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-                            <Upload className="h-8 w-8"/><span>Upload a cover image</span><span className="text-xs">(Max 5MB)</span>
+                    <FormField control={form.control} name="bannerImage" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Banner Image (Optional)</FormLabel>
+                        <FormControl>
+                            <Input type="file" className="hidden" ref={bannerImageRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => field.onChange(e.target.files?.[0])} />
+                        </FormControl>
+                        {bannerImageFile && bannerImageFile.name ? (
+                             <div className="relative w-full mx-auto">
+                                <Image src={URL.createObjectURL(bannerImageFile)} alt="New banner preview" width={1920} height={1080} className="rounded-md object-cover aspect-video" />
+                                <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("bannerImage", null)}> <Trash2 className="h-4 w-4"/> </Button>
+                            </div>
+                        ) : existingBannerImage ? (
+                            <div className="relative w-full mx-auto">
+                                <Image src={existingBannerImage} alt="Current banner" width={1920} height={1080} className="rounded-md object-cover aspect-video" />
+                                <Button type="button" variant="secondary" size="sm" className="absolute bottom-2 left-1/2 -translate-x-1/2" onClick={() => bannerImageRef.current?.click()}>Replace</Button>
+                            </div>
+                        ) : (
+                            <button type="button" onClick={() => bannerImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                                <ImageIcon className="h-8 w-8"/><span>Upload a banner image</span><span className="text-xs">Recommended: 1920x1080px (16:9 aspect ratio)</span>
+                            </button>
+                        )}
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+
+                    <FormField control={form.control} name="screenshots" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Screenshots</FormLabel>
+                        <FormControl>
+                            <Input type="file" className="hidden" ref={screenshotsRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} multiple onChange={(e) => field.onChange(e.target.files)} />
+                        </FormControl>
+                        <button type="button" onClick={() => screenshotsRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                            <Upload className="h-8 w-8"/>
+                            <span>{screenshotsFiles?.length > 0 || existingScreenshots.length > 0 ? 'Add or replace screenshots' : 'Upload screenshots'}</span>
+                            <span className="text-xs">(Up to 5 images, 5MB each)</span>
                         </button>
-                    )}
-                    <FormDescription>
-                      Recommended resolution: 600x800px (3:4 aspect ratio).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                            {(screenshotsFiles && screenshotsFiles.length > 0 ? Array.from(screenshotsFiles) : existingScreenshots).map((item: any, index) => (
+                                <div key={index} className="relative">
+                                    <Image src={item instanceof File ? URL.createObjectURL(item) : item} alt={`Screenshot preview ${index + 1}`} width={160} height={90} className="rounded-md object-cover aspect-video" />
+                                </div>
+                            ))}
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                </div>
 
-                <FormField control={form.control} name="screenshots" render={({ field }) => (
-                   <FormItem>
-                    <FormLabel>Screenshots</FormLabel>
-                     <FormControl>
-                        <Input type="file" className="hidden" ref={screenshotsRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} multiple onChange={(e) => field.onChange(e.target.files)} />
-                    </FormControl>
-                    <button type="button" onClick={() => screenshotsRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-                        <Upload className="h-8 w-8"/>
-                        <span>{screenshotsFiles?.length > 0 || existingScreenshots.length > 0 ? 'Add or replace screenshots' : 'Upload screenshots'}</span>
-                        <span className="text-xs">(Up to 5 images, 5MB each)</span>
-                    </button>
-                    <div className="grid grid-cols-3 gap-2 mt-2">
-                        {(screenshotsFiles && screenshotsFiles.length > 0 ? Array.from(screenshotsFiles) : existingScreenshots).map((item: any, index) => (
-                             <div key={index} className="relative">
-                                <Image src={item instanceof File ? URL.createObjectURL(item) : item} alt={`Screenshot preview ${index + 1}`} width={160} height={90} className="rounded-md object-cover aspect-video" />
-                             </div>
-                        ))}
-                    </div>
-                    <FormMessage />
-                   </FormItem>
-                )}/>
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating... </> ) : ( <><Send className="mr-2 h-4 w-4" /> Save and Submit for Review </> )}

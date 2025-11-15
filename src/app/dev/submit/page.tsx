@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart, Image as ImageIcon } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -62,6 +62,13 @@ const formSchema = z.object({
       (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
       ".jpg, .jpeg, .png and .webp files are accepted."
     ),
+  bannerImage: z.any()
+    .optional()
+    .refine((file) => !file || file.size <= 5_000_000, `Max file size is 5MB.`)
+    .refine(
+      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      ".jpg, .jpeg, .png and .webp files are accepted."
+    ),
   screenshots: z.any()
     .refine((files) => files?.length > 0, "At least one screenshot is required.")
     .refine((files) => files?.length <= 5, "You can upload a maximum of 5 screenshots.")
@@ -96,6 +103,7 @@ function SubmitGamePageContent() {
   const router = useRouter();
 
   const coverImageRef = useRef<HTMLInputElement>(null);
+  const bannerImageRef = useRef<HTMLInputElement>(null);
   const screenshotsRef = useRef<HTMLInputElement>(null);
 
   const isLoading = isUserLoading || purchasedGames === undefined;
@@ -127,6 +135,7 @@ function SubmitGamePageContent() {
   });
 
   const coverImage = form.watch("coverImage");
+  const bannerImage = form.watch("bannerImage");
   const screenshots = form.watch("screenshots");
   const isPayWhatYouWant = form.watch("isPayWhatYouWant");
 
@@ -150,6 +159,15 @@ function SubmitGamePageContent() {
     toast({ title: "Starting submission...", description: "Please wait while we upload your files." });
 
     try {
+      let bannerImageUrl: string | undefined = undefined;
+
+      // Banner Image (optional)
+      if (values.bannerImage) {
+        const bannerImageDataUri = await fileToDataUri(values.bannerImage);
+        bannerImageUrl = await uploadImage({ fileDataUri: bannerImageDataUri, fileName: values.bannerImage.name });
+        toast({ title: "Banner image uploaded!" });
+      }
+
       const coverImageDataUri = await fileToDataUri(values.coverImage);
       const coverImageUrl = await uploadImage({ fileDataUri: coverImageDataUri, fileName: values.coverImage.name });
       toast({ title: "Cover image uploaded!", description: "Now uploading screenshots..." });
@@ -185,6 +203,7 @@ function SubmitGamePageContent() {
         gameFileUrl: values.gameFileUrl,
         githubRepoUrl: values.githubRepoUrl,
         coverImage: coverImageUrl,
+        bannerImage: bannerImageUrl,
         screenshots: screenshotUrls,
         isAdultContent: values.isAdultContent,
         developerId: user.uid,
@@ -464,71 +483,87 @@ function SubmitGamePageContent() {
                     )}
                 />
 
+                <Separator />
 
-                <FormField control={form.control} name="coverImage" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cover Image</FormLabel>
-                    <FormControl>
-                        <Input
-                            type="file"
-                            className="hidden"
-                            ref={coverImageRef}
-                            accept={ACCEPTED_IMAGE_TYPES.join(",")}
-                            onChange={(e) => field.onChange(e.target.files?.[0])}
-                        />
-                    </FormControl>
-                    {!coverImage ? (
-                        <button type="button" onClick={() => coverImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                <div className="space-y-6">
+                    <FormField control={form.control} name="coverImage" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Cover Image (Required)</FormLabel>
+                        <FormControl>
+                            <Input
+                                type="file"
+                                className="hidden"
+                                ref={coverImageRef}
+                                accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                                onChange={(e) => field.onChange(e.target.files?.[0])}
+                            />
+                        </FormControl>
+                        {!coverImage ? (
+                            <button type="button" onClick={() => coverImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                                <Upload className="h-8 w-8"/>
+                                <span>Upload a cover image</span>
+                                <span className="text-xs">Recommended: 600x800px (3:4 aspect ratio)</span>
+                            </button>
+                        ) : (
+                            <div className="relative w-48 mx-auto">
+                                <Image src={URL.createObjectURL(coverImage)} alt="Cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
+                                <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}>
+                                    <span className="sr-only">Remove image</span>
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
+                                </Button>
+                            </div>
+                        )}
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+
+                    <FormField control={form.control} name="bannerImage" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Banner Image (Optional)</FormLabel>
+                        <FormControl>
+                            <Input type="file" className="hidden" ref={bannerImageRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => field.onChange(e.target.files?.[0])} />
+                        </FormControl>
+                        {!bannerImage ? (
+                            <button type="button" onClick={() => bannerImageRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                                <ImageIcon className="h-8 w-8"/><span>Upload a banner image</span><span className="text-xs">Recommended: 1920x1080px (16:9 aspect ratio)</span>
+                            </button>
+                        ) : (
+                             <div className="relative w-full mx-auto">
+                                <Image src={URL.createObjectURL(bannerImage)} alt="Banner preview" width={1920} height={1080} className="rounded-md object-cover aspect-video" />
+                                <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("bannerImage", null)}>
+                                    <span className="sr-only">Remove image</span>
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
+                                </Button>
+                            </div>
+                        )}
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+
+                    <FormField control={form.control} name="screenshots" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Screenshots (Required)</FormLabel>
+                        <FormControl>
+                            <Input type="file" className="hidden" ref={screenshotsRef} accept={ACCEPTED_IMAGE_TYPES.join(",")} multiple onChange={(e) => field.onChange(e.target.files)} />
+                        </FormControl>
+                        <button type="button" onClick={() => screenshotsRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
                             <Upload className="h-8 w-8"/>
-                            <span>Click to upload a cover image</span>
-                            <span className="text-xs">(Max 5MB)</span>
+                            <span>Click to upload screenshots</span>
+                            <span className="text-xs">(Up to 5 images, max 5MB each)</span>
                         </button>
-                    ) : (
-                        <div className="relative w-48 mx-auto">
-                            <Image src={URL.createObjectURL(coverImage)} alt="Cover preview" width={300} height={400} className="rounded-md object-cover aspect-[3/4]" />
-                             <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={() => form.setValue("coverImage", null)}>
-                                <span className="sr-only">Remove image</span>
-                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
-                            </Button>
-                        </div>
-                    )}
-                    <FormDescription>
-                      Recommended resolution: 600x800px (3:4 aspect ratio).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-
-                <FormField control={form.control} name="screenshots" render={({ field }) => (
-                   <FormItem>
-                    <FormLabel>Screenshots</FormLabel>
-                    <FormControl>
-                        <Input
-                            type="file"
-                            className="hidden"
-                            ref={screenshotsRef}
-                            accept={ACCEPTED_IMAGE_TYPES.join(",")}
-                            multiple
-                            onChange={(e) => field.onChange(e.target.files)}
-                        />
-                    </FormControl>
-                    <button type="button" onClick={() => screenshotsRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/50 p-6 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors">
-                        <Upload className="h-8 w-8"/>
-                        <span>Click to upload screenshots</span>
-                        <span className="text-xs">(Up to 5 images, 5MB each)</span>
-                    </button>
-                     {screenshots && screenshots.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                            {Array.from(screenshots).map((file: any, index) => (
-                                <div key={index} className="relative">
-                                    <Image src={URL.createObjectURL(file)} alt={`Screenshot preview ${index + 1}`} width={160} height={90} className="rounded-md object-cover aspect-video" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <FormMessage />
-                   </FormItem>
-                )}/>
+                        {screenshots && screenshots.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 mt-2">
+                                {Array.from(screenshots).map((file: any, index) => (
+                                    <div key={index} className="relative">
+                                        <Image src={URL.createObjectURL(file)} alt={`Screenshot preview ${index + 1}`} width={160} height={90} className="rounded-md object-cover aspect-video" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                </div>
 
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>

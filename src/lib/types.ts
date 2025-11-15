@@ -9,6 +9,7 @@ export type Game = {
   isInDevelopment?: boolean;
   genres: string[];
   coverImage: string;
+  bannerImage?: string; // New field for the banner
   screenshots: string[];
   rating: number; 
   reviewCount?: number; 
