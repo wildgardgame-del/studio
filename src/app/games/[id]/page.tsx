@@ -1,11 +1,14 @@
 
+
 'use client';
 
 import { Suspense, useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github, Award, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, ShoppingCart, Star, Link as LinkIcon, Youtube, ShieldAlert, Download, Github, Award, Clock, Calendar, Tag } from 'lucide-react';
 import Image from 'next/image';
+import { format } from 'date-fns';
+
 
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
@@ -275,15 +278,48 @@ function GamePageContent() {
                   <p className="text-sm">You are viewing this page as an admin. This game has a status of <span className="font-semibold">{game.status}</span> and is not visible to the public.</p>
                 </div>
               )}
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-muted-foreground font-semibold">Release Date</span>
+                        <span>{game.releaseDate ? format(new Date(game.releaseDate), 'MMM d, yyyy') : 'TBA'}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-muted-foreground font-semibold">Developer</span>
+                        <span>{game.publisher || 'N/A'}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-muted-foreground font-semibold">Publisher</span>
+                        <span>{game.publisher || 'N/A'}</span>
+                    </div>
+                     <div className="flex flex-col gap-1">
+                        <span className="text-muted-foreground font-semibold">Rating</span>
+                        <div className="flex items-center gap-1">
+                           <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                           <span>{game.rating.toFixed(1)} <span className="text-xs text-muted-foreground">({game.reviewCount || 0} reviews)</span></span>
+                        </div>
+                    </div>
+                </div>
 
-               <div className="prose prose-invert max-w-none text-muted-foreground text-lg">
-                  <p>{game.longDescription || game.description}</p>
-               </div>
-
-               <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <span className="font-semibold text-muted-foreground mr-2">Genres:</span>
                   {game.genres.map(genre => (
                     <Badge key={genre} variant="secondary" className="text-sm">{genre}</Badge>
                   ))}
+                </div>
+
+                {game.tags && game.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <span className="font-semibold text-muted-foreground mr-2">Tags:</span>
+                        {game.tags.map(tag => (
+                        <Badge key={tag} variant="outline" className="text-sm">{tag}</Badge>
+                        ))}
+                    </div>
+                )}
+
+
+               <div className="prose prose-invert max-w-none text-muted-foreground text-lg">
+                  <p>{game.longDescription || game.description}</p>
                </div>
                
               {game.screenshots && game.screenshots.length > 0 && (

@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart, Image as ImageIcon } from "lucide-react";
+import { Send, Loader2, Upload, Link as LinkIcon, Youtube, ArrowLeft, Download, Github, HelpCircle, ShieldAlert, Heart, Image as ImageIcon, Calendar } from "lucide-react";
 import { collection, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -31,10 +32,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { uploadImage } from "@/ai/flows/upload-image-flow";
 import { Checkbox } from "@/components/ui/checkbox";
-import { availableGenres } from "@/lib/genres";
+import { availableGenres, availableTags } from "@/lib/genres";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useGameStore } from "@/context/game-store-context";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarIcon } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MATURE_TAG = "Mature 18+";
@@ -43,6 +48,7 @@ const formSchema = z.object({
   title: z.string().min(2, "Game title must be at least 2 characters."),
   publisher: z.string().min(2, "Publisher name must be at least 2 characters."),
   price: z.coerce.number().min(0, "Price cannot be negative."),
+  releaseDate: z.date().optional(),
   isPayWhatYouWant: z.boolean().default(false),
   isInDevelopment: z.boolean().default(false),
   description: z.string().min(10, "Short description must be at least 10 characters."),
@@ -50,6 +56,7 @@ const formSchema = z.object({
   genres: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one genre.",
   }),
+  tags: z.array(z.string()).optional(),
   websiteUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   trailerUrls: z.string().optional(),
   gameFileUrl: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
@@ -121,11 +128,13 @@ function SubmitGamePageContent() {
       title: "",
       publisher: "",
       price: 0,
+      releaseDate: new Date(),
       isPayWhatYouWant: false,
       isInDevelopment: false,
       description: "",
       longDescription: "",
       genres: [],
+      tags: [],
       websiteUrl: "",
       trailerUrls: "",
       gameFileUrl: "",
@@ -193,11 +202,13 @@ function SubmitGamePageContent() {
         title: values.title,
         publisher: values.publisher,
         price: values.price,
+        releaseDate: values.releaseDate ? values.releaseDate.toISOString() : null,
         isPayWhatYouWant: values.isPayWhatYouWant,
         isInDevelopment: values.isInDevelopment,
         description: values.description,
         longDescription: values.longDescription,
         genres: finalGenres,
+        tags: values.tags,
         websiteUrl: values.websiteUrl,
         trailerUrls: trailerUrls,
         gameFileUrl: values.gameFileUrl,
@@ -210,7 +221,7 @@ function SubmitGamePageContent() {
         status: 'pending' as const,
         submittedAt: serverTimestamp(),
         rating: 0,
-        reviews: [],
+        reviewCount: 0,
       };
 
       addDocumentNonBlocking(collection(firestore, `games`), newGameData);
@@ -321,6 +332,51 @@ function SubmitGamePageContent() {
                     />
                 </div>
 
+                <FormField
+                    control={form.control}
+                    name="releaseDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>Release Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-[240px] pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, "PPP")
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarIcon
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormDescription>
+                            The official release date of your game.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
 
                 <FormField control={form.control} name="description" render={({ field }) => (
                   <FormItem>
@@ -346,7 +402,7 @@ function SubmitGamePageContent() {
                       <div className="mb-4">
                         <FormLabel>Genres</FormLabel>
                         <FormDescription>
-                          Select all genres that apply to your game. (Choosing irrelevant tags may lead to your submission being rejected)
+                          Select all genres that apply to your game.
                         </FormDescription>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -388,6 +444,58 @@ function SubmitGamePageContent() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel>Tags</FormLabel>
+                        <FormDescription>
+                          Select tags that describe the experience of your game.
+                        </FormDescription>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {availableTags.map((item) => (
+                          <FormField
+                            key={item}
+                            control={form.control}
+                            name="tags"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={item}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(item)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), item])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== item
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    {item}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
 
                  <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="websiteUrl" render={({ field }) => (

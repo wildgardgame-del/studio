@@ -1,4 +1,5 @@
 
+
 export const availableGenres = [
   "Action",
   "Action RPG",
@@ -29,3 +30,16 @@ export const availableGenres = [
 ] as const;
 
 export type Genre = typeof availableGenres[number];
+
+export const availableTags = [
+    "Single-player",
+    "Multiplayer",
+    "Co-op",
+    "Local Co-op",
+    "Online Co-op",
+    "Controller Support",
+    "Free to Play",
+    "Early Access"
+] as const;
+
+export type Tag = typeof availableTags[number];
