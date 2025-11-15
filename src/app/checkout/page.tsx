@@ -18,9 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 
 // --- IMPORTANT ---
-// THIS IS THE WALLET ADDRESS THAT WILL RECEIVE ALL PAYMENTS FROM GAME SALES.
-// REPLACE IT WITH YOUR OWN PERSONAL OR BUSINESS POLYGON WALLET ADDRESS.
-const RECIPIENT_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"; 
+// THE RECIPIENT ADDRESS IS NOW MANAGED IN YOUR ENVIRONMENT VARIABLES.
+// SET 'NEXT_PUBLIC_RECIPIENT_WALLET_ADDRESS' in .env.local
+const RECIPIENT_ADDRESS = process.env.NEXT_PUBLIC_RECIPIENT_WALLET_ADDRESS;
 
 function CheckoutPageContent() {
     const { cartItems, clearCart } = useGameStore();
@@ -99,6 +99,12 @@ function CheckoutPageContent() {
         }
         
         // Handle paid checkout
+        if (!RECIPIENT_ADDRESS) {
+            toast({ variant: "destructive", title: "Configuration Error", description: "The recipient wallet address is not configured." });
+            setIsProcessing(false);
+            return;
+        }
+        
         let currentSigner = signer;
         if (!currentSigner) {
             currentSigner = await connectWallet();
